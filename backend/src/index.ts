@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import { testConnection } from './db';
+import projectRoutes from './routes/projectRoutes';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,9 @@ app.use(cors({
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// API Routes
+app.use('/api/projects', projectRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -53,10 +57,30 @@ wss.on('connection', (ws) => {
   });
 });
 
+// 404 handler
+app.use((req: express.Request, res: express.Response) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message: `Route ${req.method} ${req.path} not found`
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  console.error('Unhandled error:', err.stack);
+  
+  res.status(500).json({
+    success: false,
+    error: {
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred'
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Start server
