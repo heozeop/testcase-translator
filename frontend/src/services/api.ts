@@ -119,6 +119,11 @@ class ApiService {
     return this.handleResponse<ProcessingResult>(response);
   }
 
+  // Alias for uploadExcelFile for better naming consistency
+  async uploadTestCases(projectId: string, file: File, onProgress?: (progress: number) => void): Promise<ProcessingResult> {
+    return this.uploadExcelFile(projectId, file, onProgress);
+  }
+
   // Utility methods
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     const response = await this.api.get('/api/health');
