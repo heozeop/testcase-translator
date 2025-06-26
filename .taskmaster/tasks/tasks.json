@@ -1,0 +1,697 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Project Infrastructure with Docker Compose",
+      "description": "Initialize the project repository with Docker Compose configuration for local development, including React frontend, Node.js/TypeScript backend, and PostgreSQL database",
+      "details": "Create project structure with separate directories for frontend (React) and backend (Node.js/TypeScript). Setup Docker Compose with services for: React app (port 3000), Node.js backend (port 8000), PostgreSQL database (port 5432). Include environment variables configuration, volume mounts for development, and hot reload capabilities. Initialize package.json files with necessary dependencies including TypeScript, Express, React, pg (PostgreSQL client), and development tools.",
+      "testStrategy": "Verify all Docker services start successfully, database connection is established, and both frontend and backend are accessible on their respective ports",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Project Directory Structure and Initialize Git Repository",
+          "description": "Set up the foundational project structure with separate directories for frontend and backend components, and initialize version control",
+          "dependencies": [],
+          "details": "Create root project directory with subdirectories: /frontend, /backend, /docker. Initialize git repository with .gitignore file excluding node_modules, .env files, and Docker volumes. Create README.md with project overview and setup instructions.",
+          "status": "pending",
+          "testStrategy": "Verify directory structure exists and git repository is properly initialized with appropriate .gitignore rules"
+        },
+        {
+          "id": 2,
+          "title": "Initialize Backend Node.js/TypeScript Project Structure",
+          "description": "Set up the backend directory with TypeScript configuration, Express server setup, and PostgreSQL client dependencies",
+          "dependencies": [
+            1
+          ],
+          "details": "Navigate to /backend directory and run npm init. Install dependencies: express, typescript, @types/node, @types/express, ts-node, nodemon, pg, @types/pg, cors, @types/cors, dotenv. Create tsconfig.json with appropriate TypeScript configuration. Set up basic Express server structure with src/index.ts, middleware setup, and npm scripts for development and build.",
+          "status": "pending",
+          "testStrategy": "Verify package.json contains all required dependencies and TypeScript compiles without errors"
+        },
+        {
+          "id": 3,
+          "title": "Initialize Frontend React Project Structure",
+          "description": "Set up the React frontend application with TypeScript support and development dependencies",
+          "dependencies": [
+            1
+          ],
+          "details": "Navigate to /frontend directory and create React app using create-react-app with TypeScript template: npx create-react-app . --template typescript. Install additional development dependencies if needed. Configure proxy in package.json to point to backend API (http://localhost:8000). Set up basic component structure and ensure hot reload is configured.",
+          "status": "pending",
+          "testStrategy": "Verify React app starts successfully and TypeScript compilation works without errors"
+        },
+        {
+          "id": 4,
+          "title": "Create Docker Compose Configuration",
+          "description": "Set up Docker Compose file with services for React frontend, Node.js backend, and PostgreSQL database with proper networking and volume mounts",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create docker-compose.yml in project root with three services: 1) frontend service using node:18-alpine, exposing port 3000, with volume mounts for hot reload 2) backend service using node:18-alpine, exposing port 8000, with volume mounts and nodemon for hot reload 3) postgres service using postgres:15-alpine, exposing port 5432, with named volume for data persistence. Configure networks for inter-service communication.",
+          "status": "pending",
+          "testStrategy": "Run docker-compose up and verify all services start successfully and can communicate with each other"
+        },
+        {
+          "id": 5,
+          "title": "Configure Environment Variables and Development Setup",
+          "description": "Set up environment variable configuration for all services and ensure hot reload capabilities work across the Docker Compose setup",
+          "dependencies": [
+            4
+          ],
+          "details": "Create .env.example files for both frontend and backend with necessary environment variables (DATABASE_URL, PORT, etc.). Create docker-compose.override.yml for development-specific configurations. Configure volume mounts in Docker Compose to enable hot reload: bind mount source code directories, configure nodemon for backend auto-restart, ensure React development server hot reload works. Add npm scripts for easy development workflow (start, stop, logs).",
+          "status": "pending",
+          "testStrategy": "Test hot reload by making changes to both frontend and backend code and verifying automatic rebuilds. Verify environment variables are properly loaded in all services."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Implement Database Schema and Models",
+      "description": "Create PostgreSQL database schema for Projects, Test Cases, Generated Code, and Execution Results entities with proper relationships",
+      "details": "Design and implement database tables: Projects (id, name, target_url, created_at, updated_at), TestCases (id, project_id, scenario_name, test_data, status, created_at), GeneratedCode (id, test_case_id, cypress_script, file_path, created_at), ExecutionResults (id, test_case_id, status, logs, executed_at). Create TypeScript interfaces/types for each entity. Implement database migration scripts and connection pooling. Use pg library for database operations.",
+      "testStrategy": "Run database migrations successfully, verify table creation with proper constraints and relationships, test CRUD operations for each entity",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Design and Create PostgreSQL Database Schema",
+          "description": "Create the database schema with all required tables and their relationships, including proper indexing and constraints",
+          "dependencies": [],
+          "details": "Create SQL migration files for Projects table (id, name, target_url, created_at, updated_at), TestCases table (id, project_id, scenario_name, test_data, status, created_at), GeneratedCode table (id, test_case_id, cypress_script, file_path, created_at), and ExecutionResults table (id, test_case_id, status, logs, executed_at). Add foreign key constraints, indexes on frequently queried columns, and proper data types. Use UUID for IDs and ensure proper cascading rules.",
+          "status": "pending",
+          "testStrategy": "Test schema creation with sample data insertion and verify all constraints work correctly"
+        },
+        {
+          "id": 2,
+          "title": "Implement Database Connection and Pool Management",
+          "description": "Set up PostgreSQL connection using pg library with connection pooling and configuration management",
+          "dependencies": [
+            1
+          ],
+          "details": "Install and configure pg library with connection pooling. Create database configuration module that reads from environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD). Implement connection pool with appropriate min/max connections, idle timeout, and error handling. Create database initialization function and health check endpoint.",
+          "status": "pending",
+          "testStrategy": "Test connection establishment, pool behavior under load, and graceful error handling for connection failures"
+        },
+        {
+          "id": 3,
+          "title": "Create TypeScript Interfaces and Types",
+          "description": "Define TypeScript interfaces and types for all database entities with proper type safety",
+          "dependencies": [
+            1
+          ],
+          "details": "Create interfaces for Project, TestCase, GeneratedCode, and ExecutionResults entities matching the database schema. Include optional fields for updates, create separate types for database rows vs API responses. Add enums for status fields (e.g., TestCaseStatus, ExecutionStatus). Create utility types for partial updates and query filters.",
+          "status": "pending",
+          "testStrategy": "Ensure type safety with TypeScript compiler and test type compatibility with database operations"
+        },
+        {
+          "id": 4,
+          "title": "Implement Database Migration System",
+          "description": "Create a migration system to manage database schema changes and versioning",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Create migration runner that tracks applied migrations in a migrations table. Implement up/down migration functions for schema changes. Create initial migration for all tables and sample migrations for future reference. Add CLI commands for running migrations (migrate up, migrate down, migrate status). Include rollback capabilities and migration validation.",
+          "status": "pending",
+          "testStrategy": "Test migration execution, rollback functionality, and migration state tracking across different scenarios"
+        },
+        {
+          "id": 5,
+          "title": "Implement Database Access Layer with CRUD Operations",
+          "description": "Create repository pattern with CRUD operations for all entities using the pg library",
+          "dependencies": [
+            2,
+            3,
+            4
+          ],
+          "details": "Create repository classes for each entity (ProjectRepository, TestCaseRepository, GeneratedCodeRepository, ExecutionResultsRepository) with methods for create, read, update, delete operations. Implement query builders for complex queries, transaction support, and proper error handling. Add methods for relationship queries (e.g., get test cases by project). Use prepared statements for security and performance.",
+          "status": "pending",
+          "testStrategy": "Unit tests for each repository method, integration tests with actual database, and performance testing for complex queries"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Develop URL Validation and HTML Retrieval Service",
+      "description": "Create backend service to validate URLs and retrieve initial HTML content for test case processing",
+      "details": "Implement URL validation service using Node.js with axios for HTTP requests. Create endpoint POST /api/projects/validate-url that: validates URL format using URL constructor, performs HEAD request to check accessibility, retrieves initial HTML content with GET request, extracts basic page metadata (title, meta tags), handles redirects and common HTTP errors. Include timeout handling (10s), user-agent headers, and basic security checks to prevent SSRF attacks.",
+      "testStrategy": "Test with valid/invalid URLs, unreachable domains, redirects, and various HTTP status codes. Verify HTML content extraction and metadata parsing",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement URL Format Validation and Security Checks",
+          "description": "Create URL validation logic with format checking and SSRF protection to ensure only valid and safe URLs are processed",
+          "dependencies": [],
+          "details": "Use Node.js URL constructor to validate URL format. Implement SSRF protection by blocking private IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), localhost, and non-HTTP/HTTPS protocols. Create utility functions for URL parsing and security validation. Include checks for malformed URLs and suspicious patterns.",
+          "status": "pending",
+          "testStrategy": "Unit tests with valid/invalid URLs, private IP addresses, localhost variants, and malicious URL patterns"
+        },
+        {
+          "id": 2,
+          "title": "Configure HTTP Client with Timeout and Headers",
+          "description": "Set up axios HTTP client with proper configuration for timeout handling, user-agent headers, and redirect management",
+          "dependencies": [
+            1
+          ],
+          "details": "Configure axios instance with 10-second timeout, custom user-agent header, automatic redirect following (max 5 redirects), and proper error handling. Set up request interceptors for logging and response interceptors for error processing. Include configuration for handling different response types and status codes.",
+          "status": "pending",
+          "testStrategy": "Integration tests for timeout scenarios, redirect handling, and various HTTP response codes"
+        },
+        {
+          "id": 3,
+          "title": "Implement URL Accessibility Check with HEAD Request",
+          "description": "Create service method to perform HEAD requests for checking URL accessibility before full content retrieval",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement HEAD request functionality to verify URL accessibility without downloading full content. Handle common HTTP status codes (200, 301, 302, 404, 500, etc.) and provide meaningful error messages. Include logic for determining if a URL is accessible based on response status and headers.",
+          "status": "pending",
+          "testStrategy": "Mock HTTP responses for different status codes and test accessibility determination logic"
+        },
+        {
+          "id": 4,
+          "title": "Develop HTML Content Retrieval and Metadata Extraction",
+          "description": "Create functionality to retrieve full HTML content and extract basic page metadata including title and meta tags",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement GET request to retrieve HTML content after accessibility verification. Use cheerio or similar library to parse HTML and extract title, meta description, meta keywords, and other relevant meta tags. Handle different character encodings and malformed HTML. Create structured metadata object for response.",
+          "status": "pending",
+          "testStrategy": "Test with various HTML structures, different encodings, and edge cases like missing titles or meta tags"
+        },
+        {
+          "id": 5,
+          "title": "Create POST /api/projects/validate-url Endpoint",
+          "description": "Implement the main API endpoint that orchestrates URL validation, accessibility checking, and content retrieval",
+          "dependencies": [
+            4
+          ],
+          "details": "Create Express.js POST endpoint that accepts URL in request body, validates input, calls validation and retrieval services in sequence, and returns structured response with validation status, accessibility info, and extracted metadata. Include comprehensive error handling with appropriate HTTP status codes and error messages. Implement request logging and response formatting.",
+          "status": "pending",
+          "testStrategy": "End-to-end API tests covering successful validation, various error scenarios, and response format validation"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Integrate Mastra.ai Claude LLM for Excel Parsing",
+      "description": "Implement LLM integration using Claude model via Mastra.ai API for parsing and validating Excel test case files",
+      "details": "Setup Mastra.ai SDK integration for Claude model. Create service for Excel file processing: use xlsx library to read .xlsx files, extract sheet data into JSON format, send structured data to Claude via Mastra.ai API with prompt for test case validation and parsing. Design prompt to identify test scenarios, expected actions, assertions, and input requirements. Implement error handling for API failures, rate limiting, and response validation. Store parsed results in TestCases table.",
+      "testStrategy": "Test with various Excel file formats, malformed files, and different test case structures. Verify Claude parsing accuracy and error handling for API failures",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Setup Mastra.ai SDK Integration and Configuration",
+          "description": "Install and configure the Mastra.ai SDK for Claude model integration, including API key setup and basic connection testing",
+          "dependencies": [],
+          "details": "Install Mastra.ai SDK package, configure environment variables for API keys, create a basic Mastra client instance with Claude model configuration, implement connection validation and basic error handling for authentication failures",
+          "status": "pending",
+          "testStrategy": "Unit tests for SDK initialization, connection tests with mock API responses, and authentication validation tests"
+        },
+        {
+          "id": 2,
+          "title": "Implement Excel File Reading and JSON Conversion",
+          "description": "Create service to read Excel files using xlsx library and convert sheet data into structured JSON format suitable for LLM processing",
+          "dependencies": [
+            1
+          ],
+          "details": "Install xlsx library, create ExcelParserService class with methods to read .xlsx files, extract worksheet data, handle multiple sheets, convert cell data to JSON with proper type handling (strings, numbers, dates), implement file validation and error handling for corrupted files",
+          "status": "pending",
+          "testStrategy": "Unit tests with sample Excel files, edge case testing for different data types, empty cells, and malformed files"
+        },
+        {
+          "id": 3,
+          "title": "Design and Implement Claude Prompt for Test Case Parsing",
+          "description": "Create structured prompts for Claude to identify and extract test scenarios, expected actions, assertions, and input requirements from Excel data",
+          "dependencies": [
+            1
+          ],
+          "details": "Design prompt templates that instruct Claude to parse Excel data and identify: test case names, test steps, expected results, input parameters, assertions, and validation criteria. Create prompt engineering utilities for consistent formatting, implement response schema validation, and handle different Excel structures and formats",
+          "status": "pending",
+          "testStrategy": "Prompt testing with various Excel formats, validation of Claude response structure, and accuracy testing against known test cases"
+        },
+        {
+          "id": 4,
+          "title": "Build LLM Processing Service with Error Handling",
+          "description": "Create service that sends structured Excel data to Claude via Mastra.ai API with comprehensive error handling for API failures and rate limiting",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Create LLMProcessingService class that combines Excel JSON data with prompts, sends requests to Claude via Mastra.ai, implements retry logic with exponential backoff for rate limiting, handles API timeouts and failures, validates response format, and implements response parsing to extract structured test case data",
+          "status": "pending",
+          "testStrategy": "Integration tests with Mastra.ai API, error simulation tests for rate limiting and timeouts, response validation tests"
+        },
+        {
+          "id": 5,
+          "title": "Implement Database Storage for Parsed Test Cases",
+          "description": "Create database operations to store parsed test case results in TestCases table with proper data validation and conflict resolution",
+          "dependencies": [
+            4
+          ],
+          "details": "Design TestCases table schema if not exists, create data access layer for storing parsed test cases, implement data validation before database insertion, handle duplicate test cases with update/merge logic, create batch insertion for multiple test cases, implement transaction handling for data consistency, and add logging for successful/failed storage operations",
+          "status": "pending",
+          "testStrategy": "Database integration tests, data validation tests, duplicate handling tests, and transaction rollback tests for error scenarios"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Create React Frontend with File Upload and URL Input",
+      "description": "Develop React frontend components for URL input, Excel file upload, and project management interface",
+      "details": "Create React components: URLInputForm (with validation feedback), FileUploadComponent (drag-drop support for .xlsx files), ProjectDashboard (list of projects), ProcessingStatus (real-time updates). Use React hooks for state management, axios for API calls, and react-dropzone for file uploads. Implement form validation, loading states, error handling, and success notifications. Style with CSS modules or styled-components for clean, intuitive interface.",
+      "testStrategy": "Test file upload functionality, URL input validation, form submissions, error states, and responsive design across different screen sizes",
+      "priority": "medium",
+      "dependencies": [
+        3
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up React project structure and dependencies",
+          "description": "Initialize React application with required dependencies and establish project structure for frontend components",
+          "dependencies": [],
+          "details": "Create React app using create-react-app or Vite. Install dependencies: axios for API calls, react-dropzone for file uploads, CSS modules or styled-components for styling. Set up folder structure with components/, hooks/, services/, and styles/ directories. Configure environment variables for API endpoints.",
+          "status": "pending",
+          "testStrategy": "Verify project builds successfully and all dependencies are properly installed"
+        },
+        {
+          "id": 2,
+          "title": "Implement URLInputForm component with validation",
+          "description": "Create URL input form component with real-time validation, error handling, and user feedback",
+          "dependencies": [
+            1
+          ],
+          "details": "Build URLInputForm component using React hooks (useState, useEffect). Implement URL validation using regex or URL constructor. Add visual feedback for valid/invalid URLs, loading states during submission, and error/success notifications. Include form submission handling with axios API calls.",
+          "status": "pending",
+          "testStrategy": "Test URL validation with various input formats, verify error states, and test successful form submission"
+        },
+        {
+          "id": 3,
+          "title": "Create FileUploadComponent with drag-and-drop functionality",
+          "description": "Develop file upload component supporting drag-and-drop for Excel files with validation and progress feedback",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement FileUploadComponent using react-dropzone library. Add file type validation for .xlsx files, file size limits, and drag-and-drop visual feedback. Include upload progress indicators, error handling for invalid files, and success notifications. Integrate with backend API for file upload.",
+          "status": "pending",
+          "testStrategy": "Test drag-and-drop functionality, file validation with various file types, and upload progress indicators"
+        },
+        {
+          "id": 4,
+          "title": "Build ProjectDashboard for project listing and management",
+          "description": "Create dashboard component to display list of projects with basic management functionality",
+          "dependencies": [
+            1,
+            2,
+            3
+          ],
+          "details": "Develop ProjectDashboard component to fetch and display projects list using axios. Include project cards/rows showing project details, creation date, and status. Add basic actions like view details, delete project. Implement loading states and error handling for API calls. Use React hooks for state management.",
+          "status": "pending",
+          "testStrategy": "Test project list rendering, API integration, loading states, and project management actions"
+        },
+        {
+          "id": 5,
+          "title": "Implement ProcessingStatus component with real-time updates",
+          "description": "Create status component to show real-time processing updates and integrate all components into cohesive interface",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Build ProcessingStatus component with real-time updates using polling or WebSocket connection. Display processing stages, progress indicators, and completion status. Integrate all components (URLInputForm, FileUploadComponent, ProjectDashboard, ProcessingStatus) into main App component with proper routing and state management. Apply consistent styling using CSS modules or styled-components.",
+          "status": "pending",
+          "testStrategy": "Test real-time status updates, component integration, responsive design, and overall user experience flow"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Implement WebSocket for Real-time Updates",
+      "description": "Setup WebSocket connection between frontend and backend for real-time processing updates and user prompts",
+      "details": "Implement WebSocket server using ws library in Node.js backend. Create WebSocket endpoints for: project processing updates, dynamic user input requests, status notifications. On frontend, use native WebSocket API or socket.io-client for connection management, message handling, and reconnection logic. Implement message types for different update categories and user interaction prompts. Handle connection states and error recovery.",
+      "testStrategy": "Test WebSocket connection establishment, message broadcasting, reconnection handling, and real-time UI updates during processing",
+      "priority": "medium",
+      "dependencies": [
+        5
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Setup WebSocket Server Infrastructure",
+          "description": "Initialize WebSocket server using ws library in Node.js backend with basic connection handling and message routing",
+          "dependencies": [],
+          "details": "Install ws library, create WebSocket server instance, implement basic connection event handlers (connection, close, error), set up message parsing and routing structure, configure server to run alongside existing HTTP server",
+          "status": "pending",
+          "testStrategy": "Test basic WebSocket connection establishment and message echo functionality"
+        },
+        {
+          "id": 2,
+          "title": "Define WebSocket Message Types and Protocol",
+          "description": "Create standardized message format and define message types for different categories of real-time updates",
+          "dependencies": [
+            1
+          ],
+          "details": "Define JSON message structure with type, payload, and metadata fields. Create message types for: PROJECT_UPDATE, USER_INPUT_REQUEST, STATUS_NOTIFICATION, ERROR, HEARTBEAT. Implement message validation and type checking utilities",
+          "status": "pending",
+          "testStrategy": "Unit tests for message validation and type checking functions"
+        },
+        {
+          "id": 3,
+          "title": "Implement Backend WebSocket Endpoints",
+          "description": "Create specific WebSocket endpoints for project processing updates, user input requests, and status notifications",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement handlers for each message type, integrate with existing project processing logic to emit updates, create user input request mechanism with response handling, implement status notification broadcasting, add client session management",
+          "status": "pending",
+          "testStrategy": "Integration tests for each endpoint with mock project data and user scenarios"
+        },
+        {
+          "id": 4,
+          "title": "Build Frontend WebSocket Client",
+          "description": "Implement frontend WebSocket client with connection management, message handling, and automatic reconnection logic",
+          "dependencies": [
+            2
+          ],
+          "details": "Create WebSocket client class using native WebSocket API, implement connection state management (connecting, connected, disconnected), add automatic reconnection with exponential backoff, implement message queue for offline scenarios, create event emitter for UI components",
+          "status": "pending",
+          "testStrategy": "Test connection scenarios including network interruptions and server restarts"
+        },
+        {
+          "id": 5,
+          "title": "Integrate WebSocket with UI Components",
+          "description": "Connect WebSocket client to frontend UI components for displaying real-time updates and handling user prompts",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Integrate WebSocket events with React components or UI framework, implement real-time update displays for project processing, create user input prompt modals/components, add connection status indicators, implement error handling and user feedback for connection issues",
+          "status": "pending",
+          "testStrategy": "End-to-end testing of real-time updates flow and user interaction scenarios"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Develop Dynamic URL Exploration Engine",
+      "description": "Create automated navigation system that explores URLs based on parsed test cases and collects necessary user inputs",
+      "details": "Implement URL exploration service using Puppeteer for browser automation. Create navigation logic that: reads test case scenarios, navigates to specified URLs/pages, identifies required form inputs and interactive elements, captures page states and element selectors. Implement dynamic input collection by prompting users via WebSocket for missing test data. Store exploration results including element selectors, page screenshots, and navigation paths for Cypress script generation.",
+      "testStrategy": "Test navigation across different website structures, form detection accuracy, user input collection flow, and handling of dynamic content loading",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Core Puppeteer Browser Automation Service",
+          "description": "Create the foundational browser automation service using Puppeteer to handle browser lifecycle, page navigation, and basic interaction capabilities",
+          "dependencies": [],
+          "details": "Set up Puppeteer service class with methods for browser initialization, page creation, navigation to URLs, and cleanup. Implement error handling for navigation failures, timeouts, and browser crashes. Configure browser options for headless/headed modes and viewport settings. Create utility methods for waiting for page loads and element visibility.",
+          "status": "pending",
+          "testStrategy": "Unit tests for browser lifecycle management, navigation success/failure scenarios, and timeout handling"
+        },
+        {
+          "id": 2,
+          "title": "Develop Test Case Parser and URL Extraction Logic",
+          "description": "Build parser to read test case scenarios and extract target URLs, navigation sequences, and expected page interactions",
+          "dependencies": [
+            1
+          ],
+          "details": "Create parser service that reads test case files/data structures and extracts URLs, navigation paths, and interaction requirements. Implement logic to identify different types of navigation (direct URL access, form submissions, link clicks). Parse expected user actions and form field requirements from test scenarios. Generate navigation plan with ordered steps and required inputs.",
+          "status": "pending",
+          "testStrategy": "Unit tests with sample test case files, validation of parsed navigation sequences, and edge case handling for malformed test cases"
+        },
+        {
+          "id": 3,
+          "title": "Create Page Element Discovery and Analysis Engine",
+          "description": "Implement automated page analysis to identify interactive elements, form fields, and capture element selectors and page structure",
+          "dependencies": [
+            1
+          ],
+          "details": "Develop page scanner that identifies all interactive elements (forms, buttons, inputs, links). Generate robust CSS selectors and XPath expressions for each element. Capture element attributes, types, validation requirements, and accessibility properties. Implement page state capture including DOM structure, loaded resources, and visual layout. Create element classification system for different input types and interaction patterns.",
+          "status": "pending",
+          "testStrategy": "Integration tests with various page types, selector reliability validation, and element detection accuracy verification"
+        },
+        {
+          "id": 4,
+          "title": "Build Dynamic User Input Collection via WebSocket",
+          "description": "Implement real-time communication system to prompt users for missing test data and form inputs during exploration",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Set up WebSocket server for real-time communication with frontend clients. Create input request system that identifies missing form data and prompts users with context about required fields. Implement input validation and type checking for collected data. Build queue system for handling multiple input requests and user responses. Create fallback mechanisms for timeout scenarios and default value handling.",
+          "status": "pending",
+          "testStrategy": "WebSocket connection tests, input validation scenarios, timeout handling, and concurrent user session management"
+        },
+        {
+          "id": 5,
+          "title": "Implement Exploration Results Storage and Navigation Path Recording",
+          "description": "Create comprehensive storage system for exploration results including element selectors, screenshots, navigation paths, and collected data for Cypress script generation",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Design data structure for storing exploration results with navigation sequences, element mappings, and user inputs. Implement screenshot capture at key navigation points and form interactions. Create navigation path recording with timestamps, actions performed, and page states. Build result serialization for Cypress script generation compatibility. Implement data persistence with options for database or file-based storage.",
+          "status": "pending",
+          "testStrategy": "Data integrity tests, screenshot quality validation, navigation path accuracy verification, and storage/retrieval performance testing"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Build Interactive Input Collection System",
+      "description": "Create system for dynamically prompting users for test inputs during URL exploration with secure storage",
+      "details": "Implement input collection service that: identifies missing test data during exploration, generates user-friendly prompts via WebSocket, validates and stores user inputs securely, links inputs to specific test cases and scenarios. Create frontend components for displaying input prompts, form fields for different data types (text, select, checkbox), and input validation. Implement secure storage with encryption for sensitive test data and session management for multi-step input collection.",
+      "testStrategy": "Test input prompt generation, user response handling, data validation, secure storage, and session persistence across different scenarios",
+      "priority": "medium",
+      "dependencies": [
+        7
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Input Collection Service Backend",
+          "description": "Create the core backend service that identifies missing test data during URL exploration and manages the input collection workflow",
+          "dependencies": [],
+          "details": "Build a service class that monitors test execution, detects when test data is missing or incomplete, and triggers input collection requests. Implement logic to categorize different types of required inputs (authentication tokens, form data, API parameters) and generate structured input requirements. Create data models for input requests, validation rules, and input metadata.",
+          "status": "pending",
+          "testStrategy": "Unit tests for input detection logic, mock test scenarios with missing data, verify correct categorization of input types"
+        },
+        {
+          "id": 2,
+          "title": "Build WebSocket Communication Layer",
+          "description": "Implement real-time WebSocket communication system for sending input prompts to users and receiving responses",
+          "dependencies": [
+            1
+          ],
+          "details": "Set up WebSocket server endpoints for bidirectional communication between backend and frontend. Create message protocols for input requests, user responses, and status updates. Implement connection management, reconnection logic, and message queuing for reliability. Add authentication and authorization for WebSocket connections.",
+          "status": "pending",
+          "testStrategy": "Integration tests for WebSocket connectivity, message delivery verification, connection resilience testing under network interruptions"
+        },
+        {
+          "id": 3,
+          "title": "Create Frontend Input Collection Components",
+          "description": "Develop React components for displaying input prompts and collecting user data through various form field types",
+          "dependencies": [
+            2
+          ],
+          "details": "Build reusable components for different input types: text fields, dropdowns, checkboxes, file uploads, and multi-step forms. Implement real-time validation with visual feedback, dynamic form generation based on backend requirements, and responsive design. Create a modal or sidebar interface for input collection that doesn't interrupt the main exploration workflow.",
+          "status": "pending",
+          "testStrategy": "Component testing with React Testing Library, visual regression tests, accessibility testing, cross-browser compatibility verification"
+        },
+        {
+          "id": 4,
+          "title": "Implement Secure Data Storage and Encryption",
+          "description": "Build secure storage system with encryption for sensitive test data and session management capabilities",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement AES encryption for sensitive input data at rest, create secure key management system, and build database schema for storing encrypted inputs with metadata. Add session management for multi-step input collection, implement data retention policies, and create secure APIs for data retrieval. Include audit logging for data access and modifications.",
+          "status": "pending",
+          "testStrategy": "Security testing for encryption/decryption, penetration testing for data access, compliance verification for data protection standards"
+        },
+        {
+          "id": 5,
+          "title": "Integrate Input Validation and Test Case Linking",
+          "description": "Connect input validation system with test case execution and establish links between collected inputs and specific test scenarios",
+          "dependencies": [
+            3,
+            4
+          ],
+          "details": "Implement comprehensive input validation rules (format, length, type checking), create mapping system to link inputs to specific test cases and scenarios, and build input preprocessing for test execution. Add input versioning for test repeatability, implement input templates for common scenarios, and create feedback mechanisms for validation errors.",
+          "status": "pending",
+          "testStrategy": "End-to-end testing of complete input collection workflow, validation rule testing with edge cases, integration testing with existing test execution system"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Implement Cypress Script Generation Engine",
+      "description": "Create automated Cypress test script generator that produces organized test files based on exploration results and user inputs",
+      "details": "Develop Cypress script generation service that: uses exploration data and user inputs to create test scripts, generates proper Cypress syntax for navigation, interactions, and assertions, organizes scripts into structured directories by scenario/project, includes proper test setup, teardown, and data management. Create templates for common test patterns (form filling, navigation, assertions). Implement file system operations to save generated scripts with proper naming conventions and folder structure. Store script metadata in GeneratedCode table.",
+      "testStrategy": "Verify generated Cypress scripts are syntactically correct, executable, and properly organized. Test with various test case complexities and validate script functionality",
+      "priority": "high",
+      "dependencies": [
+        8
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create Cypress Test Template System",
+          "description": "Develop a template engine that provides reusable Cypress test patterns for common testing scenarios like form filling, navigation, and assertions",
+          "dependencies": [],
+          "details": "Create template classes for different test patterns: FormTestTemplate (handles input filling, validation, submission), NavigationTestTemplate (page navigation, URL verification), AssertionTestTemplate (element visibility, text content, attribute checks). Each template should accept parameters and generate appropriate Cypress commands. Implement a TemplateRegistry to manage and retrieve templates by type.",
+          "status": "pending",
+          "testStrategy": "Unit tests for each template class to verify correct Cypress syntax generation with various input parameters"
+        },
+        {
+          "id": 2,
+          "title": "Build Cypress Syntax Generator",
+          "description": "Implement core engine that converts exploration data and user inputs into valid Cypress test commands and assertions",
+          "dependencies": [
+            1
+          ],
+          "details": "Create CypressSyntaxGenerator class that processes exploration results (selectors, actions, expected outcomes) and generates corresponding Cypress commands (cy.visit(), cy.get(), cy.click(), cy.type(), cy.should()). Handle different selector types (CSS, XPath, data attributes) and convert them to Cypress-compatible selectors. Include proper command chaining and waiting strategies.",
+          "status": "pending",
+          "testStrategy": "Integration tests with sample exploration data to verify generated Cypress commands execute correctly"
+        },
+        {
+          "id": 3,
+          "title": "Implement Test Script Organization System",
+          "description": "Create file system management for organizing generated Cypress tests into structured directories with proper naming conventions",
+          "dependencies": [
+            2
+          ],
+          "details": "Develop FileSystemManager that creates organized directory structures (cypress/e2e/[project]/[scenario]). Implement naming conventions for test files based on scenario type and timestamp. Create index files for test suites and configuration files (cypress.config.js) when needed. Handle file conflicts and versioning for regenerated tests.",
+          "status": "pending",
+          "testStrategy": "File system tests to verify correct directory creation, file naming, and organization structure"
+        },
+        {
+          "id": 4,
+          "title": "Create Test Setup and Teardown Management",
+          "description": "Implement comprehensive test lifecycle management including setup, teardown, and test data handling for generated Cypress tests",
+          "dependencies": [
+            2
+          ],
+          "details": "Create TestLifecycleManager that generates beforeEach/afterEach hooks for test setup and cleanup. Handle test data management (fixtures, environment variables, database seeding/cleanup). Implement custom commands for common setup tasks. Generate proper test isolation and state management code to ensure tests run independently.",
+          "status": "pending",
+          "testStrategy": "End-to-end tests to verify setup/teardown code works correctly and tests remain isolated"
+        },
+        {
+          "id": 5,
+          "title": "Integrate Script Generation with Database Storage",
+          "description": "Complete the generation engine by integrating all components and implementing database storage for generated script metadata",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Create main CypressScriptGenerator service that orchestrates template system, syntax generator, file organization, and lifecycle management. Implement database operations to store script metadata in GeneratedCode table (script path, generation timestamp, source exploration data, configuration). Add API endpoints for script generation requests and retrieval of generated scripts. Include error handling and logging throughout the generation process.",
+          "status": "pending",
+          "testStrategy": "Full integration tests covering the complete generation workflow from exploration data input to file creation and database storage"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Create RESTful API Endpoints and Error Handling",
+      "description": "Implement comprehensive REST API endpoints for project management, test case operations, and script generation with proper error handling",
+      "details": "Create REST API endpoints: GET/POST /api/projects (project CRUD), POST /api/projects/:id/test-cases (upload and parse Excel), GET /api/projects/:id/scripts (retrieve generated scripts), POST /api/projects/:id/explore (trigger URL exploration), GET /api/projects/:id/status (processing status). Implement proper HTTP status codes, request validation using Joi or similar, comprehensive error handling with structured error responses, request logging, and API documentation. Add middleware for CORS, body parsing, and security headers.",
+      "testStrategy": "Test all API endpoints with various request payloads, validate error responses, verify proper HTTP status codes, and ensure API documentation accuracy",
+      "priority": "medium",
+      "dependencies": [
+        9
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up Express.js server with middleware and basic routing structure",
+          "description": "Initialize Express.js application with essential middleware for CORS, body parsing, security headers, and request logging. Set up the basic routing structure for all API endpoints.",
+          "dependencies": [],
+          "details": "Install Express.js, helmet, cors, morgan, and body-parser. Configure middleware stack with helmet for security headers, cors for cross-origin requests, express.json() for JSON parsing, and morgan for request logging. Create route files for projects, test-cases, scripts, and exploration endpoints. Set up basic error handling middleware.",
+          "status": "pending",
+          "testStrategy": "Test middleware functionality with basic HTTP requests, verify CORS headers, security headers, and request logging output"
+        },
+        {
+          "id": 2,
+          "title": "Implement project CRUD endpoints with validation",
+          "description": "Create GET and POST endpoints for /api/projects with comprehensive request validation using Joi schema validation and proper HTTP status codes.",
+          "dependencies": [
+            1
+          ],
+          "details": "Install Joi for validation. Create Joi schemas for project creation and updates. Implement GET /api/projects to retrieve all projects and POST /api/projects to create new projects. Add validation middleware to check required fields, data types, and business rules. Return appropriate HTTP status codes (200, 201, 400, 500) with structured JSON responses.",
+          "status": "pending",
+          "testStrategy": "Unit tests for validation schemas, integration tests for endpoints with valid/invalid payloads, test HTTP status codes and response structure"
+        },
+        {
+          "id": 3,
+          "title": "Create test case upload and Excel parsing endpoint",
+          "description": "Implement POST /api/projects/:id/test-cases endpoint to handle Excel file uploads, parse the content, and store test case data with proper validation and error handling.",
+          "dependencies": [
+            2
+          ],
+          "details": "Install multer for file uploads and xlsx or exceljs for Excel parsing. Create endpoint to accept multipart/form-data with Excel files. Implement Excel parsing logic to extract test case data, validate file format and content structure. Add error handling for invalid files, parsing errors, and storage failures. Return structured response with parsed test case count and any validation errors.",
+          "status": "pending",
+          "testStrategy": "Test with valid Excel files, invalid file formats, corrupted files, and files with missing required columns. Verify error messages and status codes"
+        },
+        {
+          "id": 4,
+          "title": "Implement script generation and URL exploration endpoints",
+          "description": "Create GET /api/projects/:id/scripts for retrieving generated scripts and POST /api/projects/:id/explore for triggering URL exploration with proper status tracking.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement GET endpoint to retrieve generated test scripts with filtering options. Create POST endpoint for URL exploration that triggers background processing. Add validation for exploration parameters (URLs, depth, etc.). Implement status tracking mechanism for long-running operations. Return appropriate responses for different processing states (queued, in-progress, completed, failed).",
+          "status": "pending",
+          "testStrategy": "Test script retrieval with various filters, test exploration trigger with valid/invalid URLs, verify status tracking accuracy"
+        },
+        {
+          "id": 5,
+          "title": "Add comprehensive error handling and status monitoring endpoint",
+          "description": "Implement GET /api/projects/:id/status endpoint and enhance global error handling with structured error responses, proper logging, and API documentation.",
+          "dependencies": [
+            4
+          ],
+          "details": "Create status endpoint to return current processing state, progress information, and any error details. Implement global error handler middleware to catch and format all errors consistently. Create structured error response format with error codes, messages, and details. Add comprehensive logging for errors and important operations. Generate API documentation using Swagger/OpenAPI specification with endpoint descriptions, request/response schemas, and error codes.",
+          "status": "pending",
+          "testStrategy": "Test status endpoint accuracy, verify error response consistency across all endpoints, test error logging functionality, validate API documentation completeness"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "created": "2025-06-26T13:18:50.654Z",
+    "updated": "2025-06-26T13:18:50.654Z",
+    "description": "Tasks for master context"
+  }
+}

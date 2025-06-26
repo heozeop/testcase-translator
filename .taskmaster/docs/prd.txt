@@ -1,0 +1,127 @@
+# Overview
+
+The MVP of this product addresses the challenge of automating Cypress test generation from user-provided URLs and test cases. It targets non-technical QA personnel and product managers by simplifying the process, reducing manual effort, and enabling rapid feedback loops for test script creation.
+
+# Core Features
+
+1. **URL Input & Validation**
+
+   * **Functionality:** Users enter a URL; the system ensures it is accessible and retrieves initial HTML.
+   * **Importance:** Ensures reliable test starting points.
+   * **Operation:** Basic HTTP requests and checks are performed.
+
+2. **Test Case File Parsing (LLM-Assisted)**
+
+   * **Functionality:** Users upload Excel (.xlsx) files; an LLM (Claude model via Mastra.ai) parses and validates the file structure.
+   * **Importance:** Reduces manual validation and ensures consistency.
+   * **Operation:** Integrates Claude via Mastra.ai API for parsing structured data.
+
+3. **Dynamic URL Exploration**
+
+   * **Functionality:** Automatically navigates URLs based on test cases.
+   * **Importance:** Ensures comprehensive automated coverage.
+   * **Operation:** Script-driven navigation guided by parsed data.
+
+4. **Interactive Input Collection**
+
+   * **Functionality:** System prompts users dynamically for necessary inputs during exploration.
+   * **Importance:** Enhances test accuracy and flexibility.
+   * **Operation:** Inputs linked and stored securely per test case.
+
+5. **Automated Cypress Script Generation**
+
+   * **Functionality:** Generates Cypress test scripts for each scenario.
+   * **Importance:** Automates test script creation, reducing time-to-test significantly.
+   * **Operation:** Scripts organized into structured directories per scenario.
+
+# User Experience
+
+**User Personas:**
+
+* Non-technical QA personnel needing quick and easy test automation.
+* Product managers seeking reliable automated testing solutions without extensive setup.
+
+**Key User Flows:**
+
+1. Enter target URL.
+2. Upload and validate test case file.
+3. Provide additional inputs as prompted.
+4. System generates structured Cypress scripts.
+
+**UI/UX Considerations:**
+
+* Clear visual indicators for process stages.
+* User-friendly input forms for data collection.
+* Structured and intuitive file management interface.
+
+# Technical Architecture
+
+**System Components:**
+
+* **Frontend:** React
+* **Backend:** Node.js (TypeScript), optionally NestJS
+* **Database:** PostgreSQL
+* **LLM Integration:** Claude model via Mastra.ai
+* **Infrastructure:** Docker Compose for local development only
+
+**Data Models:**
+
+* **Projects:** Information on each URL test project.
+* **Test Cases:** Parsed details from uploaded files.
+* **Generated Code:** Cypress scripts generated per test.
+* **Execution Results:** Results and logs from test execution (future scope).
+
+**APIs and Integrations:**
+
+* RESTful APIs for managing projects, test cases, and scripts.
+* WebSocket APIs for real-time user updates.
+
+**Infrastructure Requirements:**
+
+* Docker Compose setup for consistent local development.
+
+# Development Roadmap
+
+**MVP Requirements:**
+
+* URL validation and initial HTML retrieval.
+* LLM-assisted Excel file parsing.
+* Automated exploration and interactive input handling.
+* Cypress script generation organized by scenario.
+
+**Future Enhancements:**
+
+* Automated script execution and detailed failure reporting.
+* Integration with GitHub for automated pull request creation.
+
+# Logical Dependency Chain
+
+1. Set up URL validation and initial fetching infrastructure.
+2. Develop LLM-based file parsing capability.
+3. Implement dynamic URL exploration and input handling.
+4. Automate Cypress script generation and organization.
+
+# Risks and Mitigations
+
+**Technical Risks:**
+
+* Potential inaccuracies in LLM parsing.
+
+  * **Mitigation:** Prototype early, establish validation checks.
+
+* Dependency on external LLM API reliability and latency.
+
+  * **Mitigation:** Introduce caching and fallback methods.
+
+**Resource Constraints:**
+
+* Limited local development infrastructure capabilities.
+
+  * **Mitigation:** Focus strictly on essential Docker Compose setup, postpone extensive cloud infrastructure.
+
+# Appendix
+
+**Technical Specifications:**
+
+* Database schemas outlined in the detailed PRD.
+* REST API design and WebSocket specifications provided in base PRD.
