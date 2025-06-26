@@ -5,12 +5,39 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 dev-debug.log
+lerna-debug.log*
+.pnpm-debug.log*
 
 # Dependency directories
 node_modules/
+jspm_packages/
 
 # Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# TypeScript
+*.tsbuildinfo
+.tsc-cache/
+
+# Docker
+docker-data/
+*.pid
+
+# Test coverage
+coverage/
+.nyc_output/
 
 # Editor directories and files
 .idea
@@ -20,6 +47,28 @@ node_modules/
 *.njsproj
 *.sln
 *.sw?
+*.sublime-workspace
 
 # OS specific
 .DS_Store
+Thumbs.db
+
+# Database
+*.sqlite
+*.sqlite3
+postgres-data/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Generated Cypress tests output
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
+
+# Python cache (for any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class

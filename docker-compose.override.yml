@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  frontend:
+    stdin_open: true
+    tty: true
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - WATCHPACK_POLLING=true
+
+  backend:
+    stdin_open: true
+    tty: true
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=debug
+
+  db:
+    ports:
+      - "5432:5432"

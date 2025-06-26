@@ -1,0 +1,40 @@
+{
+  "name": "testcase-translator",
+  "version": "1.0.0",
+  "description": "A powerful test automation tool that converts Excel-based test cases into automated Cypress test scripts",
+  "scripts": {
+    "dev": "docker-compose up",
+    "dev:build": "docker-compose up --build",
+    "dev:frontend": "cd frontend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:db": "docker-compose up db",
+    "stop": "docker-compose down",
+    "clean": "docker-compose down -v",
+    "logs": "docker-compose logs -f",
+    "logs:frontend": "docker-compose logs -f frontend",
+    "logs:backend": "docker-compose logs -f backend",
+    "logs:db": "docker-compose logs -f db",
+    "build": "docker-compose -f docker-compose.prod.yml build",
+    "prod": "docker-compose -f docker-compose.prod.yml up",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "lint": "cd backend && npm run lint",
+    "typecheck": "cd backend && npm run typecheck"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/testcase-translator.git"
+  },
+  "keywords": [
+    "testing",
+    "automation",
+    "cypress",
+    "excel",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yourusername/testcase-translator/issues"
+  },
+  "homepage": "https://github.com/yourusername/testcase-translator#readme"
+}
