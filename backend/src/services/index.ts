@@ -10,6 +10,8 @@ export { TestCaseStorageService } from './TestCaseStorageService';
 
 // Task 7: Dynamic URL Exploration Engine
 export { PuppeteerService } from './PuppeteerService';
+export { TestCaseParser } from './TestCaseParser';
+export { ElementDiscoveryEngine } from './ElementDiscoveryEngine';
 export { PageExplorationService } from './PageExplorationService';
 export { FormAnalysisService } from './FormAnalysisService';
 export { DynamicContentService } from './DynamicContentService';

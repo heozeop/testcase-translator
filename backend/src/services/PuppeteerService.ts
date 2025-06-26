@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page, ElementHandle, PuppeteerLaunchOptions } from 'puppeteer';
+import puppeteer, { Browser, Page, ElementHandle, LaunchOptions } from 'puppeteer';
 
 export interface BrowserConfig {
   headless?: boolean;
@@ -65,6 +65,7 @@ export class PuppeteerService {
   private browser: Browser | null = null;
   private pages: Map<string, Page> = new Map();
   private config: Required<BrowserConfig>;
+  private isInitializing: boolean = false;
 
   constructor(config: BrowserConfig = {}) {
     this.config = {
@@ -75,6 +76,19 @@ export class PuppeteerService {
       slowMo: config.slowMo ?? 0,
       devtools: config.devtools ?? false
     };
+    this.validateConfig();
+  }
+
+  private validateConfig(): void {
+    if (this.config.timeout < 1000 || this.config.timeout > 300000) {
+      throw new Error('Timeout must be between 1000ms and 300000ms');
+    }
+    if (this.config.viewport.width < 320 || this.config.viewport.height < 240) {
+      throw new Error('Viewport dimensions must be at least 320x240');
+    }
+    if (this.config.slowMo < 0 || this.config.slowMo > 5000) {
+      throw new Error('SlowMo must be between 0ms and 5000ms');
+    }
   }
 
   async initialize(): Promise<void> {
@@ -82,27 +96,43 @@ export class PuppeteerService {
       return;
     }
 
-    const launchOptions: PuppeteerLaunchOptions = {
-      headless: this.config.headless,
-      slowMo: this.config.slowMo,
-      devtools: this.config.devtools,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-default-apps'
-      ]
-    };
+    if (this.isInitializing) {
+      // Wait for initialization to complete
+      while (this.isInitializing && !this.browser) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return;
+    }
+
+    this.isInitializing = true;
 
     try {
+      const launchOptions: LaunchOptions = {
+        headless: this.config.headless,
+        slowMo: this.config.slowMo,
+        devtools: this.config.devtools,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--disable-default-apps',
+          '--disable-extensions',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
+        ]
+      };
+
       this.browser = await puppeteer.launch(launchOptions);
       console.log('Puppeteer browser initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Puppeteer browser:', error);
       throw new Error(`Browser initialization failed: ${error}`);
+    } finally {
+      this.isInitializing = false;
     }
   }
 
@@ -166,7 +196,7 @@ export class PuppeteerService {
       }
 
       // Wait for page to be fully loaded
-      await page.waitForLoadState('domcontentloaded');
+      await this.waitForLoadState(page, 'domcontentloaded');
       
       const loadTime = Date.now() - startTime;
       
@@ -476,11 +506,17 @@ export class PuppeteerService {
       throw new Error(`Page with ID ${pageId} not found`);
     }
 
-    return await page.screenshot({
+    const screenshotOptions: any = {
       fullPage: options?.fullPage || false,
-      path: options?.path,
       type: 'png'
-    }) as Buffer;
+    };
+
+    if (options?.path) {
+      screenshotOptions.path = options.path;
+    }
+
+    const result = await page.screenshot(screenshotOptions);
+    return Buffer.from(result as unknown as Uint8Array);
   }
 
   async closePage(pageId: string): Promise<void> {
@@ -493,7 +529,8 @@ export class PuppeteerService {
 
   async close(): Promise<void> {
     // Close all pages
-    for (const [pageId, page] of this.pages) {
+    const pageEntries = Array.from(this.pages.entries());
+    for (const [pageId, page] of pageEntries) {
       await page.close();
     }
     this.pages.clear();
@@ -512,16 +549,345 @@ export class PuppeteerService {
   async isPageActive(pageId: string): Promise<boolean> {
     return this.pages.has(pageId);
   }
-}
 
-// Helper function to wait for page load state
-declare global {
-  interface Page {
-    waitForLoadState(state: 'load' | 'domcontentloaded' | 'networkidle'): Promise<void>;
+  private async waitForLoadState(page: Page, state: 'load' | 'domcontentloaded' | 'networkidle'): Promise<void> {
+    try {
+      switch (state) {
+        case 'load':
+          await page.waitForFunction(() => document.readyState === 'complete');
+          break;
+        case 'domcontentloaded':
+          await page.waitForFunction(() => document.readyState !== 'loading');
+          break;
+        case 'networkidle':
+          // Wait for network to be idle - no new requests for 500ms
+          await new Promise(resolve => {
+            let timeoutId: NodeJS.Timeout;
+            const resetTimeout = () => {
+              clearTimeout(timeoutId);
+              timeoutId = setTimeout(resolve, 500);
+            };
+            
+            page.on('request', resetTimeout);
+            page.on('response', resetTimeout);
+            resetTimeout();
+            
+            // Cleanup listeners after 10 seconds maximum
+            setTimeout(() => {
+              page.off('request', resetTimeout);
+              page.off('response', resetTimeout);
+              clearTimeout(timeoutId);
+              resolve(undefined);
+            }, 10000);
+          });
+          break;
+      }
+    } catch (error) {
+      console.warn(`Failed to wait for load state ${state}:`, error);
+      // Continue anyway as this is not critical
+    }
   }
-}
 
-// Extend Page prototype with waitForLoadState method
-if (typeof globalThis !== 'undefined' && !globalThis.window) {
-  // Server-side environment
+  async selectOption(pageId: string, selector: string, value: string): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      await page.select(selector, value);
+      return true;
+    } catch (error) {
+      console.error(`Failed to select option ${value} in element ${selector}:`, error);
+      return false;
+    }
+  }
+
+  async checkCheckbox(pageId: string, selector: string, checked: boolean = true): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      const checkbox = await page.$(selector);
+      if (!checkbox) {
+        throw new Error(`Checkbox ${selector} not found`);
+      }
+
+      const isChecked = await page.evaluate((el) => (el as HTMLInputElement).checked, checkbox);
+      if (isChecked !== checked) {
+        await page.click(selector);
+      }
+      return true;
+    } catch (error) {
+      console.error(`Failed to set checkbox ${selector} to ${checked}:`, error);
+      return false;
+    }
+  }
+
+  async uploadFile(pageId: string, selector: string, filePath: string): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      const input = await page.$(selector);
+      if (!input) {
+        throw new Error(`File input ${selector} not found`);
+      }
+
+      await (input as ElementHandle<HTMLInputElement>).uploadFile(filePath);
+      return true;
+    } catch (error) {
+      console.error(`Failed to upload file to ${selector}:`, error);
+      return false;
+    }
+  }
+
+  async evaluateScript(pageId: string, script: string): Promise<any> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      return await page.evaluate(script);
+    } catch (error) {
+      console.error(`Failed to evaluate script:`, error);
+      throw error;
+    }
+  }
+
+  async waitForNavigation(pageId: string, options?: { timeout?: number; waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' }): Promise<void> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      await page.waitForNavigation({
+        timeout: options?.timeout || this.config.timeout,
+        waitUntil: options?.waitUntil || 'networkidle2'
+      });
+    } catch (error) {
+      console.error(`Navigation wait failed:`, error);
+      throw error;
+    }
+  }
+
+  async getElementText(pageId: string, selector: string): Promise<string | null> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      const element = await page.$(selector);
+      if (!element) {
+        return null;
+      }
+
+      return await page.evaluate(el => el.textContent?.trim() || '', element);
+    } catch (error) {
+      console.error(`Failed to get text from element ${selector}:`, error);
+      return null;
+    }
+  }
+
+  async getElementAttribute(pageId: string, selector: string, attribute: string): Promise<string | null> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      const element = await page.$(selector);
+      if (!element) {
+        return null;
+      }
+
+      return await page.evaluate((el, attr) => el.getAttribute(attr), element, attribute);
+    } catch (error) {
+      console.error(`Failed to get attribute ${attribute} from element ${selector}:`, error);
+      return null;
+    }
+  }
+
+  async scrollToElement(pageId: string, selector: string): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    try {
+      const element = await page.$(selector);
+      if (!element) {
+        return false;
+      }
+
+      await page.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), element);
+      return true;
+    } catch (error) {
+      console.error(`Failed to scroll to element ${selector}:`, error);
+      return false;
+    }
+  }
+
+  async getCurrentUrl(pageId: string): Promise<string> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      throw new Error(`Page with ID ${pageId} not found`);
+    }
+
+    return page.url();
+  }
+
+  async getBrowserInfo(): Promise<{ version: string; userAgent: string }> {
+    if (!this.browser) {
+      await this.initialize();
+    }
+
+    const version = await this.browser!.version();
+    const page = await this.browser!.newPage();
+    const userAgent = await page.evaluate(() => navigator.userAgent);
+    await page.close();
+
+    return { version, userAgent };
+  }
+
+  async getAllPageIds(): Promise<string[]> {
+    return Array.from(this.pages.keys());
+  }
+
+  async getPageUrl(pageId: string): Promise<string | null> {
+    const page = this.pages.get(pageId);
+    return page ? page.url() : null;
+  }
+
+  async clearCache(pageId: string): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      return false;
+    }
+
+    try {
+      await page.evaluateOnNewDocument(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to clear cache for page ${pageId}:`, error);
+      return false;
+    }
+  }
+
+  async reloadPage(pageId: string, options?: { waitUntil?: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2' }): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      return false;
+    }
+
+    try {
+      await page.reload({
+        waitUntil: options?.waitUntil || 'networkidle2',
+        timeout: this.config.timeout
+      });
+      return true;
+    } catch (error) {
+      console.error(`Failed to reload page ${pageId}:`, error);
+      return false;
+    }
+  }
+
+  async setViewport(pageId: string, viewport: { width: number; height: number }): Promise<boolean> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      return false;
+    }
+
+    try {
+      await page.setViewport(viewport);
+      return true;
+    } catch (error) {
+      console.error(`Failed to set viewport for page ${pageId}:`, error);
+      return false;
+    }
+  }
+
+  async isElementVisible(pageId: string, selector: string): Promise<boolean | null> {
+    const page = this.pages.get(pageId);
+    if (!page) {
+      return null;
+    }
+
+    try {
+      const element = await page.$(selector);
+      if (!element) {
+        return false;
+      }
+
+      return await page.evaluate(el => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }, element);
+    } catch (error) {
+      console.error(`Failed to check visibility of element ${selector}:`, error);
+      return null;
+    }
+  }
+
+  getConfig(): Required<BrowserConfig> {
+    return { ...this.config };
+  }
+
+  async healthCheck(): Promise<{ healthy: boolean; details: any }> {
+    try {
+      const details: any = {
+        browserInitialized: !!this.browser,
+        pagesCount: this.pages.size,
+        isInitializing: this.isInitializing
+      };
+
+      if (this.browser) {
+        try {
+          details.browserVersion = await this.browser.version();
+          details.browserConnected = this.browser.isConnected();
+        } catch (error) {
+          details.browserError = (error as Error).message;
+        }
+      }
+
+      // Test creating a page if browser is available
+      if (this.browser && this.browser.isConnected()) {
+        const testPageId = `health_check_${Date.now()}`;
+        try {
+          const testPage = await this.createPage(testPageId);
+          await testPage.goto('data:text/html,<html><body>Health Check</body></html>', { waitUntil: 'load', timeout: 5000 });
+          await this.closePage(testPageId);
+          details.pageCreationTest = 'passed';
+        } catch (error) {
+          details.pageCreationTest = 'failed';
+          details.pageCreationError = (error as Error).message;
+        }
+      }
+
+      const healthy = details.browserInitialized && 
+                     details.browserConnected !== false && 
+                     details.pageCreationTest !== 'failed';
+
+      return { healthy, details };
+    } catch (error) {
+      return {
+        healthy: false,
+        details: {
+          error: (error as Error).message,
+          browserInitialized: !!this.browser,
+          pagesCount: this.pages.size
+        }
+      };
+    }
+  }
 }
