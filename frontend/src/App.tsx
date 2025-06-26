@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { URLInputForm } from './components/URLInputForm';
-import { FileUploadComponent } from './components/FileUploadComponent';
+import { WebSocketFileUpload } from './components/WebSocketFileUpload';
 import { ProjectDashboard } from './components/ProjectDashboard';
+import { WebSocketProcessingStatus } from './components/WebSocketProcessingStatus';
+import { UserInputModal } from './components/UserInputModal';
+import { EnhancedNotificationSystem } from './components/NotificationSystem';
+import { WebSocketStatusBadge } from './components/WebSocketStatus';
 import { Toaster } from './components/ui/toaster';
 
-type ViewMode = 'dashboard' | 'create-project' | 'upload-files';
+type ViewMode = 'dashboard' | 'create-project' | 'upload-files' | 'processing';
 
 interface Project {
   id: string;
@@ -39,9 +43,8 @@ function App() {
 
   const handleUploadSuccess = (testCases: any[]) => {
     console.log('Upload successful, test cases:', testCases);
-    // Go back to dashboard after successful upload
-    setCurrentView('dashboard');
-    setCurrentProject(null);
+    // Show processing status after successful upload
+    setCurrentView('processing');
   };
 
   const handleUploadError = (error: string) => {
@@ -53,16 +56,40 @@ function App() {
     setCurrentProject(null);
   };
 
+  const handleProcessingComplete = (status: any) => {
+    console.log('Processing completed:', status);
+    // Go back to dashboard after processing is complete
+    setCurrentView('dashboard');
+    setCurrentProject(null);
+  };
+
+  const handleProcessingError = (error: string) => {
+    console.error('Processing error:', error);
+  };
+
+  const handleProcessingCancel = () => {
+    setCurrentView('dashboard');
+    setCurrentProject(null);
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="container mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            Testcase Translator
-          </h1>
-          <p className="text-muted-foreground">
-            Convert Excel test cases into automated Cypress test scripts
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1"></div>
+            <div className="text-center">
+              <h1 className="text-4xl font-bold text-foreground mb-2">
+                Testcase Translator
+              </h1>
+              <p className="text-muted-foreground">
+                Convert Excel test cases into automated Cypress test scripts
+              </p>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <WebSocketStatusBadge />
+            </div>
+          </div>
         </header>
 
         <main className="space-y-8">
@@ -117,7 +144,7 @@ function App() {
               </div>
               
               <div className="flex justify-center">
-                <FileUploadComponent
+                <WebSocketFileUpload
                   projectId={currentProject.id}
                   onUploadSuccess={handleUploadSuccess}
                   onUploadError={handleUploadError}
@@ -125,9 +152,38 @@ function App() {
               </div>
             </div>
           )}
+
+          {currentView === 'processing' && currentProject && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold mb-2">
+                  Processing Test Cases
+                </h2>
+                <p className="text-muted-foreground mb-2">
+                  Project: <span className="font-medium">{currentProject.name}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Please wait while we process your test cases
+                </p>
+              </div>
+              
+              <div className="flex justify-center">
+                <WebSocketProcessingStatus
+                  projectId={currentProject.id}
+                  onComplete={handleProcessingComplete}
+                  onError={handleProcessingError}
+                  onCancel={handleProcessingCancel}
+                  showConnectionStatus={true}
+                />
+              </div>
+            </div>
+          )}
         </main>
       </div>
       
+      {/* WebSocket-based components for real-time features */}
+      <UserInputModal />
+      <EnhancedNotificationSystem position="top-right" maxNotifications={5} />
       <Toaster />
     </div>
   );

@@ -423,6 +423,7 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
   try {
     const { id: projectId } = req.params;
     const file = req.file;
+    const wsEndpoints = req.app.locals.wsEndpoints;
 
     // Validate project exists
     const project = await projectRepository.findById(projectId);
@@ -464,9 +465,33 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
       return res.status(503).json(errorResponse);
     }
 
+    // Notify clients about file upload start
+    if (wsEndpoints) {
+      wsEndpoints.notifyFileUploadProgress(
+        projectId,
+        `file_${Date.now()}`,
+        file.originalname,
+        10,
+        'validating',
+        'Validating Excel file...'
+      );
+    }
+
     // Parse Excel file
     let workbook;
     try {
+      // Notify parsing start
+      if (wsEndpoints) {
+        wsEndpoints.notifyFileUploadProgress(
+          projectId,
+          `file_${Date.now()}`,
+          file.originalname,
+          30,
+          'parsing',
+          'Parsing Excel content...'
+        );
+      }
+
       workbook = await ExcelParserService.parseExcelFile(
         file.buffer,
         file.originalname,
@@ -493,6 +518,18 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
     // Process with LLM
     let processingResult;
     try {
+      // Notify LLM processing start
+      if (wsEndpoints) {
+        wsEndpoints.notifyFileUploadProgress(
+          projectId,
+          `file_${Date.now()}`,
+          file.originalname,
+          50,
+          'processing',
+          'Processing test cases with AI...'
+        );
+      }
+
       processingResult = await llmProcessingService.processExcelFile(
         workbook,
         {
@@ -541,6 +578,41 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
         timestamp: new Date().toISOString()
       };
       return res.status(500).json(errorResponse);
+    }
+
+    // Notify completion
+    if (wsEndpoints) {
+      wsEndpoints.notifyFileUploadProgress(
+        projectId,
+        `file_${Date.now()}`,
+        file.originalname,
+        100,
+        'completed',
+        `Successfully processed ${storageResult.stored.length} test cases`
+      );
+
+      // Send test case extraction notification
+      wsEndpoints.notifyTestCaseExtraction(
+        projectId,
+        `file_${Date.now()}`,
+        processingResult.extractedTestCases.length,
+        storageResult.stored.length,
+        storageResult.errors.length,
+        storageResult.stored.map(tc => ({
+          id: tc.id,
+          name: tc.scenario_name,
+          status: tc.status === 'processed' ? 'valid' : 'invalid',
+          issues: []
+        }))
+      );
+
+      // Send success notification
+      wsEndpoints.broadcastNotificationToProject(
+        projectId,
+        'Processing Complete',
+        `Successfully processed ${storageResult.stored.length} test cases from ${file.originalname}`,
+        'success'
+      );
     }
 
     const successResponse: ApiSuccessResponse = {

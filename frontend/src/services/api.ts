@@ -124,6 +124,12 @@ class ApiService {
     return this.uploadExcelFile(projectId, file, onProgress);
   }
 
+  // Get project processing status
+  async getProjectStatus(projectId: string): Promise<any> {
+    const response = await this.api.get(`/api/projects/${projectId}/status`);
+    return this.handleResponse<any>(response);
+  }
+
   // Utility methods
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     const response = await this.api.get('/api/health');

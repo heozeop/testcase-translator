@@ -4,16 +4,24 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
 import { testConnection } from './db';
 import projectRoutes from './routes/projectRoutes';
+import websocketTestRoutes from './routes/websocketTestRoutes';
+import { WebSocketServerManager } from './websocket/WebSocketServer';
+import { WebSocketEndpoints } from './websocket/WebSocketEndpoints';
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
-const wss = new WebSocketServer({ server: httpServer });
+
+// Initialize WebSocket server
+const wsManager = new WebSocketServerManager(httpServer, '/ws');
+const wsEndpoints = new WebSocketEndpoints(wsManager);
+
+// Set up bi-directional reference
+wsManager.endpoints = wsEndpoints;
 
 // Middleware
 app.use(helmet());
@@ -25,8 +33,13 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Make WebSocket manager and endpoints available to routes
+app.locals.wsManager = wsManager;
+app.locals.wsEndpoints = wsEndpoints;
+
 // API Routes
 app.use('/api/projects', projectRoutes);
+app.use('/api/websocket', websocketTestRoutes);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -38,24 +51,17 @@ app.get('/health', async (req, res) => {
   });
 });
 
-// WebSocket connection handling
-wss.on('connection', (ws) => {
-  console.log('New WebSocket connection established');
-  
-  ws.on('message', (message) => {
-    console.log('Received:', message.toString());
-    // Echo the message back for now
-    ws.send(JSON.stringify({ type: 'echo', data: message.toString() }));
-  });
-  
-  ws.on('close', () => {
-    console.log('WebSocket connection closed');
-  });
-  
-  ws.on('error', (error) => {
-    console.error('WebSocket error:', error);
+// WebSocket status endpoint
+app.get('/api/websocket/status', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      clientCount: wsManager.getClientCount(),
+      serverTime: new Date().toISOString()
+    }
   });
 });
+
 
 // 404 handler
 app.use((req: express.Request, res: express.Response) => {
@@ -87,11 +93,31 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 const PORT = process.env.BACKEND_PORT || 8000;
 httpServer.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`WebSocket server is ready`);
+  console.log(`WebSocket server is ready on /ws`);
+  console.log(`WebSocket clients: ${wsManager.getClientCount()}`);
   
   // Test database connection on startup
   const dbConnected = await testConnection();
   if (!dbConnected) {
     console.warn('Warning: Could not connect to database on startup');
   }
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  wsManager.shutdown();
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  wsManager.shutdown();
+  httpServer.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
