@@ -9,40 +9,34 @@ import { ExcelParserService } from '../services/ExcelParserService';
 import { LLMProcessingService } from '../services/LLMProcessingService';
 import { TestCaseStorageService } from '../services/TestCaseStorageService';
 import { ProjectRepository } from '../repositories/ProjectRepository';
+import { TestCaseRepository } from '../repositories/TestCaseRepository';
+import { GeneratedCodeRepository } from '../repositories/GeneratedCodeRepository';
 import { ApiResponse, ApiErrorResponse, ApiSuccessResponse } from '../types';
+import { 
+  asyncHandler, 
+  validateSchema, 
+  HttpError, 
+  NotFoundError, 
+  ConflictError,
+  ServiceUnavailableError,
+  ValidationErrorClass
+} from '../middleware/errorHandler';
+import { 
+  sendSuccess, 
+  sendError, 
+  sendPaginatedResponse, 
+  getPaginationOptions,
+  getFilterOptions,
+  sanitizeOutput
+} from '../utils/apiHelpers';
+import { validationSchemas } from '../utils/validationSchemas';
 
 const router = express.Router();
 
-// Validation schemas
-const validateUrlSchema = Joi.object({
-  url: Joi.string().uri().required().messages({
-    'string.uri': 'Please provide a valid URL',
-    'any.required': 'URL is required'
-  }),
-  options: Joi.object({
-    timeout: Joi.number().min(1000).max(30000).default(10000),
-    checkAccessibility: Joi.boolean().default(true),
-    retrieveContent: Joi.boolean().default(false),
-    extractMetadata: Joi.boolean().default(true),
-    followRedirects: Joi.boolean().default(true),
-    maxSize: Joi.number().min(1024).max(10 * 1024 * 1024).default(5 * 1024 * 1024) // 5MB default
-  }).default({})
-});
-
-const createProjectSchema = Joi.object({
-  name: Joi.string().min(1).max(255).required().messages({
-    'string.min': 'Project name cannot be empty',
-    'string.max': 'Project name cannot exceed 255 characters',
-    'any.required': 'Project name is required'
-  }),
-  target_url: Joi.string().uri().required().messages({
-    'string.uri': 'Please provide a valid target URL',
-    'any.required': 'Target URL is required'
-  }),
-  description: Joi.string().max(1000).optional().allow('').messages({
-    'string.max': 'Description cannot exceed 1000 characters'
-  })
-});
+// Initialize repositories
+const projectRepository = new ProjectRepository();
+const testCaseRepository = new TestCaseRepository();
+const generatedCodeRepository = new GeneratedCodeRepository();
 
 // Configure multer for file uploads
 const upload = multer({
@@ -70,7 +64,6 @@ const upload = multer({
 const urlValidationService = new UrlValidationService();
 const urlAccessibilityService = new UrlAccessibilityService();
 const htmlRetrievalService = new HtmlRetrievalService();
-const projectRepository = new ProjectRepository();
 const testCaseStorageService = new TestCaseStorageService();
 
 // Initialize LLM service (will be configured with environment variables)
@@ -90,38 +83,22 @@ try {
 }
 
 // POST /api/projects/validate-url
-router.post('/validate-url', async (req: Request, res: Response) => {
-  try {
-    // Validate request body
-    const { error, value } = validateUrlSchema.validate(req.body);
-    if (error) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: error.details[0].message
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
-    }
+router.post('/validate-url', 
+  validateSchema(validationSchemas.urls.validate),
+  asyncHandler(async (req: Request, res: Response) => {
 
-    const { url, options } = value;
+    const { url, options } = req.body;
     
     console.log(`Validating URL: ${url} with options:`, options);
 
     // Step 1: URL format validation and security checks
     const validation = UrlValidationService.validateUrl(url);
     if (!validation.isValid || !validation.isSafe) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'URL_VALIDATION_FAILED',
-          message: validation.error || 'URL validation failed'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
+      throw new HttpError(
+        validation.error || 'URL validation failed',
+        400,
+        'URL_VALIDATION_FAILED'
+      );
     }
 
     const result: any = {
@@ -234,235 +211,220 @@ router.post('/validate-url', async (req: Request, res: Response) => {
       }
     }
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: result,
-      timestamp: new Date().toISOString()
-    };
-
-    res.json(successResponse);
-  } catch (error: any) {
-    console.error('URL validation error:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred during URL validation'
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+    sendSuccess(res, sanitizeOutput(result, ['internalHeaders']));
+  })
+);
 
 // GET /api/projects
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const offset = (page - 1) * limit;
+router.get('/', 
+  validateSchema(validationSchemas.projects.query, 'query'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const paginationOptions = getPaginationOptions(req);
+    const filters = getFilterOptions(req, ['status', 'created_after', 'created_before']);
 
     const result = await projectRepository.findAll({
-      limit,
-      offset,
-      orderBy: 'created_at',
-      order: 'DESC'
+      ...paginationOptions,
+      filters
     });
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: result.data,
-      timestamp: new Date().toISOString()
-    };
-
-    // Add pagination info to response
-    (successResponse as any).pagination = {
-      page: result.page,
-      limit: result.limit,
-      total: result.total,
-      totalPages: result.totalPages
-    };
-
-    res.json(successResponse);
-  } catch (error: any) {
-    console.error('Error fetching projects:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve projects'
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+    sendPaginatedResponse(res, result);
+  })
+);
 
 // POST /api/projects
-router.post('/', async (req: Request, res: Response) => {
-  try {
-    // Validate request body
-    const { error, value } = createProjectSchema.validate(req.body);
-    if (error) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: error.details[0].message
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
-    }
+router.post('/', 
+  validateSchema(validationSchemas.projects.create),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { name, target_url, description } = req.body;
 
     // Check if project with same name already exists
-    const existingProject = await projectRepository.findByName(value.name);
+    const existingProject = await projectRepository.findByName(name);
     if (existingProject) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'PROJECT_EXISTS',
-          message: 'A project with this name already exists'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(409).json(errorResponse);
+      throw new ConflictError('A project with this name already exists');
     }
 
     // Validate target URL
-    const urlValidation = UrlValidationService.validateUrl(value.target_url);
+    const urlValidation = UrlValidationService.validateUrl(target_url);
     if (!urlValidation.isValid || !urlValidation.isSafe) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'INVALID_TARGET_URL',
-          message: urlValidation.error || 'Target URL is invalid or unsafe'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
+      throw new HttpError(
+        urlValidation.error || 'Target URL is invalid or unsafe',
+        400,
+        'INVALID_TARGET_URL'
+      );
     }
 
     // Create project
     const project = await projectRepository.create({
-      name: value.name,
-      target_url: UrlValidationService.normalizeUrl(value.target_url),
-      description: value.description || undefined
+      name,
+      target_url: UrlValidationService.normalizeUrl(target_url),
+      description: description || undefined
     });
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: project,
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(201).json(successResponse);
-  } catch (error: any) {
-    console.error('Error creating project:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to create project'
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+    sendSuccess(res, sanitizeOutput(project), 'Project created successfully', 201);
+  })
+);
 
 // GET /api/projects/:id
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
+router.get('/:id', 
+  validateSchema(validationSchemas.common.id, 'params'),
+  asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     
     const project = await projectRepository.findWithStats(id);
     if (!project) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'PROJECT_NOT_FOUND',
-          message: 'Project not found'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(404).json(errorResponse);
+      throw new NotFoundError('Project');
     }
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: project,
-      timestamp: new Date().toISOString()
-    };
+    sendSuccess(res, sanitizeOutput(project));
+  })
+);
 
-    res.json(successResponse);
-  } catch (error: any) {
-    console.error('Error fetching project:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve project'
-      },
-      timestamp: new Date().toISOString()
-    };
+// PUT /api/projects/:id
+router.put('/:id', 
+  validateSchema(validationSchemas.common.id, 'params'),
+  validateSchema(validationSchemas.projects.update),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const updateData = req.body;
 
-    res.status(500).json(errorResponse);
-  }
-});
+    // Check if project exists
+    const existingProject = await projectRepository.findById(id);
+    if (!existingProject) {
+      throw new NotFoundError('Project');
+    }
+
+    // If name is being updated, check for conflicts
+    if (updateData.name && updateData.name !== existingProject.name) {
+      const nameConflict = await projectRepository.findByName(updateData.name);
+      if (nameConflict) {
+        throw new ConflictError('A project with this name already exists');
+      }
+    }
+
+    // Validate target URL if provided
+    if (updateData.target_url) {
+      const urlValidation = UrlValidationService.validateUrl(updateData.target_url);
+      if (!urlValidation.isValid || !urlValidation.isSafe) {
+        throw new HttpError(
+          urlValidation.error || 'Target URL is invalid or unsafe',
+          400,
+          'INVALID_TARGET_URL'
+        );
+      }
+      updateData.target_url = UrlValidationService.normalizeUrl(updateData.target_url);
+    }
+
+    const updatedProject = await projectRepository.update(id, updateData);
+    sendSuccess(res, sanitizeOutput(updatedProject), 'Project updated successfully');
+  })
+);
+
+// DELETE /api/projects/:id
+router.delete('/:id',
+  validateSchema(validationSchemas.common.id, 'params'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // Check if project exists
+    const project = await projectRepository.findById(id);
+    if (!project) {
+      throw new NotFoundError('Project');
+    }
+
+    // Check if project has test cases or generated code
+    const testCaseCount = await testCaseRepository.countByProjectId(id);
+    const generatedCodeCount = await generatedCodeRepository.countByProjectId(id);
+
+    if (testCaseCount > 0 || generatedCodeCount > 0) {
+      throw new ConflictError(
+        'Cannot delete project with existing test cases or generated code. Delete associated data first.'
+      );
+    }
+
+    await projectRepository.delete(id);
+    sendSuccess(res, { id }, 'Project deleted successfully');
+  })
+);
+
+// GET /api/projects/:id/statistics
+router.get('/:id/statistics',
+  validateSchema(validationSchemas.common.id, 'params'),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    // Check if project exists
+    const project = await projectRepository.findById(id);
+    if (!project) {
+      throw new NotFoundError('Project');
+    }
+
+    const stats = await projectRepository.getProjectStatistics(id);
+    sendSuccess(res, stats);
+  })
+);
+
+// POST /api/projects/:id/duplicate
+router.post('/:id/duplicate',
+  validateSchema(validationSchemas.common.id, 'params'),
+  validateSchema(Joi.object({
+    name: validationSchemas.common.name,
+    copy_test_cases: Joi.boolean().default(false),
+    copy_generated_code: Joi.boolean().default(false)
+  })),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { name, copy_test_cases, copy_generated_code } = req.body;
+
+    // Check if source project exists
+    const sourceProject = await projectRepository.findById(id);
+    if (!sourceProject) {
+      throw new NotFoundError('Source project');
+    }
+
+    // Check if new name already exists
+    const nameConflict = await projectRepository.findByName(name);
+    if (nameConflict) {
+      throw new ConflictError('A project with this name already exists');
+    }
+
+    const duplicatedProject = await projectRepository.duplicate(id, {
+      name,
+      copy_test_cases,
+      copy_generated_code
+    });
+
+    sendSuccess(res, sanitizeOutput(duplicatedProject), 'Project duplicated successfully', 201);
+  })
+);
 
 // POST /api/projects/:id/test-cases/upload
-router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Request, res: Response) => {
-  try {
+router.post('/:id/test-cases/upload', 
+  validateSchema(validationSchemas.common.id, 'params'),
+  upload.single('excelFile'),
+  validateSchema(validationSchemas.files.process),
+  asyncHandler(async (req: Request, res: Response) => {
     const { id: projectId } = req.params;
     const file = req.file;
     const wsEndpoints = req.app.locals.wsEndpoints;
+    const { processing_options } = req.body;
 
     // Validate project exists
     const project = await projectRepository.findById(projectId);
     if (!project) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'PROJECT_NOT_FOUND',
-          message: 'Project not found'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(404).json(errorResponse);
+      throw new NotFoundError('Project');
     }
 
     // Validate file upload
     if (!file) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'FILE_REQUIRED',
-          message: 'Excel file is required'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
+      throw new HttpError('Excel file is required', 400, 'FILE_REQUIRED');
     }
 
     // Check if LLM service is available
     if (!llmProcessingService) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'LLM_SERVICE_UNAVAILABLE',
-          message: 'AI processing service is not configured. Please check ANTHROPIC_API_KEY environment variable.'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(503).json(errorResponse);
+      throw new ServiceUnavailableError(
+        'AI processing',
+        'AI processing service is not configured. Please check ANTHROPIC_API_KEY environment variable.'
+      );
     }
 
     // Notify clients about file upload start
@@ -500,19 +462,16 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
           headerRow: 1,
           maxRows: 1000,
           maxColumns: 50,
-          includeEmptyRows: false
+          includeEmptyRows: false,
+          ...processing_options
         }
       );
     } catch (error: any) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'EXCEL_PARSE_ERROR',
-          message: `Failed to parse Excel file: ${error.message}`
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(400).json(errorResponse);
+      throw new HttpError(
+        `Failed to parse Excel file: ${error.message}`,
+        400,
+        'EXCEL_PARSE_ERROR'
+      );
     }
 
     // Process with LLM
@@ -538,22 +497,18 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
           description: project.description || undefined
         },
         {
-          validateResults: true,
-          enhanceTestCases: false, // Keep simple for now
-          maxRetries: 2,
-          timeout: 60000
+          validateResults: processing_options?.validateResults ?? true,
+          enhanceTestCases: processing_options?.enhanceTestCases ?? false,
+          maxRetries: processing_options?.maxRetries ?? 2,
+          timeout: processing_options?.timeout ?? 60000
         }
       );
     } catch (error: any) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'LLM_PROCESSING_ERROR',
-          message: `Failed to process Excel file with AI: ${error.message}`
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(500).json(errorResponse);
+      throw new HttpError(
+        `Failed to process Excel file with AI: ${error.message}`,
+        500,
+        'LLM_PROCESSING_ERROR'
+      );
     }
 
     // Store test cases in database
@@ -569,15 +524,11 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
         }
       );
     } catch (error: any) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'STORAGE_ERROR',
-          message: `Failed to store test cases: ${error.message}`
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(500).json(errorResponse);
+      throw new HttpError(
+        `Failed to store test cases: ${error.message}`,
+        500,
+        'STORAGE_ERROR'
+      );
     }
 
     // Notify completion
@@ -615,104 +566,50 @@ router.post('/:id/test-cases/upload', upload.single('excelFile'), async (req: Re
       );
     }
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: {
-        processingResult: {
-          summary: processingResult.summary,
-          metadata: processingResult.metadata,
-          warnings: processingResult.warnings
-        },
-        storageResult: {
-          summary: storageResult.summary,
-          errors: storageResult.errors
-        },
-        testCases: storageResult.stored.map(tc => ({
-          id: tc.id,
-          scenarioName: tc.scenario_name,
-          status: tc.status,
-          createdAt: tc.created_at
-        }))
+    const responseData = {
+      processingResult: {
+        summary: processingResult.summary,
+        metadata: processingResult.metadata,
+        warnings: processingResult.warnings
       },
-      timestamp: new Date().toISOString()
+      storageResult: {
+        summary: storageResult.summary,
+        errors: storageResult.errors
+      },
+      testCases: storageResult.stored.map((tc: any) => ({
+        id: tc.id,
+        scenarioName: tc.scenario_name,
+        status: tc.status,
+        createdAt: tc.created_at
+      }))
     };
 
-    res.status(201).json(successResponse);
-  } catch (error: any) {
-    console.error('Excel upload error:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred during file processing'
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+    sendSuccess(res, sanitizeOutput(responseData), 'Test cases uploaded and processed successfully', 201);
+  })
+);
 
 // GET /api/projects/:id/test-cases
-router.get('/:id/test-cases', async (req: Request, res: Response) => {
-  try {
+router.get('/:id/test-cases', 
+  validateSchema(validationSchemas.common.id, 'params'),
+  validateSchema(validationSchemas.testCases.query, 'query'),
+  asyncHandler(async (req: Request, res: Response) => {
     const { id: projectId } = req.params;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const offset = (page - 1) * limit;
+    const paginationOptions = getPaginationOptions(req);
+    const filters = getFilterOptions(req, ['status', 'priority', 'test_type', 'created_after', 'created_before']);
 
     // Validate project exists
     const project = await projectRepository.findById(projectId);
     if (!project) {
-      const errorResponse: ApiErrorResponse = {
-        success: false,
-        error: {
-          code: 'PROJECT_NOT_FOUND',
-          message: 'Project not found'
-        },
-        timestamp: new Date().toISOString()
-      };
-      return res.status(404).json(errorResponse);
+      throw new NotFoundError('Project');
     }
 
-    const testCaseRepository = new (await import('../repositories/TestCaseRepository')).TestCaseRepository();
     const result = await testCaseRepository.findByProjectId(projectId, {
-      limit,
-      offset,
-      orderBy: 'created_at',
-      order: 'DESC'
+      ...paginationOptions,
+      filters
     });
 
-    const successResponse: ApiSuccessResponse = {
-      success: true,
-      data: result.data,
-      timestamp: new Date().toISOString()
-    };
-
-    // Add pagination info
-    (successResponse as any).pagination = {
-      page: result.page,
-      limit: result.limit,
-      total: result.total,
-      totalPages: result.totalPages
-    };
-
-    res.json(successResponse);
-  } catch (error: any) {
-    console.error('Error fetching test cases:', error);
-    
-    const errorResponse: ApiErrorResponse = {
-      success: false,
-      error: {
-        code: 'DATABASE_ERROR',
-        message: 'Failed to retrieve test cases'
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    res.status(500).json(errorResponse);
-  }
-});
+    sendPaginatedResponse(res, result);
+  })
+);
 
 export default router;
