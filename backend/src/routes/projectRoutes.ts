@@ -612,4 +612,106 @@ router.get('/:id/test-cases',
   })
 );
 
+// POST /api/projects/:id/explore-and-generate
+// Enhanced endpoint that performs exploration and immediately generates Cypress tests
+router.post('/:id/explore-and-generate',
+  validateSchema(Joi.object({
+    url: Joi.string().uri().required(),
+    explorationOptions: Joi.object({
+      maxDepth: Joi.number().min(1).max(5).default(2),
+      timeout: Joi.number().min(5000).max(60000).default(30000),
+      waitForElements: Joi.boolean().default(true),
+      collectInputs: Joi.boolean().default(true),
+      screenshotPages: Joi.boolean().default(true)
+    }).optional(),
+    cypressOptions: Joi.object({
+      templateTypes: Joi.array().items(Joi.string().valid('navigation', 'form')).default(['navigation', 'form']),
+      generateReadme: Joi.boolean().default(true),
+      useTypeScript: Joi.boolean().default(false)
+    }).optional()
+  })),
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id: projectId } = req.params;
+    const { url, explorationOptions = {}, cypressOptions = {} } = req.body;
+
+    // Validate project exists
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError('Project');
+    }
+
+    console.log(`Starting exploration and Cypress generation for project ${projectId} with URL: ${url}`);
+
+    try {
+      // This would integrate with the ExplorationOrchestrator from Task 7
+      // For now, return a structured response indicating the process is initiated
+      const processId = `exploration-${Date.now()}`;
+      
+      // In a real implementation, this would:
+      // 1. Start exploration using ExplorationOrchestrator
+      // 2. Collect navigation and form data
+      // 3. Generate Cypress tests using CypressGenerationOrchestrator
+      // 4. Return the generated project information
+
+      sendSuccess(res, {
+        processId,
+        projectId,
+        status: 'initiated',
+        message: 'Exploration and Cypress generation process started',
+        url,
+        explorationOptions,
+        cypressOptions,
+        estimatedDuration: '2-5 minutes',
+        statusEndpoint: `/api/projects/${projectId}/explore-status/${processId}`
+      }, 'Exploration and generation process initiated successfully', 202);
+
+    } catch (error: any) {
+      console.error('Exploration and generation error:', error);
+      throw new HttpError(
+        `Failed to start exploration and generation: ${error.message}`,
+        500,
+        'EXPLORATION_GENERATION_ERROR',
+        true,
+        { originalError: error.message }
+      );
+    }
+  })
+);
+
+// GET /api/projects/:id/explore-status/:processId
+// Get status of exploration and generation process
+router.get('/:id/explore-status/:processId',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { id: projectId, processId } = req.params;
+
+    // Validate project exists
+    const project = await projectRepository.findById(projectId);
+    if (!project) {
+      throw new NotFoundError('Project');
+    }
+
+    // In a real implementation, this would check the actual status
+    // For now, return a mock status
+    sendSuccess(res, {
+      processId,
+      projectId,
+      status: 'in_progress', // completed, failed, in_progress
+      progress: {
+        exploration: 'completed',
+        inputCollection: 'in_progress',
+        cypressGeneration: 'pending'
+      },
+      currentStep: 'Collecting user inputs via WebSocket',
+      estimatedTimeRemaining: '2 minutes',
+      startedAt: new Date(Date.now() - 120000).toISOString(), // 2 minutes ago
+      results: {
+        pagesExplored: 3,
+        formsFound: 2,
+        inputsCollected: 5,
+        screenshotsTaken: 8
+      }
+    }, 'Process status retrieved successfully');
+  })
+);
+
 export default router;

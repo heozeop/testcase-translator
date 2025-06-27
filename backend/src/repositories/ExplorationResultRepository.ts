@@ -744,4 +744,9 @@ export class ExplorationResultRepository {
       client.release();
     }
   }
+
+  // NestJS-compatible methods
+  async findBySessionId(sessionId: string): Promise<ExplorationResult[]> {
+    return this.getExplorationResultsBySession(sessionId);
+  }
 }

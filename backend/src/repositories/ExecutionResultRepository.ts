@@ -131,13 +131,13 @@ export class ExecutionResultRepository {
   async delete(id: string): Promise<boolean> {
     const sql = 'DELETE FROM execution_results WHERE id = $1';
     const result = await query(sql, [id]);
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async deleteByTestCaseId(testCaseId: string): Promise<number> {
     const sql = 'DELETE FROM execution_results WHERE test_case_id = $1';
     const result = await query(sql, [testCaseId]);
-    return result.rowCount;
+    return result.rowCount ?? 0;
   }
 
   async getStatsByTestCaseId(testCaseId: string): Promise<{

@@ -26,14 +26,20 @@ import { ExplorationResultRepository } from '../repositories/ExplorationResultRe
 
 export interface CypressGenerationRequest {
   projectId: string;
+  sessionId?: string;
   testCaseId?: string;
   explorationResultId?: string;
+  baseUrl?: string;
+  suiteName?: string;
+  description?: string;
   templateTypes?: string[];
   generationOptions?: Partial<CypressGenerationOptions>;
   organizationOptions?: Partial<FileOrganizationOptions>;
   lifecycleConfig?: Partial<TestDataConfiguration>;
   environment?: Partial<TestEnvironment>;
   outputPath?: string;
+  options?: any;
+  testCaseIds?: string[];
 }
 
 export interface CypressGenerationResult {

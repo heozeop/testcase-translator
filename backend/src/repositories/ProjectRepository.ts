@@ -100,7 +100,7 @@ export class ProjectRepository {
   async delete(id: string): Promise<boolean> {
     const sql = 'DELETE FROM projects WHERE id = $1';
     const result = await query(sql, [id]);
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async findWithStats(id: string): Promise<ProjectWithStats | null> {
@@ -153,7 +153,7 @@ export class ProjectRepository {
       // Delete project
       const result = await client.query('DELETE FROM projects WHERE id = $1', [id]);
       
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
     });
   }
 }

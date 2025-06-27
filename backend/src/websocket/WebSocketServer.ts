@@ -23,6 +23,7 @@ export class WebSocketServerManager {
   private wss: WebSocketServer;
   private clients: Map<string, WebSocketClient> = new Map();
   private pingInterval: NodeJS.Timeout | null = null;
+  private startTime: number = Date.now();
   public endpoints: any; // Will be set from outside
 
   constructor(server: any, path: string = '/ws') {
@@ -394,6 +395,28 @@ export class WebSocketServerManager {
 
   public getClientCount(): number {
     return this.clients.size;
+  }
+
+  public getConnectionInfo(): any {
+    const projectStats: Record<string, number> = {};
+    
+    for (const client of this.clients.values()) {
+      if (client.projectId) {
+        projectStats[client.projectId] = (projectStats[client.projectId] || 0) + 1;
+      }
+    }
+    
+    return {
+      totalClients: this.clients.size,
+      projectBreakdown: projectStats,
+      serverUptime: Date.now() - this.startTime,
+      activeConnections: Array.from(this.clients.values()).map(client => ({
+        id: client.id,
+        projectId: client.projectId,
+        userId: client.userId,
+        connectedAt: client.lastPing
+      }))
+    };
   }
 
   public getProjectClients(projectId: string): WebSocketClient[] {

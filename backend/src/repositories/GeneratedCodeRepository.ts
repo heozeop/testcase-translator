@@ -324,7 +324,7 @@ export class GeneratedCodeRepository {
       `;
 
       const result = await client.query(query, params);
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
 
     } finally {
       client.release();
@@ -348,7 +348,7 @@ export class GeneratedCodeRepository {
       `, [generationId]);
 
       await client.query('COMMIT');
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
 
     } catch (error) {
       await client.query('ROLLBACK');
@@ -442,8 +442,167 @@ export class GeneratedCodeRepository {
         WHERE generation_id = $3 AND file_name = $4
       `, [content, new Date(), generationId, fileName]);
 
-      return result.rowCount > 0;
+      return (result.rowCount ?? 0) > 0;
 
+    } finally {
+      client.release();
+    }
+  }
+
+  // NestJS-compatible methods
+  async findAll(options: {
+    projectId?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+    orderBy?: string;
+    order?: string;
+  }) {
+    const page = options.page || 1;
+    const limit = options.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const whereConditions = [];
+    const queryParams = [];
+    let paramCount = 0;
+
+    if (options.projectId) {
+      paramCount++;
+      whereConditions.push(`project_id = $${paramCount}`);
+      queryParams.push(options.projectId);
+    }
+
+    if (options.status) {
+      paramCount++;
+      whereConditions.push(`status = $${paramCount}`);
+      queryParams.push(options.status);
+    }
+
+    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    const orderBy = options.orderBy || 'created_at';
+    const order = options.order || 'DESC';
+
+    const client = await this.pool.connect();
+    try {
+      // Get total count
+      const countResult = await client.query(`
+        SELECT COUNT(*) as total FROM generated_code ${whereClause}
+      `, queryParams);
+      const total = parseInt(countResult.rows[0].total, 10);
+
+      // Get paginated data
+      paramCount++;
+      queryParams.push(limit);
+      paramCount++;
+      queryParams.push(offset);
+
+      const dataResult = await client.query(`
+        SELECT * FROM generated_code 
+        ${whereClause}
+        ORDER BY ${orderBy} ${order}
+        LIMIT $${paramCount - 1} OFFSET $${paramCount}
+      `, queryParams);
+
+      return {
+        data: dataResult.rows,
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page < Math.ceil(total / limit),
+        hasPrev: page > 1,
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  async findById(id: string) {
+    return this.getGeneratedCode(id);
+  }
+
+  async delete(id: string): Promise<boolean> {
+    return this.deleteGeneratedCode(id);
+  }
+
+  async findFileByName(generationId: string, fileName: string) {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(`
+        SELECT content FROM generated_code_files 
+        WHERE generation_id = $1 AND file_name = $2
+      `, [generationId, fileName]);
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      return {
+        content: result.rows[0].content,
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  async getStatistics(projectId?: string) {
+    const client = await this.pool.connect();
+    try {
+      const whereClause = projectId ? 'WHERE project_id = $1' : '';
+      const params = projectId ? [projectId] : [];
+
+      const statsResult = await client.query(`
+        SELECT 
+          COUNT(*) as total_generations,
+          COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_generations,
+          COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_generations,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_generations,
+          AVG(CASE WHEN status = 'completed' THEN EXTRACT(EPOCH FROM (updated_at - created_at)) END) as avg_generation_time,
+          MAX(created_at) as last_generation_time
+        FROM generated_code
+        ${whereClause}
+      `, params);
+
+      const filesResult = await client.query(`
+        SELECT 
+          COUNT(*) as total_files,
+          AVG(file_count) as avg_files_per_generation
+        FROM (
+          SELECT generation_id, COUNT(*) as file_count
+          FROM generated_code_files
+          ${projectId ? 'WHERE generation_id IN (SELECT id FROM generated_code WHERE project_id = $1)' : ''}
+          GROUP BY generation_id
+        ) as file_counts
+      `, params);
+
+      const testCasesResult = await client.query(`
+        SELECT 
+          COUNT(DISTINCT test_case_id) as total_test_cases,
+          AVG(test_case_count) as avg_test_cases_per_generation
+        FROM (
+          SELECT test_case_id, COUNT(*) as test_case_count
+          FROM generated_code
+          ${whereClause}
+          GROUP BY test_case_id
+        ) as test_case_counts
+      `, params);
+
+      const stats = statsResult.rows[0];
+      const fileStats = filesResult.rows[0];
+      const testCaseStats = testCasesResult.rows[0];
+
+      return {
+        totalGenerations: parseInt(stats.total_generations, 10),
+        successfulGenerations: parseInt(stats.successful_generations, 10),
+        failedGenerations: parseInt(stats.failed_generations, 10),
+        pendingGenerations: parseInt(stats.pending_generations, 10),
+        averageGenerationTime: parseFloat(stats.avg_generation_time) || 0,
+        lastGenerationTime: stats.last_generation_time,
+        totalFiles: parseInt(fileStats.total_files, 10) || 0,
+        averageFilesPerGeneration: parseFloat(fileStats.avg_files_per_generation) || 0,
+        totalTestCases: parseInt(testCaseStats.total_test_cases, 10) || 0,
+        averageTestCasesPerGeneration: parseFloat(testCaseStats.avg_test_cases_per_generation) || 0,
+      };
     } finally {
       client.release();
     }

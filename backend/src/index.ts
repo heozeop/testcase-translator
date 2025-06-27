@@ -10,6 +10,8 @@ import projectRoutes from './routes/projectRoutes';
 import testCaseRoutes from './routes/testCaseRoutes';
 import scriptRoutes from './routes/scriptRoutes';
 import websocketTestRoutes from './routes/websocketTestRoutes';
+import cypressRoutes from './routes/cypressRoutes';
+import statusRoutes from './routes/statusRoutes';
 import { WebSocketServerManager } from './websocket/WebSocketServer';
 import { WebSocketEndpoints } from './websocket/WebSocketEndpoints';
 import { 
@@ -81,10 +83,12 @@ app.locals.wsEndpoints = wsEndpoints;
 app.use('/api/projects', projectRoutes);
 app.use('/api/test-cases', testCaseRoutes);
 app.use('/api/scripts', scriptRoutes);
+app.use('/api/cypress', cypressRoutes);
+app.use('/api/status', statusRoutes);
 app.use('/api/websocket', websocketTestRoutes);
 
 // Health check endpoint
-app.get('/health', async (req, res) => {
+app.get('/health', async (_req, res) => {
   try {
     const dbConnected = await testConnection();
     const healthData = {
@@ -152,8 +156,18 @@ app.get('/api/docs', (req, res) => {
       },
       scripts: {
         base: '/api/scripts',
-        description: 'Cypress script generation and optimization',
+        description: 'Legacy Cypress script generation and optimization',
         methods: ['GET', 'POST', 'DELETE']
+      },
+      cypress: {
+        base: '/api/cypress',
+        description: 'Modern Cypress test generation with templates and lifecycle management',
+        methods: ['GET', 'POST', 'DELETE']
+      },
+      status: {
+        base: '/api/status',
+        description: 'System status monitoring and performance metrics',
+        methods: ['GET']
       },
       websocket: {
         base: '/api/websocket',
