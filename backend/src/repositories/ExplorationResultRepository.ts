@@ -1,4 +1,4 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 import { getPool } from '../db';
 import { 
   ExplorationSession, 
@@ -6,9 +6,7 @@ import {
   PageState, 
   NavigationAction, 
   ExplorationResult,
-  FormState,
-  CollectedInput,
-  CypressScriptData
+  CollectedInput
 } from '../services/ExplorationResultsStorage';
 
 export interface ExplorationSessionRow {

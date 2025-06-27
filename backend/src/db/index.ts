@@ -13,7 +13,7 @@ const poolConfig: PoolConfig = {
 
 export const pool = new Pool(poolConfig);
 
-pool.on('error', (err, client) => {
+pool.on('error', (err, _client) => {
   console.error('Unexpected error on idle client', err);
   process.exit(-1);
 });
@@ -45,7 +45,7 @@ export async function getClient() {
 
   client.query = ((...args: any[]) => {
     (client as any).lastQuery = args;
-    return query(...args);
+    return query(...(args as [string, any[]?]));
   }) as any;
 
   const releaseWithTimeout = () => {
@@ -87,4 +87,8 @@ export async function testConnection(): Promise<boolean> {
 
 export async function closePool(): Promise<void> {
   await pool.end();
+}
+
+export function getPool() {
+  return pool;
 }

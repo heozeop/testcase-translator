@@ -39,7 +39,7 @@ export class ResponseInterceptor<T>
     next: CallHandler,
   ): Observable<ApiSuccessResponse<T> | PaginatedApiResponse<T>> {
     const ctx = context.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    // const response = ctx.getResponse<Response>(); // Not used in this interceptor
     
     return next.handle().pipe(
       map((data) => {

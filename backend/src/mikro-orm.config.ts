@@ -2,7 +2,6 @@ import { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
 import { Migrator } from '@mikro-orm/migrations';
-import * as path from 'path';
 
 const config: MikroOrmModuleOptions = {
   driver: PostgreSqlDriver,

@@ -104,7 +104,7 @@ export const errorHandler = (
   error: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   let statusCode = 500;
   let errorCode = 'INTERNAL_ERROR';
@@ -263,7 +263,7 @@ export const notFoundHandler = (req: Request, res: Response): void => {
 
 // Validation middleware for Joi schemas
 export const validateSchema = (schema: any, target: 'body' | 'query' | 'params' = 'body') => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     const { error, value } = schema.validate(req[target], {
       abortEarly: false,
       allowUnknown: false,
@@ -288,7 +288,7 @@ export const validateSchema = (schema: any, target: 'body' | 'query' | 'params' 
 };
 
 // Rate limiting error handler
-export const rateLimitHandler = (req: Request, res: Response): void => {
+export const rateLimitHandler = (_req: Request, res: Response): void => {
   const errorResponse: ApiErrorResponse = {
     success: false,
     error: {
@@ -302,7 +302,7 @@ export const rateLimitHandler = (req: Request, res: Response): void => {
 };
 
 // Security headers middleware
-export const securityHeaders = (req: Request, res: Response, next: NextFunction): void => {
+export const securityHeaders = (_req: Request, res: Response, next: NextFunction): void => {
   res.set({
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
@@ -315,7 +315,7 @@ export const securityHeaders = (req: Request, res: Response, next: NextFunction)
 
 // Request timeout middleware
 export const requestTimeout = (timeoutMs: number = 30000) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (_req: Request, res: Response, next: NextFunction): void => {
     const timeout = setTimeout(() => {
       if (!res.headersSent) {
         const errorResponse: ApiErrorResponse = {

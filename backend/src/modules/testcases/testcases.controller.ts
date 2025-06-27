@@ -112,7 +112,7 @@ export class TestCasesController {
     try {
       return await this.testCasesService.duplicate(id, body.name);
     } catch (error) {
-      if (error.message === 'Original test case not found') {
+      if (error instanceof Error && error.message === 'Original test case not found') {
         throw new NotFoundException('Original test case not found');
       }
       throw error;

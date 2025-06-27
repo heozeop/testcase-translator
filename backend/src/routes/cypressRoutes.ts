@@ -4,12 +4,11 @@ import Joi from 'joi';
 import { 
   CypressGenerationOrchestrator,
   CypressGenerationRequest,
-  CypressGenerationResult 
 } from '../services/CypressGenerationOrchestrator';
 import { ExplorationResultsStorage } from '../services/ExplorationResultsStorage';
 import { GeneratedCodeRepository } from '../repositories/GeneratedCodeRepository';
 import { ExplorationResultRepository } from '../repositories/ExplorationResultRepository';
-import { Pool } from 'pg';
+import { getPool } from '../db';
 import { 
   asyncHandler, 
   validateSchema, 
@@ -19,9 +18,7 @@ import {
 } from '../middleware/errorHandler';
 import { 
   sendSuccess, 
-  sendError, 
   sendPaginatedResponse, 
-  getPaginationOptions,
   sanitizeOutput
 } from '../utils/apiHelpers';
 
@@ -29,15 +26,19 @@ const router = express.Router();
 
 // Initialize services and repositories
 // Note: In a real implementation, pool would be injected or imported properly
-const generatedCodeRepository = new GeneratedCodeRepository({} as Pool);
-const explorationResultRepository = new ExplorationResultRepository({} as Pool);
-const explorationStorage = new ExplorationResultsStorage();
+const pool = getPool();
+const generatedCodeRepository = new GeneratedCodeRepository(pool);
+const explorationResultRepository = new ExplorationResultRepository();
+const explorationStorage = new ExplorationResultsStorage(pool);
 
 // Initialize Cypress Generation Orchestrator
 const cypressOrchestrator = new CypressGenerationOrchestrator(
   explorationStorage,
   generatedCodeRepository,
-  explorationResultRepository
+  explorationResultRepository,
+  {}, // generationOptions
+  {}, // organizationOptions 
+  {}  // lifecycleConfig
 );
 
 // Validation schemas
@@ -363,7 +364,7 @@ router.delete('/generations/:id',
 // GET /api/cypress/templates
 // Get available Cypress templates
 router.get('/templates',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
     const templates = cypressOrchestrator.getAvailableTemplates();
     
     sendSuccess(res, {

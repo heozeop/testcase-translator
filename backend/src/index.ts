@@ -129,7 +129,7 @@ app.get('/health', async (_req, res) => {
 });
 
 // WebSocket status endpoint
-app.get('/api/websocket/status', (req, res) => {
+app.get('/api/websocket/status', (_req, res) => {
   sendSuccess(res, {
     clientCount: wsManager.getClientCount(),
     serverTime: new Date().toISOString(),
@@ -138,7 +138,7 @@ app.get('/api/websocket/status', (req, res) => {
 });
 
 // API documentation endpoint
-app.get('/api/docs', (req, res) => {
+app.get('/api/docs', (_req, res) => {
   sendSuccess(res, {
     name: 'Testcase Translator API',
     version: process.env.npm_package_version || '1.0.0',

@@ -1,6 +1,9 @@
 import { PuppeteerService } from './PuppeteerService';
 import { ElementDiscoveryEngine, DiscoveredElement } from './ElementDiscoveryEngine';
 import { DynamicInputCollectionEngine, CollectedInput } from './DynamicInputCollectionEngine';
+
+// Re-export CollectedInput for other modules
+export { CollectedInput };
 import { TestCaseParser, NavigationPlan } from './TestCaseParser';
 
 export interface NavigationAction {

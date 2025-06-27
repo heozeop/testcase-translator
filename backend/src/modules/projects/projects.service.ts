@@ -108,7 +108,7 @@ export class ProjectsService {
     return true;
   }
 
-  async validateUrl(url: string, options?: any) {
+  async validateUrl(url: string, _options?: any) {
     // This would integrate with the URL validation service
     // For now, return a mock response
     return {
@@ -213,7 +213,7 @@ export class ProjectsService {
     };
   }
 
-  async getTestCases(projectId: string, query: any) {
+  async getTestCases(_projectId: string, _query: any) {
     // Mock test cases response
     return {
       data: [],

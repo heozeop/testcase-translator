@@ -11,7 +11,7 @@ import { TestCaseStorageService } from '../services/TestCaseStorageService';
 import { ProjectRepository } from '../repositories/ProjectRepository';
 import { TestCaseRepository } from '../repositories/TestCaseRepository';
 import { GeneratedCodeRepository } from '../repositories/GeneratedCodeRepository';
-import { ApiResponse, ApiErrorResponse, ApiSuccessResponse } from '../types';
+import { getPool } from '../db';
 import { 
   asyncHandler, 
   validateSchema, 
@@ -19,11 +19,9 @@ import {
   NotFoundError, 
   ConflictError,
   ServiceUnavailableError,
-  ValidationErrorClass
 } from '../middleware/errorHandler';
 import { 
   sendSuccess, 
-  sendError, 
   sendPaginatedResponse, 
   getPaginationOptions,
   getFilterOptions,
@@ -36,7 +34,7 @@ const router = express.Router();
 // Initialize repositories
 const projectRepository = new ProjectRepository();
 const testCaseRepository = new TestCaseRepository();
-const generatedCodeRepository = new GeneratedCodeRepository();
+const generatedCodeRepository = new GeneratedCodeRepository(getPool());
 
 // Configure multer for file uploads
 const upload = multer({

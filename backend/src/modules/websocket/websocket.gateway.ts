@@ -20,7 +20,7 @@ import { WebSocketService } from './websocket.service';
 })
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(WebSocketGateway.name);
 

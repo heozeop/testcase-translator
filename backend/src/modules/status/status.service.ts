@@ -214,7 +214,7 @@ export class StatusService {
     try {
       // This would integrate with error logging system
       // For now, return mock data
-      const errors = [];
+      const errors: any[] = [];
 
       return {
         data: {

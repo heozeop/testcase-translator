@@ -742,11 +742,31 @@
             "testStrategy": "Test status endpoint accuracy, verify error response consistency across all endpoints, test error logging functionality, validate API documentation completeness"
           }
         ]
+      },
+      {
+        "id": 11,
+        "title": "Fix TypeScript Compilation Errors in Backend",
+        "description": "Resolve all TypeScript compilation errors in the backend codebase to ensure successful builds with 'pnpm build', including fixing unused variables, type mismatches, and missing properties.",
+        "details": "Systematically address all TypeScript compilation errors by: 1) Running 'pnpm build' to identify all current errors and warnings, 2) Fixing unused variable warnings by removing unused imports/variables or adding underscore prefix for intentionally unused parameters, 3) Resolving type mismatches in the Cypress controller interface by ensuring proper type definitions and implementing missing interface methods, 4) Adding missing properties to TypeScript interfaces and classes, ensuring all required properties are defined with correct types, 5) Updating import statements and module declarations to match actual file exports, 6) Configuring tsconfig.json with appropriate compiler options (strict mode, noUnusedLocals, noUnusedParameters), 7) Adding proper type annotations for function parameters and return types where TypeScript cannot infer them, 8) Implementing proper error handling with typed catch blocks, 9) Ensuring all async functions have proper Promise return types, 10) Adding type guards and assertions where necessary for dynamic content. Pay special attention to database model types, API endpoint handlers, WebSocket message types, and service layer interfaces.",
+        "testStrategy": "Execute 'pnpm build' command and verify zero compilation errors and warnings. Run TypeScript compiler with --noEmit flag to check types without generating output. Verify all existing functionality still works by running the backend server and testing API endpoints. Check that WebSocket connections and database operations function correctly after type fixes. Run any existing unit tests to ensure no regressions were introduced. Validate that the build process completes successfully in Docker environment.",
+        "status": "in-progress",
+        "dependencies": [
+          1,
+          2,
+          3,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-06-26T13:18:50.654Z",
-      "updated": "2025-06-27T00:05:52.353Z",
+      "updated": "2025-06-27T11:03:10.728Z",
       "description": "Tasks for master context"
     }
   }
