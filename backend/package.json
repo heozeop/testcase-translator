@@ -12,7 +12,17 @@
     "migrate": "ts-node src/scripts/migrate.ts",
     "migrate:up": "ts-node src/scripts/migrate.ts up",
     "migrate:down": "ts-node src/scripts/migrate.ts down",
-    "migrate:status": "ts-node src/scripts/migrate.ts status"
+    "migrate:status": "ts-node src/scripts/migrate.ts status",
+    "clean": "pnpm dlx rimraf dist node_modules",
+    "reinstall": "pnpm clean && pnpm install",
+    "update": "pnpm update --interactive",
+    "audit": "pnpm audit",
+    "preinstall": "npx only-allow pnpm"
+  },
+  "packageManager": "pnpm@10.10.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=10.0.0"
   },
   "keywords": [],
   "author": "",

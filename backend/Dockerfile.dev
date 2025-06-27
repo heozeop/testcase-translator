@@ -1,10 +1,16 @@
-FROM node:18-alpine
+FROM node:20-alpine
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 
 WORKDIR /app
 
-# Install dependencies for development
-COPY package*.json ./
-RUN npm install
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc ./
+
+# Install all dependencies (including devDependencies)
+RUN pnpm install --frozen-lockfile
 
 # Copy configuration files
 COPY tsconfig.json ./
@@ -14,4 +20,4 @@ COPY nodemon.json ./
 EXPOSE 8000
 
 # Use nodemon for hot reload
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]
