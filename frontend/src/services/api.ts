@@ -15,8 +15,11 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
+    // If API_BASE_URL starts with '/', it's a relative URL (will use proxy)
+    const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+    
     this.api = axios.create({
-      baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
+      baseURL: baseURL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',

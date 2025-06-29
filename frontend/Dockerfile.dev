@@ -4,18 +4,27 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy all configuration files
-COPY .env ./
 COPY public ./public
 COPY src ./src
 COPY tsconfig.json ./
 COPY tailwind.config.js ./
 COPY postcss.config.js ./
 
+# Create .env file from environment variables at runtime
+# This ensures React gets the correct values
+RUN echo "#!/bin/sh" > /app/docker-entrypoint.sh && \
+    echo "# Generate .env file from environment variables" >> /app/docker-entrypoint.sh && \
+    echo "echo \"REACT_APP_API_BASE_URL=\$REACT_APP_API_BASE_URL\" > /app/.env" >> /app/docker-entrypoint.sh && \
+    echo "echo \"REACT_APP_WEBSOCKET_URL=\$REACT_APP_WEBSOCKET_URL\" >> /app/.env" >> /app/docker-entrypoint.sh && \
+    echo "# Start the application" >> /app/docker-entrypoint.sh && \
+    echo "exec npm start" >> /app/docker-entrypoint.sh && \
+    chmod +x /app/docker-entrypoint.sh
+
 # Expose port
 EXPOSE 3000
 
-# Start development server
-CMD ["npm", "start"]
+# Use entrypoint to generate .env before starting
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
