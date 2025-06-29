@@ -237,6 +237,14 @@ class ApiService {
               onProgress(message.data);
             } else if (message.type === 'complete') {
               console.log('Generation completed:', message.data);
+              console.log('Files in response:', message.data?.data?.files?.length || 0);
+              if (message.data?.data?.files) {
+                console.log('File details:', message.data.data.files.map((f: any) => ({ 
+                  name: f.fileName, 
+                  size: f.content?.length || 0,
+                  type: f.type 
+                })));
+              }
               resolve(message.data);
               return;
             } else if (message.type === 'error') {

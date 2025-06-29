@@ -230,12 +230,15 @@ export class ProjectsController {
         // Generate code with progress streaming (extended timeout handled in service)
         finalResult = await this.projectsService.generateCypressCode(projectId, progressCallback);
         
-        console.log('Final result structure:', JSON.stringify(finalResult, null, 2));
         console.log('Files generated:', finalResult?.data?.files?.length || 0);
+        if (finalResult?.data?.files) {
+          console.log('File names:', finalResult.data.files.map((f: any) => f.fileName));
+          console.log('File content lengths:', finalResult.data.files.map((f: any) => `${f.fileName}: ${f.content?.length || 0} chars`));
+        }
         
         // Send final result
         const finalChunk = JSON.stringify({ type: 'complete', data: finalResult }) + '\n';
-        console.log('Sending final chunk:', finalChunk.substring(0, 200) + '...');
+        console.log('Final chunk size:', finalChunk.length);
         res.write(finalChunk);
         res.end();
 
