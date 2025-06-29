@@ -3,8 +3,10 @@ import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { TestCase } from '../types/api';
 
-interface TestCase {
+// Local interface for display purposes
+interface DisplayTestCase {
   id: string;
   scenarioName: string;
   description: string;
@@ -16,6 +18,21 @@ interface TestCase {
   originalFilename: string;
 }
 
+// Helper function to convert API TestCase to DisplayTestCase
+const convertToDisplayTestCase = (apiTestCase: TestCase): DisplayTestCase => {
+  return {
+    id: apiTestCase.id,
+    scenarioName: apiTestCase.scenario_name || 'Unnamed Test',
+    description: apiTestCase.test_data?.metadata?.description || 'No description',
+    steps: apiTestCase.test_data?.steps?.map(step => step.description) || [],
+    expectedResult: apiTestCase.test_data?.metadata?.expectedResults || 'No expected result specified',
+    priority: apiTestCase.test_data?.metadata?.priority || 'medium',
+    status: apiTestCase.status,
+    createdAt: apiTestCase.created_at,
+    originalFilename: apiTestCase.test_data?.metadata?.sourceSheet || 'Unknown'
+  };
+};
+
 interface TestCasesListProps {
   projectId: string;
   onBack?: () => void;
@@ -23,7 +40,7 @@ interface TestCasesListProps {
 }
 
 export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack, onGenerateCypress }) => {
-  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [testCases, setTestCases] = useState<DisplayTestCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -44,7 +61,10 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
     try {
       setLoading(true);
       const response = await apiService.getTestCases(projectId, page, 10);
-      setTestCases(response.data);
+      
+      // Convert API test cases to display format
+      const displayTestCases = response.data.map(convertToDisplayTestCase);
+      setTestCases(displayTestCases);
       setPagination(response.pagination);
     } catch (error: any) {
       console.error('Error fetching test cases:', error);
