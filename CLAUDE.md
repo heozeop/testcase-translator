@@ -47,11 +47,11 @@ task-master tag use <tag-name>
 
 #### Docker Setup (Recommended)
 ```bash
-# Quick setup with nginx reverse proxy (recommended)
+# Quick setup (uses docker-compose.override.yml)
 ./scripts/setup-docker.sh
-# Access: http://localhost
+# Access: Frontend http://localhost:3000, Backend http://localhost:8000
 
-# Simple setup with direct port mapping
+# Simple setup with alternative configuration
 ./scripts/setup-docker-simple.sh
 # Access: Frontend http://localhost:5173, Backend http://localhost:8000
 
@@ -60,8 +60,8 @@ task-master tag use <tag-name>
 # Access: http://localhost:3000
 
 # Manual setup options
-docker-compose up --build                                          # nginx proxy
-docker-compose -f docker-compose.yml -f docker-compose.simple.yml up --build  # direct ports
+docker-compose up --build                                          # default with override
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml up --build  # simple ports
 docker-compose -f docker-compose.prod.yml up --build              # production
 ```
 

@@ -8,15 +8,14 @@ echo "📦 Checking running containers..."
 docker-compose ps
 
 echo ""
-echo "🌐 Testing backend connectivity..."
-# Test backend directly
-echo "Direct backend test (http://localhost:8000/api/health):"
-curl -s http://localhost:8000/api/health || echo "❌ Backend not accessible on port 8000"
+echo "🌐 Testing service connectivity..."
+# Test services directly
+echo "Frontend (http://localhost:3000):"
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "❌ Frontend not accessible"
 
 echo ""
-echo "🎨 Testing frontend..."
-echo "Frontend (http://localhost:3000):"
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "❌ Frontend not accessible on port 3000"
+echo "Backend API (http://localhost:8000/api/health):"
+curl -s http://localhost:8000/api/health || echo "❌ Backend not accessible"
 
 echo ""
 echo "🔗 Testing container-to-container communication..."
