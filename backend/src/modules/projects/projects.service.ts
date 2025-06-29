@@ -282,6 +282,7 @@ export class ProjectsService {
     
     // Parse header row
     const headers = this.parseCSVLine(lines[0]);
+    console.log('CSV Headers detected:', headers);
     const testCases = [];
     
     // Parse data rows
@@ -305,6 +306,7 @@ export class ProjectsService {
         const header = headers[j].toLowerCase().trim();
         const value = values[j].trim();
         
+        // Check for English headers
         if (header === 'test case name' || header.includes('name') || header.includes('scenario')) {
           testCase.testCaseName = value;
         } else if (header === 'description' || header.includes('desc')) {
@@ -317,11 +319,43 @@ export class ProjectsService {
         } else if (header === 'priority') {
           testCase.priority = value.toLowerCase();
         }
+        // Check for Korean/common CSV headers
+        else if (header === 'category' || header === 'depth 1' || header === 'depth 2' || header === 'depth 3') {
+          // Use category or depth as scenario name if no name set yet
+          if (!testCase.testCaseName && value) {
+            testCase.testCaseName = value;
+          } else if (value) {
+            // Combine multiple category levels
+            testCase.testCaseName = testCase.testCaseName ? `${testCase.testCaseName} > ${value}` : value;
+          }
+        } else if (header === 'step') {
+          // Parse Korean step column
+          testCase.steps = this.parseSteps(value);
+        } else if (header === 'expect result' || header === 'expected result') {
+          testCase.expectedResult = value;
+        } else if (header === 'pre-condition') {
+          testCase.description = value;
+        } else if (header === 'comment') {
+          // Append comment to description
+          if (value) {
+            testCase.description = testCase.description ? `${testCase.description}. Comment: ${value}` : `Comment: ${value}`;
+          }
+        }
       }
       
       // Ensure we have at least a test case name
       if (!testCase.testCaseName) {
         testCase.testCaseName = `Test Case ${i}`;
+      }
+      
+      // Debug logging
+      if (i <= 3) { // Log first 3 test cases for debugging
+        console.log(`Parsed test case ${i}:`, {
+          testCaseName: testCase.testCaseName,
+          description: testCase.description,
+          steps: testCase.steps,
+          expectedResult: testCase.expectedResult
+        });
       }
       
       testCases.push(testCase);
@@ -353,15 +387,23 @@ export class ProjectsService {
   }
   
   private parseSteps(stepsText: string): string[] {
-    if (!stepsText) return [];
+    if (!stepsText || stepsText === '-') return [];
     
-    // Split by common patterns: "1.", "2.", "Step 1", semicolon, etc.
-    const steps = stepsText
-      .split(/(?:\d+\.|\bstep\s*\d+[:\.]?|;)/i)
+    // Clean up the text
+    const cleanText = stepsText.trim();
+    
+    // Split by common patterns: "1.", "2.", "Step 1", semicolon, newlines, etc.
+    const steps = cleanText
+      .split(/(?:\d+\.|\bstep\s*\d+[:\.]?|;|\n|\r\n)/i)
       .map(step => step.trim())
-      .filter(step => step.length > 0);
+      .filter(step => step.length > 2); // Filter out very short fragments
     
-    return steps.length > 0 ? steps : [stepsText];
+    // If no splitting occurred, treat entire text as single step
+    if (steps.length === 0 || (steps.length === 1 && steps[0] === cleanText)) {
+      return cleanText.length > 2 ? [cleanText] : [];
+    }
+    
+    return steps;
   }
 
   async exploreAndGenerate(
