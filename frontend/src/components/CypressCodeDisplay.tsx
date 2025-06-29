@@ -464,6 +464,37 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                             </div>
                           )}
                           
+                          {/* Collapsible Video */}
+                          {test.video && (
+                            <div className="mt-3">
+                              <details className="group">
+                                <summary className="flex items-center justify-between cursor-pointer p-2 bg-purple-50 rounded hover:bg-purple-100 transition-colors">
+                                  <span className="text-sm font-medium text-purple-800">🎥 View Test Video</span>
+                                  <span className="text-purple-600 group-open:rotate-90 transition-transform">▶</span>
+                                </summary>
+                                <div className="mt-2 p-2 border border-purple-200 rounded">
+                                  <video 
+                                    src={`http://localhost:8000/api/projects/${executionResult.projectId}/executions/${executionResult.executionId}/videos/${test.video}`}
+                                    controls
+                                    className="w-full rounded-lg border"
+                                    preload="metadata"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLVideoElement;
+                                      target.style.display = 'none';
+                                      const errorDiv = document.createElement('div');
+                                      errorDiv.className = 'text-red-500 text-sm p-2';
+                                      errorDiv.textContent = 'Video failed to load';
+                                      target.parentNode?.appendChild(errorDiv);
+                                    }}
+                                  >
+                                    Your browser does not support the video tag.
+                                  </video>
+                                  <p className="text-xs text-gray-500 mt-1">MP4 video recording of test execution</p>
+                                </div>
+                              </details>
+                            </div>
+                          )}
+                          
                           {/* Error Message */}
                           {test.error && (
                             <div className="mt-2 p-2 bg-red-50 rounded">

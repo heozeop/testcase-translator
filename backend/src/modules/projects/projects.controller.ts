@@ -294,4 +294,16 @@ export class ProjectsController {
   ) {
     return this.projectsService.getExecutionScreenshot(projectId, executionId, filename, res);
   }
+
+  @Get(':id/executions/:executionId/videos/:filename')
+  @ApiOperation({ summary: 'Get video from test execution' })
+  @ApiResponse({ status: 200, description: 'Video file' })
+  async getExecutionVideo(
+    @Param('id') projectId: string,
+    @Param('executionId') executionId: string,
+    @Param('filename') filename: string,
+    @Res() res: any,
+  ) {
+    return this.projectsService.getExecutionVideo(projectId, executionId, filename, res);
+  }
 }

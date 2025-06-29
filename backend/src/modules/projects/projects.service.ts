@@ -1608,6 +1608,74 @@ describe('Generated Test Suite - CSV to Automation', () => {
     fs.createReadStream(screenshotPath).pipe(res);
   }
 
+  async getExecutionVideo(projectId: string, executionId: string, filename: string, res: any): Promise<void> {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Validate inputs to prevent path traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      res.status(400).json({ error: 'Invalid filename' });
+      return;
+    }
+    
+    // Get execution data to find the temp directory
+    const query = `
+      SELECT execution_data 
+      FROM execution_results 
+      WHERE id = $1 AND project_id = $2
+    `;
+    
+    const result = await this.pool.query(query, [executionId, projectId]);
+    
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Execution not found' });
+      return;
+    }
+    
+    const executionData = result.rows[0].execution_data;
+    const tempDir = executionData?.tempDir;
+    
+    if (!tempDir) {
+      res.status(404).json({ error: 'No temp directory found for this execution' });
+      return;
+    }
+    
+    const videoPath = path.join(tempDir, 'videos', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(videoPath)) {
+      res.status(404).json({ error: 'Video not found' });
+      return;
+    }
+    
+    // Get file stats for content length
+    const stats = fs.statSync(videoPath);
+    
+    // Set proper headers for video streaming
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Length', stats.size);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    
+    // Handle range requests for video streaming
+    const range = res.req.headers.range;
+    if (range) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : stats.size - 1;
+      const chunksize = (end - start) + 1;
+      
+      res.status(206);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${stats.size}`);
+      res.setHeader('Content-Length', chunksize);
+      
+      const stream = fs.createReadStream(videoPath, { start, end });
+      stream.pipe(res);
+    } else {
+      fs.createReadStream(videoPath).pipe(res);
+    }
+  }
+
   private async crawlWebsiteStructure(baseUrl: string, progressCallback?: (progress: any) => void, startTime?: number): Promise<any> {
     const puppeteer = require('puppeteer');
     
@@ -1925,9 +1993,14 @@ describe('Generated Test Suite - CSV to Automation', () => {
   private async executePuppeteerTestsAsync(executionId: string, projectId: string, tempDir: string) {
     const puppeteer = require('puppeteer');
     const path = require('path');
+    const fs = require('fs');
     
     try {
-      console.log(`Starting Puppeteer test execution in ${tempDir}`);
+      console.log(`Starting Puppeteer test execution with video recording in ${tempDir}`);
+      
+      // Create videos directory
+      const videosDir = path.join(tempDir, 'videos');
+      await fs.promises.mkdir(videosDir, { recursive: true });
       
       // Get project details to use the actual target URL
       const project = await this.findOne(projectId);
@@ -1942,9 +2015,9 @@ describe('Generated Test Suite - CSV to Automation', () => {
         targetUrl = 'https://www.coupang.com'; // Use clean Coupang URL
       }
       
-      console.log(`Running tests against target URL: ${targetUrl}`);
+      console.log(`Running tests with video recording against target URL: ${targetUrl}`);
       
-      // Launch browser with system Chromium (Alpine Linux)
+      // Launch browser with system Chromium (Alpine Linux) - enable video recording
       const browser = await puppeteer.launch({
         headless: true,
         executablePath: '/usr/bin/chromium-browser',
@@ -1959,7 +2032,9 @@ describe('Generated Test Suite - CSV to Automation', () => {
           '--disable-extensions',
           '--no-first-run',
           '--no-default-browser-check',
-          '--lang=ko-KR,ko'
+          '--lang=ko-KR,ko',
+          '--enable-features=VaapiVideoDecoder',
+          '--use-fake-ui-for-media-stream'
         ]
       });
 
@@ -2011,12 +2086,89 @@ describe('Generated Test Suite - CSV to Automation', () => {
 
       const testResults: any[] = [];
       const screenshots: string[] = [];
+      const videoFrames: string[] = [];
+      const videos: string[] = [];
       let testsPassed = 0;
       let testsFailed = 0;
+      
+      // Video recording setup
+      let frameIndex = 0;
+      const recordFrame = async (testName: string) => {
+        try {
+          const framePath = path.join(videosDir, `frame_${String(frameIndex).padStart(4, '0')}_${testName.replace(/[^a-zA-Z0-9]/g, '_')}.png`);
+          await page.screenshot({ path: framePath, fullPage: false });
+          videoFrames.push(framePath);
+          frameIndex++;
+        } catch (error) {
+          console.log('Frame capture failed:', error);
+        }
+      };
+
+      // Function to create MP4 from captured frames
+      const createVideoFromFrames = async (testName: string, testFrames: string[]) => {
+        if (testFrames.length === 0) return null;
+        
+        try {
+          const { spawn } = require('child_process');
+          const outputVideoPath = path.join(videosDir, `${testName.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`);
+          
+          // Create frame list file for FFmpeg
+          const frameListPath = path.join(videosDir, `${testName.replace(/[^a-zA-Z0-9]/g, '_')}_frames.txt`);
+          const frameListContent = testFrames.map(frame => `file '${frame}'`).join('\n');
+          await fs.promises.writeFile(frameListPath, frameListContent);
+          
+          return new Promise((resolve, reject) => {
+            const ffmpegArgs = [
+              '-f', 'concat',
+              '-safe', '0',
+              '-i', frameListPath,
+              '-r', '2', // 2 FPS (since we capture frames slowly)
+              '-c:v', 'libx264',
+              '-pix_fmt', 'yuv420p',
+              '-y', // Overwrite output file
+              outputVideoPath
+            ];
+            
+            const ffmpeg = spawn('ffmpeg', ffmpegArgs, {
+              stdio: ['pipe', 'pipe', 'pipe']
+            });
+            
+            let stderr = '';
+            ffmpeg.stderr.on('data', (data) => {
+              stderr += data.toString();
+            });
+            
+            ffmpeg.on('close', (code) => {
+              if (code === 0) {
+                console.log(`Video created successfully: ${outputVideoPath}`);
+                // Clean up frame list file
+                fs.unlink(frameListPath, () => {});
+                resolve(path.basename(outputVideoPath));
+              } else {
+                console.error(`FFmpeg failed with code ${code}: ${stderr}`);
+                reject(new Error(`Video creation failed: ${stderr}`));
+              }
+            });
+            
+            ffmpeg.on('error', (error) => {
+              console.error('FFmpeg spawn error:', error);
+              reject(error);
+            });
+          });
+        } catch (error) {
+          console.error('Error creating video from frames:', error);
+          return null;
+        }
+      };
 
       // Test 1: Homepage Load Test
+      const test1Frames: string[] = [];
       try {
         console.log('Running Test 1: Homepage Load Test');
+        
+        // Record initial frame
+        await recordFrame('homepage_load_start');
+        test1Frames.push(videoFrames[videoFrames.length - 1]);
         
         // Add random delay to avoid detection
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
@@ -2058,6 +2210,10 @@ describe('Generated Test Suite - CSV to Automation', () => {
             
             // Additional wait for dynamic content
             await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Record frame after successful load
+            await recordFrame('homepage_load_success');
+            test1Frames.push(videoFrames[videoFrames.length - 1]);
             
             loadSuccess = true;
             break;
@@ -2105,10 +2261,17 @@ describe('Generated Test Suite - CSV to Automation', () => {
         });
         
         if (pageValidation.title && pageValidation.textLength > 500) {
+          // Create video for this test
+          const videoFileName = await createVideoFromFrames('homepage_load_test', test1Frames);
+          if (videoFileName) {
+            videos.push(videoFileName);
+          }
+          
           testResults.push({
             name: 'Homepage Load Test',
             status: 'passed',
             screenshot: 'homepage-test.png',
+            video: videoFileName,
             details: `Page loaded successfully: "${pageValidation.title}" (${pageValidation.textLength} chars, ${pageValidation.imageCount} images, ${pageValidation.linkCount} links, ${pageValidation.buttonCount} buttons, Korean: ${pageValidation.hasKoreanText})`
           });
           testsPassed++;
@@ -2124,18 +2287,30 @@ describe('Generated Test Suite - CSV to Automation', () => {
           // Screenshot failed, continue
         }
         
+        // Create video even for failed test if we have frames
+        const videoFileName = test1Frames.length > 0 ? await createVideoFromFrames('homepage_load_test_failed', test1Frames) : null;
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Homepage Load Test',
           status: 'failed',
           error: error.message,
-          screenshot: 'homepage-error.png'
+          screenshot: 'homepage-error.png',
+          video: videoFileName
         });
         testsFailed++;
       }
 
       // Test 2: Search Functionality Test
+      const test2Frames: string[] = [];
       try {
         console.log('Running Test 2: Search Functionality Test');
+        
+        // Record initial frame
+        await recordFrame('search_test_start');
+        test2Frames.push(videoFrames[videoFrames.length - 1]);
         
         // Navigate to homepage if not already there
         if (page.url() !== targetUrl) {
@@ -2175,6 +2350,10 @@ describe('Generated Test Suite - CSV to Automation', () => {
         if (searchFound) {
           await page.type(searchSelector, '상품'); // Korean for "product"
           
+          // Record frame after typing
+          await recordFrame('search_typing');
+          test2Frames.push(videoFrames[videoFrames.length - 1]);
+          
           // Try to submit search
           const submitSelectors = [
             'button[type="submit"]',
@@ -2195,16 +2374,27 @@ describe('Generated Test Suite - CSV to Automation', () => {
           // Wait for results and CSS to load
           await new Promise(resolve => setTimeout(resolve, 2000));
           await this.waitForCSSLoad(page);
+          
+          // Record frame after search results
+          await recordFrame('search_results');
+          test2Frames.push(videoFrames[videoFrames.length - 1]);
         }
         
         const screenshotPath = path.join(tempDir, 'screenshots', 'search-test.png');
         await page.screenshot({ path: screenshotPath, fullPage: true });
         screenshots.push('search-test.png');
         
+        // Create video for search test
+        const videoFileName = await createVideoFromFrames('search_functionality_test', test2Frames);
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Search Functionality Test',
           status: 'passed',
           screenshot: 'search-test.png',
+          video: videoFileName,
           details: searchFound ? `Search input found: ${searchSelector}` : 'No search input found, captured current page'
         });
         testsPassed++;
@@ -2217,18 +2407,30 @@ describe('Generated Test Suite - CSV to Automation', () => {
           // Screenshot failed
         }
         
+        // Create video even for failed test if we have frames
+        const videoFileName = test2Frames.length > 0 ? await createVideoFromFrames('search_functionality_test_failed', test2Frames) : null;
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Search Functionality Test',
           status: 'failed',
           error: error.message,
-          screenshot: 'search-error.png'
+          screenshot: 'search-error.png',
+          video: videoFileName
         });
         testsFailed++;
       }
 
       // Test 3: Navigation Test
+      const test3Frames: string[] = [];
       try {
         console.log('Running Test 3: Navigation Test');
+        
+        // Record initial frame
+        await recordFrame('navigation_test_start');
+        test3Frames.push(videoFrames[videoFrames.length - 1]);
         
         // Ensure we're on the homepage first
         let currentUrl = page.url();
@@ -2318,6 +2520,11 @@ describe('Generated Test Suite - CSV to Automation', () => {
                   `, { timeout: 10000 });
                   
                   await this.waitForCSSLoad(page);
+                  
+                  // Record frame after successful navigation
+                  await recordFrame('navigation_success');
+                  test3Frames.push(videoFrames[videoFrames.length - 1]);
+                  
                   navSuccess = true;
                   navigationSuccess = true;
                   navigationDetails = `Successfully navigated to: ${link.text}`;
@@ -2366,10 +2573,17 @@ describe('Generated Test Suite - CSV to Automation', () => {
         // Consider test passed if we found links, even if navigation failed due to site issues
         const testStatus = navLinks.length > 0 ? 'passed' : 'failed';
         
+        // Create video for navigation test
+        const videoFileName = await createVideoFromFrames('navigation_test', test3Frames);
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Navigation Test',
           status: testStatus,
           screenshot: 'navigation-test.png',
+          video: videoFileName,
           details: `Found ${navLinks.length} navigation links. ${navigationDetails}`
         });
         
@@ -2387,18 +2601,30 @@ describe('Generated Test Suite - CSV to Automation', () => {
           // Screenshot failed
         }
         
+        // Create video even for failed test if we have frames
+        const videoFileName = test3Frames.length > 0 ? await createVideoFromFrames('navigation_test_failed', test3Frames) : null;
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Navigation Test',
           status: 'failed',
           error: error.message,
-          screenshot: 'navigation-error.png'
+          screenshot: 'navigation-error.png',
+          video: videoFileName
         });
         testsFailed++;
       }
 
       // Test 4: Mobile Responsiveness Test
+      const test4Frames: string[] = [];
       try {
         console.log('Running Test 4: Mobile Responsiveness Test');
+        
+        // Record initial frame
+        await recordFrame('mobile_test_start');
+        test4Frames.push(videoFrames[videoFrames.length - 1]);
         
         // Switch to mobile viewport
         await page.setViewport({ width: 375, height: 667 });
@@ -2437,6 +2663,10 @@ describe('Generated Test Suite - CSV to Automation', () => {
             
             // Additional wait for responsive transitions and dynamic content
             await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Record frame after mobile load
+            await recordFrame('mobile_load_success');
+            test4Frames.push(videoFrames[videoFrames.length - 1]);
             
             mobileLoadSuccess = true;
             break;
@@ -2510,10 +2740,17 @@ describe('Generated Test Suite - CSV to Automation', () => {
         if (responsiveCheck.hasViewportMeta) mobileFeatures.push('viewport meta tag');
         if (responsiveCheck.hasResponsiveImages) mobileFeatures.push('images present');
         
+        // Create video for mobile test
+        const videoFileName = await createVideoFromFrames('mobile_responsiveness_test', test4Frames);
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Mobile Responsiveness Test',
           status: 'passed',
           screenshot: 'mobile-test.png',
+          video: videoFileName,
           details: `Mobile view loaded (${responsiveCheck.textLength} chars). Responsiveness: ${responsiveQuality}. Features: ${mobileFeatures.join(', ') || 'none detected'}. Viewport: ${responsiveCheck.viewportWidth}x${responsiveCheck.viewportHeight}`
         });
         testsPassed++;
@@ -2526,21 +2763,39 @@ describe('Generated Test Suite - CSV to Automation', () => {
           // Screenshot failed
         }
         
+        // Create video even for failed test if we have frames
+        const videoFileName = test4Frames.length > 0 ? await createVideoFromFrames('mobile_responsiveness_test_failed', test4Frames) : null;
+        if (videoFileName) {
+          videos.push(videoFileName);
+        }
+        
         testResults.push({
           name: 'Mobile Responsiveness Test',
           status: 'failed',
           error: error.message,
-          screenshot: 'mobile-error.png'
+          screenshot: 'mobile-error.png',
+          video: videoFileName
         });
         testsFailed++;
       }
 
       await browser.close();
 
+      // Clean up individual frame files (keep only videos)
+      try {
+        for (const framePath of videoFrames) {
+          await fs.promises.unlink(framePath).catch(() => {}); // Ignore errors
+        }
+        console.log(`Cleaned up ${videoFrames.length} frame files`);
+      } catch (error) {
+        console.log('Error cleaning up frame files:', error);
+      }
+
       const finalStatus = testsFailed === 0 ? 'completed' : 'failed';
       const logs = {
         testResults,
         screenshots,
+        videos,
         summary: {
           total: testResults.length,
           passed: testsPassed,
