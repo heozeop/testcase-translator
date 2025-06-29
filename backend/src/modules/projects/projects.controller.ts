@@ -11,11 +11,13 @@ import {
   UploadedFile,
   BadRequestException,
   NotFoundException,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto } from './dto/project.dto';
+import { multerConfig } from '../../common/config/multer.config';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -84,7 +86,7 @@ export class ProjectsController {
   }
 
   @Post(':id/test-cases/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', multerConfig))
   @ApiOperation({ summary: 'Upload Excel file for test case parsing' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -106,6 +108,18 @@ export class ProjectsController {
     @Param('id') projectId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
+    console.log('Backend received file upload request:', {
+      projectId,
+      file: file ? {
+        fieldname: file.fieldname,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.path,
+        filename: file.filename
+      } : 'NO FILE RECEIVED'
+    });
+    
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -114,11 +128,18 @@ export class ProjectsController {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
       'text/csv',
+      'application/csv',
+      'text/plain', // Some browsers send CSV as text/plain
     ];
 
-    if (!allowedMimes.includes(file.mimetype)) {
+    // Check MIME type and file extension for better validation
+    const isValidMime = allowedMimes.includes(file.mimetype);
+    const fileName = file.originalname.toLowerCase();
+    const isValidExtension = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv');
+    
+    if (!isValidMime && !isValidExtension) {
       throw new BadRequestException(
-        'Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.',
+        `Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed. Received: ${file.mimetype}`,
       );
     }
 
@@ -169,5 +190,101 @@ export class ProjectsController {
     @Query() query: any,
   ) {
     return this.projectsService.getTestCases(projectId, query);
+  }
+
+  @Get(':id/test-cases/download')
+  @ApiOperation({ summary: 'Download processed test cases as CSV' })
+  @ApiResponse({ status: 200, description: 'CSV file downloaded successfully' })
+  async downloadTestCases(
+    @Param('id') projectId: string,
+    @Res() res: any,
+  ) {
+    // TODO: Implement CSV download functionality
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="test-cases-${projectId}.csv"`);
+    res.send('No CSV data available');
+  }
+
+  @Post(':id/generate-cypress')
+  @ApiOperation({ summary: 'Generate Cypress test code from uploaded test cases with intelligent crawling' })
+  @ApiResponse({ status: 200, description: 'Cypress code generated successfully' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  @ApiResponse({ status: 400, description: 'No test cases found' })
+  async generateCypressCode(@Param('id') projectId: string, @Res() res: any) {
+    try {
+      // Set headers for streaming response
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      let finalResult: any = null;
+
+      // Stream progress updates
+      const progressCallback = (progress: any) => {
+        const chunk = JSON.stringify({ type: 'progress', data: progress }) + '\n';
+        res.write(chunk);
+      };
+
+      try {
+        // Generate code with progress streaming (extended timeout handled in service)
+        finalResult = await this.projectsService.generateCypressCode(projectId, progressCallback);
+        
+        // Send final result
+        const finalChunk = JSON.stringify({ type: 'complete', data: finalResult }) + '\n';
+        res.write(finalChunk);
+        res.end();
+
+      } catch (error: any) {
+        console.error('Code generation error:', error);
+        const errorChunk = JSON.stringify({ 
+          type: 'error', 
+          data: { 
+            message: error.message,
+            timestamp: new Date().toISOString()
+          } 
+        }) + '\n';
+        res.write(errorChunk);
+        res.end();
+      }
+
+    } catch (error: any) {
+      console.error('Streaming setup error:', error);
+      res.status(500).json({ 
+        error: 'Failed to start code generation',
+        message: error.message 
+      });
+    }
+  }
+
+  @Post(':id/run-cypress')
+  @ApiOperation({ summary: 'Run generated Cypress tests' })
+  @ApiResponse({ status: 200, description: 'Cypress tests execution started' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  @ApiResponse({ status: 400, description: 'No generated code found' })
+  async runCypressTests(@Param('id') projectId: string) {
+    return this.projectsService.runCypressTests(projectId);
+  }
+
+  @Get(':id/cypress-status/:executionId')
+  @ApiOperation({ summary: 'Get Cypress test execution status' })
+  @ApiResponse({ status: 200, description: 'Execution status retrieved' })
+  async getCypressStatus(
+    @Param('id') projectId: string,
+    @Param('executionId') executionId: string,
+  ) {
+    return this.projectsService.getCypressExecutionStatus(projectId, executionId);
+  }
+
+  @Get(':id/executions/:executionId/screenshots/:filename')
+  @ApiOperation({ summary: 'Get screenshot from test execution' })
+  @ApiResponse({ status: 200, description: 'Screenshot file' })
+  async getExecutionScreenshot(
+    @Param('id') projectId: string,
+    @Param('executionId') executionId: string,
+    @Param('filename') filename: string,
+    @Res() res: any,
+  ) {
+    return this.projectsService.getExecutionScreenshot(projectId, executionId, filename, res);
   }
 }

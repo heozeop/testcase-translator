@@ -75,7 +75,9 @@ export class TestCaseRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
     };
   }
 
@@ -108,7 +110,9 @@ export class TestCaseRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
     };
   }
 
@@ -222,5 +226,136 @@ export class TestCaseRepository {
       
       return results;
     });
+  }
+
+  async countByProjectId(projectId: string): Promise<number> {
+    const sql = 'SELECT COUNT(*) FROM test_cases WHERE project_id = $1';
+    const result = await query(sql, [projectId]);
+    return parseInt(result.rows[0].count, 10);
+  }
+
+  async findAll(options: QueryOptions & { filters?: any } = {}): Promise<PaginatedResult<TestCase>> {
+    const { limit = 10, offset = 0, orderBy = 'created_at', order = 'DESC', filters = {} } = options;
+    
+    let whereClause = '';
+    const params: any[] = [];
+    let paramCount = 0;
+
+    // Add filters
+    if (filters.status) {
+      paramCount++;
+      whereClause += paramCount === 1 ? 'WHERE' : ' AND';
+      whereClause += ` status = $${paramCount}`;
+      params.push(filters.status);
+    }
+
+    if (filters.project_id) {
+      paramCount++;
+      whereClause += paramCount === 1 ? 'WHERE' : ' AND';
+      whereClause += ` project_id = $${paramCount}`;
+      params.push(filters.project_id);
+    }
+    
+    const countSql = `SELECT COUNT(*) FROM test_cases ${whereClause}`;
+    const dataSql = `
+      SELECT * FROM test_cases 
+      ${whereClause}
+      ORDER BY ${orderBy} ${order}
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+    
+    const [countResult, dataResult] = await Promise.all([
+      query(countSql, params),
+      query(dataSql, [...params, limit, offset])
+    ]);
+    
+    const total = parseInt(countResult.rows[0].count, 10);
+    const page = Math.floor(offset / limit) + 1;
+    
+    const data = dataResult.rows.map(row => ({
+      ...row,
+      test_data: typeof row.test_data === 'string' ? JSON.parse(row.test_data) : row.test_data
+    }));
+    
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
+    };
+  }
+
+  async findWithDetails(id: string): Promise<TestCase | null> {
+    return this.findWithRelations(id);
+  }
+
+  async findByScenarioName(projectId: string, scenarioName: string): Promise<TestCase | null> {
+    const sql = 'SELECT * FROM test_cases WHERE project_id = $1 AND scenario_name = $2';
+    const result = await query(sql, [projectId, scenarioName]);
+    
+    if (result.rows.length === 0) {
+      return null;
+    }
+    
+    const row = result.rows[0];
+    return {
+      ...row,
+      test_data: typeof row.test_data === 'string' ? JSON.parse(row.test_data) : row.test_data
+    };
+  }
+
+  async duplicate(id: string, newData: { scenario_name: string }): Promise<TestCase | null> {
+    const original = await this.findById(id);
+    if (!original) {
+      return null;
+    }
+
+    return this.create({
+      project_id: original.project_id,
+      scenario_name: newData.scenario_name,
+      test_data: original.test_data,
+      status: TestCaseStatus.PENDING
+    });
+  }
+
+  async getTestCaseStatistics(projectId?: string): Promise<{
+    total: number;
+    byStatus: Record<string, number>;
+    recentActivity: any[];
+  }> {
+    const whereClause = projectId ? 'WHERE project_id = $1' : '';
+    const params = projectId ? [projectId] : [];
+
+    const statsResult = await query(`
+      SELECT 
+        COUNT(*) as total,
+        status,
+        COUNT(*) as count
+      FROM test_cases 
+      ${whereClause}
+      GROUP BY status
+    `, params);
+
+    const recentResult = await query(`
+      SELECT * FROM test_cases 
+      ${whereClause}
+      ORDER BY updated_at DESC 
+      LIMIT 10
+    `, params);
+
+    const total = statsResult.rows.reduce((sum, row) => sum + parseInt(row.count, 10), 0);
+    const byStatus = statsResult.rows.reduce((acc, row) => {
+      acc[row.status] = parseInt(row.count, 10);
+      return acc;
+    }, {});
+
+    return {
+      total,
+      byStatus,
+      recentActivity: recentResult.rows
+    };
   }
 }

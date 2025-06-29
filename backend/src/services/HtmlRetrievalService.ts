@@ -171,7 +171,7 @@ export class HtmlRetrievalService {
     return htmlContent;
   }
 
-  private extractMetadata($: cheerio.CheerioAPI): PageMetadata {
+  private extractMetadata($: cheerio.Root): PageMetadata {
     const metadata: PageMetadata = {};
 
     // Basic metadata
@@ -262,11 +262,11 @@ export class HtmlRetrievalService {
     return metadata;
   }
 
-  private extractLinks($: cheerio.CheerioAPI, baseUrl: string): {
+  private extractLinks($: cheerio.Root, baseUrl: string): {
     internal: string[];
     external: string[];
   } {
-    const links = { internal: [], external: [] };
+    const links: { internal: string[]; external: string[] } = { internal: [], external: [] };
     const baseDomain = new URL(baseUrl).hostname;
 
     $('a[href]').each((_, element) => {
@@ -296,7 +296,7 @@ export class HtmlRetrievalService {
     return links;
   }
 
-  private extractImages($: cheerio.CheerioAPI, baseUrl: string): string[] {
+  private extractImages($: cheerio.Root, baseUrl: string): string[] {
     const images: string[] = [];
 
     $('img[src]').each((_, element) => {
@@ -316,7 +316,7 @@ export class HtmlRetrievalService {
     return images;
   }
 
-  private extractForms($: cheerio.CheerioAPI): FormInfo[] {
+  private extractForms($: cheerio.Root): FormInfo[] {
     const forms: FormInfo[] = [];
 
     $('form').each((_, formElement) => {
@@ -357,12 +357,12 @@ export class HtmlRetrievalService {
     return forms;
   }
 
-  private extractHeadings($: cheerio.CheerioAPI): HeadingInfo[] {
+  private extractHeadings($: cheerio.Root): HeadingInfo[] {
     const headings: HeadingInfo[] = [];
 
     $('h1, h2, h3, h4, h5, h6').each((_, element) => {
       const $heading = $(element);
-      const tagName = element.tagName.toLowerCase();
+      const tagName = (element as any).tagName?.toLowerCase() || 'h1';
       const level = parseInt(tagName.substring(1), 10);
       const text = $heading.text().trim();
       const id = $heading.attr('id') || undefined;

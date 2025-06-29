@@ -344,7 +344,7 @@ export class FormAnalysisService {
     return field.name || field.id;
   }
 
-  private findHelpText(field: ElementInfo): string | undefined {
+  private findHelpText(_field: ElementInfo): string | undefined {
     // In a real implementation, this would search for aria-describedby or help text
     return undefined;
   }
@@ -413,7 +413,7 @@ export class FormAnalysisService {
     return suggestions;
   }
 
-  private extractValidationRules(formInfo: FormInfo, fieldAnalysis: FieldAnalysis[]): ValidationRule[] {
+  private extractValidationRules(_formInfo: FormInfo, fieldAnalysis: FieldAnalysis[]): ValidationRule[] {
     const rules: ValidationRule[] = [];
 
     for (const analysis of fieldAnalysis) {
@@ -487,10 +487,10 @@ export class FormAnalysisService {
 
       if (analysis.fieldType === 'checkbox') {
         action = 'check';
-        value = undefined;
+        value = 'true';
       } else if (analysis.fieldType === 'radio') {
         action = 'check';
-        value = undefined;
+        value = 'true';
       } else if (analysis.fieldType === 'select') {
         action = 'select';
         value = 'First Option'; // Would need to extract actual options
@@ -522,7 +522,7 @@ export class FormAnalysisService {
   }
 
   private generateTestStrategies(
-    formType: FormType,
+    _formType: FormType,
     complexity: FormComplexity,
     fieldAnalysis: FieldAnalysis[]
   ): TestStrategy[] {

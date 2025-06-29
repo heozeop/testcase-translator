@@ -1,5 +1,5 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
+// import * as fs from 'fs/promises'; // Unused import
+// import * as path from 'path'; // Unused import
 import { CypressTemplateContext } from './CypressTemplateEngine';
 import { CollectedInput, PageState } from './ExplorationResultsStorage';
 
@@ -112,7 +112,7 @@ export class CypressTestLifecycleManager {
     return commands;
   }
 
-  private generateGlobalSetup(context: SetupTeardownContext): string[] {
+  private generateGlobalSetup(_context: SetupTeardownContext): string[] {
     const commands: string[] = [];
 
     // Viewport configuration
@@ -678,7 +678,7 @@ export class TestDataGenerator {
         });
       }
 
-      if (input.metadata?.required) {
+      if ((input as any).metadata?.required) {
         validationRules.push({
           field: input.fieldName,
           type: 'required',

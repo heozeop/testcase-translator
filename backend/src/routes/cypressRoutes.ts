@@ -29,7 +29,12 @@ const router = express.Router();
 const pool = getPool();
 const generatedCodeRepository = new GeneratedCodeRepository(pool);
 const explorationResultRepository = new ExplorationResultRepository();
-const explorationStorage = new ExplorationResultsStorage(pool);
+const explorationStorage = new ExplorationResultsStorage(
+  new (require('../services/PuppeteerService').PuppeteerService)(),
+  new (require('../services/ElementDiscoveryEngine').ElementDiscoveryEngine)(),
+  new (require('../services/DynamicInputCollectionEngine').DynamicInputCollectionEngine)(),
+  new (require('../services/TestCaseParser').TestCaseParser)()
+);
 
 // Initialize Cypress Generation Orchestrator
 const cypressOrchestrator = new CypressGenerationOrchestrator(
@@ -37,7 +42,7 @@ const cypressOrchestrator = new CypressGenerationOrchestrator(
   generatedCodeRepository,
   explorationResultRepository,
   {}, // generationOptions
-  {}, // organizationOptions 
+  {}, // organizationOptions
   {}  // lifecycleConfig
 );
 

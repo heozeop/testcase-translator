@@ -83,12 +83,12 @@ export class CypressGenerationOrchestrator {
   private syntaxGenerator: CypressSyntaxGenerator;
   private fileOrganizer: CypressFileOrganizer;
   private lifecycleManager: CypressTestLifecycleManager;
-  private explorationStorage: ExplorationResultsStorage;
+  // private explorationStorage: ExplorationResultsStorage; // Reserved for future use
   private generatedCodeRepository: GeneratedCodeRepository;
   private explorationResultRepository: ExplorationResultRepository;
 
   constructor(
-    explorationStorage: ExplorationResultsStorage,
+    _explorationStorage: ExplorationResultsStorage,
     generatedCodeRepository: GeneratedCodeRepository,
     explorationResultRepository: ExplorationResultRepository,
     generationOptions: Partial<CypressGenerationOptions> = {},
@@ -99,7 +99,7 @@ export class CypressGenerationOrchestrator {
     this.syntaxGenerator = new CypressSyntaxGenerator(generationOptions);
     this.fileOrganizer = new CypressFileOrganizer(organizationOptions);
     this.lifecycleManager = new CypressTestLifecycleManager(lifecycleConfig);
-    this.explorationStorage = explorationStorage;
+    // this._explorationStorage = explorationStorage; // Reserved for future use
     this.generatedCodeRepository = generatedCodeRepository;
     this.explorationResultRepository = explorationResultRepository;
   }
@@ -207,14 +207,17 @@ export class CypressGenerationOrchestrator {
     
     if (request.testCaseId) {
       // Find the most recent exploration result for this test case
-      const results = await this.explorationResultRepository.getExplorationResultsByTestCase(request.testCaseId);
+      const results = await this.explorationResultRepository.getExplorationResultsBySession(request.testCaseId);
       return results.length > 0 ? results[0] : null;
     }
 
     if (request.projectId) {
       // Find the most recent exploration result for this project
-      const results = await this.explorationResultRepository.getExplorationResultsByProject(request.projectId);
-      return results.length > 0 ? results[0] : null;
+      const sessions = await this.explorationResultRepository.getExplorationSessionsByProject(request.projectId);
+      if (sessions.length > 0) {
+        const results = await this.explorationResultRepository.getExplorationResultsBySession(sessions[0].id);
+        return results.length > 0 ? results[0] : null;
+      }
     }
 
     return null;
@@ -224,25 +227,20 @@ export class CypressGenerationOrchestrator {
     explorationData: ExplorationResult,
     request: CypressGenerationRequest
   ): CypressTemplateContext {
-    const baseUrl = explorationData.sessions[0]?.navigationSequences[0]?.startUrl || 'http://localhost:3000';
+    const firstSequence = explorationData.rawData.navigationSequences?.[0];
+    const baseUrl = firstSequence?.startUrl || (explorationData.session as any).startUrl || 'http://localhost:3000';
     
     return {
       projectName: `Project-${request.projectId}`,
-      testCaseName: explorationData.testCaseId || `TestCase-${Date.now()}`,
+      testCaseName: explorationData.session.id || `TestCase-${Date.now()}`,
       baseUrl,
-      actions: explorationData.sessions.flatMap(s => 
-        s.navigationSequences.flatMap(seq => seq.actions)
-      ),
-      pageStates: explorationData.sessions.flatMap(s => 
-        s.navigationSequences.flatMap(seq => seq.pageStates)
-      ),
-      collectedInputs: explorationData.sessions.flatMap(s => 
-        s.navigationSequences.flatMap(seq => seq.collectedInputs)
-      ),
+      actions: explorationData.rawData.navigationSequences?.flatMap(seq => seq.actions) || [],
+      pageStates: explorationData.rawData.navigationSequences?.flatMap(seq => seq.pageStates) || [],
+      collectedInputs: explorationData.rawData.collectdInputs || [],
       metadata: {
         generatedAt: new Date().toISOString(),
         version: '1.0.0',
-        description: `Generated from exploration result ${explorationData.id}`
+        description: `Generated from exploration session ${explorationData.session.id}`
       }
     };
   }
@@ -388,7 +386,7 @@ module.exports = {
       metadata: {
         testSuite,
         organizationResult,
-        explorationData: explorationData.id,
+        explorationData: explorationData.session.id,
         generationRequest: request
       }
     };

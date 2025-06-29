@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
     ports:
-      - "3000:3000"
+      - "5173:3000"
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
@@ -14,6 +12,8 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WDS_SOCKET_PORT=0
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_WEBSOCKET_URL=http://localhost:8000
     depends_on:
       - backend
     networks:
@@ -24,15 +24,17 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     ports:
-      - "8000:8000"
+      - "8000:3000"
     volumes:
       - ./backend/src:/app/src
+      - ./backend/uploads:/app/uploads
       - /app/node_modules
     env_file:
       - .env
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:password@db:5432/testcase_translator
+      - BACKEND_PORT=8000
     depends_on:
       - db
     networks:

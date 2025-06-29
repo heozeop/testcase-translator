@@ -30,6 +30,8 @@ export interface PaginatedResponse<T> {
     limit: number;
     total: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 
@@ -131,6 +133,18 @@ export interface UrlValidationResponse {
     author?: string;
     error?: string;
   };
+}
+
+export interface FileUploadResult {
+  projectId: string;
+  testCaseId?: string;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  status: string;
+  message?: string;
+  testCases?: TestCase[];
+  testCasesExtracted?: number;
 }
 
 export interface ProcessingResult {

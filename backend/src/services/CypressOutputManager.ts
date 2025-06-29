@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import { join, dirname, basename, extname } from 'path';
+import { join, basename, extname } from 'path';
 import { GeneratedScript } from './CypressScriptGenerator';
 import { OptimizationResult } from './CypressScriptOptimizer';
 import { ValidationResult } from './CypressScriptOptimizer';
@@ -505,7 +505,7 @@ export class CypressOutputManager {
     }
 
     // Add timestamp if requested
-    if (this.config.fileNaming.timestampFormat !== 'none') {
+    if (this.config.fileNaming.timestampFormat && this.config.fileNaming.timestampFormat !== 'none') {
       const timestamp = this.formatTimestamp(this.config.fileNaming.timestampFormat);
       const ext = extname(name);
       const base = basename(name, ext);
@@ -656,7 +656,7 @@ beforeEach(() => {
 `;
   }
 
-  private generateCypressConfig(scripts: GeneratedScript[]): string {
+  private generateCypressConfig(_scripts: GeneratedScript[]): string {
     const config = {
       e2e: {
         baseUrl: 'http://localhost:3000',
@@ -670,7 +670,7 @@ beforeEach(() => {
         defaultCommandTimeout: 10000,
         requestTimeout: 10000,
         responseTimeout: 10000,
-        setupNodeEvents(on, config) {
+        setupNodeEvents(_on: any, _config: any) {
           // implement node event listeners here
         }
       }
@@ -829,17 +829,17 @@ module.exports = defineConfig(${JSON.stringify(config, null, 2)});
     }
   }
 
-  private async createZipExport(outputPath: string, options: ExportOptions): Promise<string> {
+  private async createZipExport(outputPath: string, _options: ExportOptions): Promise<string> {
     // Would implement ZIP creation logic here
     return outputPath;
   }
 
-  private async createTarExport(outputPath: string, options: ExportOptions): Promise<string> {
+  private async createTarExport(outputPath: string, _options: ExportOptions): Promise<string> {
     // Would implement TAR creation logic here
     return outputPath;
   }
 
-  private async createJsonExport(outputPath: string, options: ExportOptions): Promise<string> {
+  private async createJsonExport(outputPath: string, _options: ExportOptions): Promise<string> {
     const exportData = {
       generated: new Date().toISOString(),
       files: Array.from(this.generatedFiles.values()),

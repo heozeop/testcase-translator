@@ -228,7 +228,7 @@ export class TestCaseParser {
     });
   }
 
-  private extractUrls(testData: TestCaseData, baseUrl: string, errors: ParsingError[], warnings: ParsingWarning[]): ParsedUrl[] {
+  private extractUrls(testData: TestCaseData, baseUrl: string, _errors: ParsingError[], warnings: ParsingWarning[]): ParsedUrl[] {
     const urls: ParsedUrl[] = [];
     const seenUrls = new Set<string>();
 
@@ -275,7 +275,7 @@ export class TestCaseParser {
     return urls;
   }
 
-  private extractUrlsFromStep(step: TestStep, stepIndex: number, baseUrl: string): ParsedUrl[] {
+  private extractUrlsFromStep(step: TestStep, stepIndex: number, _baseUrl: string): ParsedUrl[] {
     const urls: ParsedUrl[] = [];
 
     // Check action field for URLs
@@ -299,7 +299,7 @@ export class TestCaseParser {
     return urls;
   }
 
-  private extractUrlsFromMetadata(metadata: Record<string, any>, baseUrl: string): ParsedUrl[] {
+  private extractUrlsFromMetadata(metadata: Record<string, any>, _baseUrl: string): ParsedUrl[] {
     const urls: ParsedUrl[] = [];
 
     // Recursively search metadata for URL-like strings
@@ -466,7 +466,7 @@ export class TestCaseParser {
     match: RegExpMatchArray,
     step: TestStep,
     stepIndex: number,
-    requirements: NavigationRequirement[]
+    _requirements: NavigationRequirement[]
   ): ParsedNavigation {
     return {
       type: actionType,
@@ -560,7 +560,7 @@ export class TestCaseParser {
     }
   }
 
-  private identifyUserInputRequirements(testData: TestCaseData, errors: ParsingError[], warnings: ParsingWarning[]): UserInputRequirement[] {
+  private identifyUserInputRequirements(testData: TestCaseData, _errors: ParsingError[], _warnings: ParsingWarning[]): UserInputRequirement[] {
     const requirements: UserInputRequirement[] = [];
 
     // Check inputs from test data
@@ -645,7 +645,7 @@ export class TestCaseParser {
     return null;
   }
 
-  private parseAssertions(assertions: Assertion[], errors: ParsingError[], warnings: ParsingWarning[]): ParsedAssertion[] {
+  private parseAssertions(assertions: Assertion[], _errors: ParsingError[], warnings: ParsingWarning[]): ParsedAssertion[] {
     return assertions.map((assertion, index) => {
       try {
         return {

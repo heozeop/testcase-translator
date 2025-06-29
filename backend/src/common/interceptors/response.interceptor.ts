@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Response } from 'express';
+// import { Response } from 'express';
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -35,11 +35,10 @@ export class ResponseInterceptor<T>
   implements NestInterceptor<T, ApiSuccessResponse<T> | PaginatedApiResponse<T>>
 {
   intercept(
-    context: ExecutionContext,
+    _context: ExecutionContext,
     next: CallHandler,
   ): Observable<ApiSuccessResponse<T> | PaginatedApiResponse<T>> {
-    const ctx = context.switchToHttp();
-    // const response = ctx.getResponse<Response>(); // Not used in this interceptor
+    // const ctx = context.switchToHttp(); // Not used in this interceptor
     
     return next.handle().pipe(
       map((data) => {

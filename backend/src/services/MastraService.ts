@@ -1,4 +1,3 @@
-import { Mastra } from '@mastra/core';
 import { Anthropic } from '@anthropic-ai/sdk';
 
 export interface MastraConfig {

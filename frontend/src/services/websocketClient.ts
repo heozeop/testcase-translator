@@ -1,9 +1,9 @@
+import { io, Socket } from 'socket.io-client';
 import {
   WebSocketMessage,
   AnyWebSocketMessage,
   MessageType,
   MessageFactory,
-  WebSocketConnectionStatus,
   WebSocketConnectionState,
   WelcomeMessage,
   NotificationMessage,
@@ -43,7 +43,7 @@ export interface WebSocketEventMap {
 }
 
 export class WebSocketClient {
-  private ws: WebSocket | null = null;
+  private socket: Socket | null = null;
   private options: Required<WebSocketClientOptions>;
   private connectionState: WebSocketConnectionState;
   private eventHandlers: Map<keyof WebSocketEventMap, Set<WebSocketEventHandler>> = new Map();
@@ -76,7 +76,7 @@ export class WebSocketClient {
 
   public connect(projectId?: string, userId?: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      if (this.socket && this.socket.connected) {
         resolve();
         return;
       }
@@ -84,42 +84,48 @@ export class WebSocketClient {
       this.isIntentionallyDisconnected = false;
       this.updateConnectionState({ status: 'connecting' });
 
-      // Build connection URL with query parameters
-      const url = new URL(this.options.url);
-      if (projectId) url.searchParams.set('projectId', projectId);
-      if (userId) url.searchParams.set('userId', userId);
-
       try {
-        this.ws = new WebSocket(url.toString());
-        
+        // Create Socket.IO connection
+        const query: any = {};
+        if (projectId) query.projectId = projectId;
+        if (userId) query.userId = userId;
+
+        this.socket = io(this.options.url, {
+          query,
+          timeout: this.options.connectionTimeout,
+          autoConnect: false
+        });
+
         // Set up connection timeout
         const connectionTimeout = setTimeout(() => {
-          if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
-            this.ws.close();
+          if (this.socket && !this.socket.connected) {
+            this.socket.disconnect();
             reject(new Error('Connection timeout'));
           }
         }, this.options.connectionTimeout);
 
-        this.ws.onopen = () => {
+        this.socket.on('connect', () => {
           clearTimeout(connectionTimeout);
           this.onOpen();
           resolve();
-        };
+        });
 
-        this.ws.onmessage = (event) => {
-          this.onMessage(event);
-        };
-
-        this.ws.onclose = (event) => {
+        this.socket.on('disconnect', (reason) => {
           clearTimeout(connectionTimeout);
-          this.onClose(event);
-        };
+          this.onClose(reason);
+        });
 
-        this.ws.onerror = (event) => {
+        this.socket.on('connect_error', (error) => {
           clearTimeout(connectionTimeout);
-          this.onError(event);
-          reject(new Error('WebSocket connection error'));
-        };
+          this.onError(error);
+          reject(new Error(`Socket.IO connection error: ${error.message}`));
+        });
+
+        // Set up message listeners for all the backend events
+        this.setupEventListeners();
+
+        // Connect
+        this.socket.connect();
 
       } catch (error) {
         this.updateConnectionState({ 
@@ -135,8 +141,8 @@ export class WebSocketClient {
     this.isIntentionallyDisconnected = true;
     this.clearTimers();
     
-    if (this.ws) {
-      this.ws.close(1000, 'Client initiated disconnect');
+    if (this.socket) {
+      this.socket.disconnect();
     }
 
     this.updateConnectionState({ 
@@ -151,7 +157,7 @@ export class WebSocketClient {
   }
 
   public isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
+    return this.socket?.connected || false;
   }
 
   // =============================================================================
@@ -169,10 +175,12 @@ export class WebSocketClient {
     }
 
     try {
-      this.ws!.send(JSON.stringify(message));
+      // Map WebSocket message types to Socket.IO events
+      const eventName = this.getSocketEventName(message.type as MessageType);
+      this.socket!.emit(eventName, message.payload);
       return true;
     } catch (error) {
-      console.error('Failed to send WebSocket message:', error);
+      console.error('Failed to send Socket.IO message:', error);
       return false;
     }
   }
@@ -262,6 +270,69 @@ export class WebSocketClient {
   }
 
   // =============================================================================
+  // SOCKET.IO HELPERS
+  // =============================================================================
+
+  private setupEventListeners(): void {
+    if (!this.socket) return;
+
+    // Listen for backend events
+    this.socket.on('pong', (data) => {
+      // Handle pong response (connection is alive)
+      this.updateConnectionState({ lastPing: Date.now() });
+    });
+
+    this.socket.on('error', (data) => {
+      this.emit('error', data);
+    });
+
+    // Listen for file upload progress updates
+    this.socket.on('file-upload-progress', (data) => {
+      this.emit('file-upload-progress', data);
+    });
+
+    // Listen for test case extraction results
+    this.socket.on('test-case-extraction', (data) => {
+      this.emit('test-case-extraction', data);
+    });
+
+    // Listen for generation progress
+    this.socket.on('generation_progress', (data) => {
+      this.emit('processing-step', data);
+    });
+
+    // Listen for exploration updates
+    this.socket.on('exploration_update', (data) => {
+      this.emit('project-update', data);
+    });
+
+    // Add session info response
+    this.socket.on('session_info', (data) => {
+      this.emit('status-update', data);
+    });
+  }
+
+  private getSocketEventName(messageType: MessageType): string {
+    // Map WebSocket message types to Socket.IO event names
+    switch (messageType) {
+      case MessageType.JOIN_PROJECT:
+        return 'join_session';
+      case MessageType.LEAVE_PROJECT:
+        return 'leave_session';
+      case MessageType.PING:
+        return 'ping';
+      case MessageType.USER_INPUT_RESPONSE:
+        return 'input_response';
+      case MessageType.STATUS_REQUEST:
+        return 'get_session_info';
+      case MessageType.NOTIFICATION_ACTION:
+        return 'broadcast_to_session';
+      default:
+        return 'message';
+    }
+  }
+
+  // =============================================================================
   // INTERNAL EVENT HANDLERS
   // =============================================================================
 
@@ -276,16 +347,8 @@ export class WebSocketClient {
     this.flushMessageQueue();
   }
 
-  private onMessage(event: MessageEvent): void {
-    try {
-      const message: AnyWebSocketMessage = JSON.parse(event.data);
-      this.handleMessage(message);
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error, event.data);
-    }
-  }
 
-  private onClose(event: CloseEvent): void {
+  private onClose(reason: string): void {
     this.clearTimers();
 
     if (this.isIntentionallyDisconnected) {
@@ -302,77 +365,14 @@ export class WebSocketClient {
     }
   }
 
-  private onError(event: Event): void {
-    console.error('WebSocket error:', event);
+  private onError(error: Error): void {
+    console.error('Socket.IO error:', error);
     this.updateConnectionState({ 
       status: 'error',
-      error: 'WebSocket connection error'
+      error: `Socket.IO connection error: ${error.message}`
     });
   }
 
-  private handleMessage(message: AnyWebSocketMessage): void {
-    // Update last ping time for connection tracking
-    this.updateConnectionState({ lastPing: Date.now() });
-
-    switch (message.type) {
-      case MessageType.WELCOME:
-        this.updateConnectionState({ 
-          clientId: (message.payload as any).clientId,
-          projectId: (message.payload as any).projectId
-        });
-        this.emit('welcome', message.payload as any);
-        break;
-
-      case MessageType.PONG:
-        // Handle pong response (connection is alive)
-        break;
-
-      case MessageType.PROJECT_JOINED:
-        this.updateConnectionState({ projectId: (message.payload as any).projectId });
-        this.emit('project-joined', message.payload as any);
-        break;
-
-      case MessageType.PROJECT_LEFT:
-        this.updateConnectionState({ projectId: undefined });
-        this.emit('project-left', message.payload as any);
-        break;
-
-      case MessageType.NOTIFICATION:
-        this.emit('notification', message.payload as any);
-        break;
-
-      case MessageType.STATUS_UPDATE:
-        this.emit('status-update', message.payload as any);
-        break;
-
-      case MessageType.PROJECT_UPDATE:
-        this.emit('project-update', message.payload as any);
-        break;
-
-      case MessageType.USER_INPUT_REQUEST:
-        this.emit('user-input-request', message.payload as any);
-        break;
-
-      case MessageType.FILE_UPLOAD_PROGRESS:
-        this.emit('file-upload-progress', message.payload as any);
-        break;
-
-      case MessageType.TEST_CASE_EXTRACTION:
-        this.emit('test-case-extraction', message.payload as any);
-        break;
-
-      case MessageType.PROCESSING_STEP:
-        this.emit('processing-step', message.payload as any);
-        break;
-
-      case MessageType.ERROR:
-        this.emit('error', message.payload as any);
-        break;
-
-      default:
-        console.warn('Unknown message type:', message.type);
-    }
-  }
 
   // =============================================================================
   // RECONNECTION LOGIC
@@ -456,9 +456,9 @@ export class WebSocketClient {
     this.messageQueue = [];
     this.eventHandlers.clear();
     
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
     }
   }
 }

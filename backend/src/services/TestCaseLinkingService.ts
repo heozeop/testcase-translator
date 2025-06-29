@@ -1,5 +1,5 @@
 import { InputRequest, InputResponse } from './InputCollectionService';
-import { TestCase, TestStep } from '../types/TestCase';
+import { TestCase, TestStep } from '../types/database';
 
 export interface InputMapping {
   inputId: string;
@@ -85,7 +85,7 @@ export class TestCaseLinkingService {
   ): Promise<LinkedTestData> {
     const linkedData: LinkedTestData = {
       testCaseId: testCase.id,
-      scenarioId: testCase.scenarios?.[0]?.id,
+      scenarioId: undefined, // testCase.scenarios not available in database interface
       inputs: {},
       generatedSteps: [],
       executionPlan: {
@@ -197,7 +197,7 @@ export class TestCaseLinkingService {
 
     for (const [stepNumber, stepInputs] of inputsByStep) {
       // Find the original test step or create a new one
-      const originalStep = testCase.steps?.find(s => s.step === stepNumber);
+      const originalStep = testCase.test_data?.steps?.find((_s, index) => index + 1 === stepNumber);
       
       if (originalStep) {
         // Enhance existing step with input data
@@ -210,8 +210,8 @@ export class TestCaseLinkingService {
       }
     }
 
-    // Sort steps by step number
-    return steps.sort((a, b) => a.step - b.step);
+    // Return steps in order
+    return steps;
   }
 
   private async enhanceStepWithInputs(
@@ -225,26 +225,20 @@ export class TestCaseLinkingService {
       const placeholder = `{${inputId}}`;
       const value = data.processedValue;
 
-      if (enhancedStep.description.includes(placeholder)) {
+      if (enhancedStep.description && enhancedStep.description.includes(placeholder)) {
         enhancedStep.description = enhancedStep.description.replace(placeholder, value);
       }
 
       if (enhancedStep.action.includes(placeholder)) {
         enhancedStep.action = enhancedStep.action.replace(placeholder, value);
       }
-
-      // Add to test data
-      if (!enhancedStep.testData) {
-        enhancedStep.testData = {};
-      }
-      enhancedStep.testData[inputId] = value;
     }
 
     return enhancedStep;
   }
 
   private async createStepFromInputs(
-    stepNumber: number,
+    _stepNumber: number,
     stepInputs: Array<{ inputId: string; data: any }>
   ): Promise<TestStep | null> {
     if (stepInputs.length === 0) return null;
@@ -295,11 +289,10 @@ export class TestCaseLinkingService {
     }
 
     return {
-      step: stepNumber,
-      description,
       action: action.trim(),
-      expectedResult: 'Action should complete successfully',
-      testData
+      target: '',
+      value: undefined,
+      description
     };
   }
 
@@ -315,16 +308,17 @@ export class TestCaseLinkingService {
     };
 
     // Extract step numbers and sort them
-    const stepNumbers = linkedData.generatedSteps.map(s => s.step).sort((a, b) => a - b);
+    const stepNumbers = linkedData.generatedSteps.map((_s, index) => index + 1).sort((a, b) => a - b);
     plan.order = stepNumbers;
 
     // Analyze dependencies between steps
-    for (const step of linkedData.generatedSteps) {
+    for (let stepIndex = 0; stepIndex < linkedData.generatedSteps.length; stepIndex++) {
+      const stepNumber = stepIndex + 1;
       const stepDeps: number[] = [];
       
       // Find inputs that this step depends on
       const stepInputs = Object.values(linkedData.inputs).filter(
-        input => input.mapping.stepNumber === step.step
+        input => input.mapping.stepNumber === stepNumber
       );
 
       for (const input of stepInputs) {
@@ -339,7 +333,7 @@ export class TestCaseLinkingService {
       }
 
       if (stepDeps.length > 0) {
-        plan.dependencies[step.step] = [...new Set(stepDeps)];
+        plan.dependencies[stepNumber] = [...new Set(stepDeps)];
       }
 
       // Check for conditional execution
@@ -348,7 +342,7 @@ export class TestCaseLinkingService {
         .filter(condition => condition);
       
       if (skipConditions.length > 0) {
-        plan.conditions[step.step] = skipConditions.join(' || ');
+        plan.conditions[stepNumber] = skipConditions.join(' || ');
       }
     }
 
@@ -373,20 +367,20 @@ export class TestCaseLinkingService {
 
   private createTestContext(testCase: TestCase, mapping: InputMapping): TestCaseContext {
     const stepIndex = mapping.stepNumber || 0;
-    const currentStep = testCase.steps?.[stepIndex];
+    const currentStep = testCase.test_data?.steps?.[stepIndex];
     
     return {
       testCaseId: testCase.id,
       scenarioName: testCase.scenario_name || 'Default Scenario',
       stepIndex,
       currentStep: currentStep || {
-        step: stepIndex,
-        description: 'Auto-generated step',
         action: '',
-        expectedResult: ''
+        target: '',
+        value: undefined,
+        description: 'Auto-generated step'
       },
-      previousSteps: testCase.steps?.slice(0, stepIndex) || [],
-      nextSteps: testCase.steps?.slice(stepIndex + 1) || [],
+      previousSteps: testCase.test_data?.steps?.slice(0, stepIndex) || [],
+      nextSteps: testCase.test_data?.steps?.slice(stepIndex + 1) || [],
       globalContext: {}
     };
   }
@@ -437,7 +431,7 @@ export class TestCaseLinkingService {
       return 'hash';
     }
     
-    if (request.type === 'email' || request.type === 'phone') {
+    if (request.type === 'email') {
       return 'format';
     }
     
@@ -458,7 +452,7 @@ export class TestCaseLinkingService {
     return validations;
   }
 
-  private findDependentInputs(request: InputRequest, testCase: TestCase): string[] {
+  private findDependentInputs(request: InputRequest, _testCase: TestCase): string[] {
     // Simple heuristic: find inputs that might depend on this one
     const dependents: string[] = [];
     
@@ -619,9 +613,6 @@ export class TestCaseLinkingService {
   }
 
   // Public API methods
-  getLinkedTestData(testCaseId: string): LinkedTestData | undefined {
-    return this.linkedTestData.get(testCaseId);
-  }
 
   getAllLinkedTestData(): Map<string, LinkedTestData> {
     return new Map(this.linkedTestData);
@@ -636,10 +627,11 @@ export class TestCaseLinkingService {
     let script = `describe('Test Case ${testCaseId}', () => {\n`;
     script += `  it('should execute test scenario', () => {\n`;
 
-    for (const step of linkedData.generatedSteps) {
-      script += `    // Step ${step.step}: ${step.description}\n`;
+    for (let i = 0; i < linkedData.generatedSteps.length; i++) {
+      const step = linkedData.generatedSteps[i];
+      script += `    // Step ${i + 1}: ${step.description || 'No description'}\n`;
       script += `    ${step.action.split('\n').map(line => '    ' + line).join('\n')}\n`;
-      script += `    // Expected: ${step.expectedResult}\n\n`;
+      script += `    // Target: ${step.target}\n\n`;
     }
 
     script += `  });\n`;
@@ -720,5 +712,105 @@ export class TestCaseLinkingService {
 
   removeInputMapping(inputId: string): boolean {
     return this.inputMappings.delete(inputId);
+  }
+
+  async getLinkedTestData(testCaseId: string): Promise<LinkedTestData | null> {
+    return this.linkedTestData.get(testCaseId) || null;
+  }
+
+  async linkTestCaseData(testCaseId: string, inputData: Record<string, any>): Promise<LinkedTestData> {
+    // Create a mock test case for processing
+    const mockTestCase: TestCase = {
+      id: testCaseId,
+      project_id: '',
+      scenario_name: 'Test Scenario',
+      test_data: { steps: [], assertions: [], inputs: inputData },
+      status: 'pending' as any,
+      created_at: new Date(),
+      updated_at: new Date()
+    };
+
+    // Convert input data to InputResponse format
+    const collectedInputs: Record<string, InputResponse> = {};
+    const inputRequests: Record<string, InputRequest> = {};
+
+    Object.entries(inputData).forEach(([key, value]) => {
+      const inputId = `input_${key}`;
+      collectedInputs[inputId] = {
+        requestId: inputId,
+        value,
+        timestamp: Date.now(),
+        valid: true,
+        validationErrors: []
+      };
+      
+      inputRequests[inputId] = {
+        id: inputId,
+        type: 'text',
+        prompt: `Enter ${key}`,
+        required: true,
+        category: 'test-data',
+        context: {
+          sessionId: 'mock_session',
+          testCaseId,
+          elementSelector: `[name="${key}"]`
+        },
+        validationRules: [],
+        metadata: {
+          priority: 'medium',
+          source: 'test-execution',
+          tags: [],
+          hints: [],
+          examples: [],
+          securityLevel: 'internal'
+        },
+        createdAt: Date.now()
+      };
+    });
+
+    return this.linkInputsToTestCase(mockTestCase, collectedInputs, inputRequests);
+  }
+
+  async generateExecutableSteps(testCaseId: string): Promise<{
+    steps: any[];
+    setup: string[];
+    teardown: string[];
+    dependencies: string[];
+  }> {
+    const linkedData = await this.getLinkedTestData(testCaseId);
+    if (!linkedData) {
+      return {
+        steps: [],
+        setup: [],
+        teardown: [],
+        dependencies: []
+      };
+    }
+
+    const steps = linkedData.generatedSteps.map(step => ({
+      action: step.action,
+      target: step.target,
+      value: step.value,
+      description: step.description
+    }));
+
+    const setup = [
+      'cy.viewport(1280, 720)',
+      'cy.clearCookies()',
+      'cy.clearLocalStorage()'
+    ];
+
+    const teardown = [
+      'cy.screenshot({ capture: "viewport", overwrite: true })'
+    ];
+
+    const dependencies = Object.keys(linkedData.executionPlan.dependencies || {});
+
+    return {
+      steps,
+      setup,
+      teardown,
+      dependencies
+    };
   }
 }

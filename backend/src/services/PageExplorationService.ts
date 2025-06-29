@@ -1,4 +1,4 @@
-import { PuppeteerService, ElementInfo, FormInfo, PageAnalysis } from './PuppeteerService';
+import { PuppeteerService, ElementInfo, PageAnalysis } from './PuppeteerService';
 
 export interface ExplorationResult {
   pageAnalysis: PageAnalysis;
@@ -78,6 +78,9 @@ export interface ExplorationOptions {
   timeout?: number;
   includeHiddenElements?: boolean;
   respectRobotsTxt?: boolean;
+  maxPages?: number;
+  extractForms?: boolean;
+  extractImages?: boolean;
 }
 
 export class PageExplorationService {
@@ -449,7 +452,7 @@ export class PageExplorationService {
 
   private async generateInteractionSuggestions(
     discoveredElements: DiscoveredElement[],
-    pageAnalysis: PageAnalysis
+    _pageAnalysis: PageAnalysis
   ): Promise<InteractionSuggestion[]> {
     const suggestions: InteractionSuggestion[] = [];
 
@@ -490,11 +493,11 @@ export class PageExplorationService {
   }
 
   private generateFormSuggestion(
-    formSelector: string,
+    _formSelector: string,
     elements: DiscoveredElement[]
   ): InteractionSuggestion | null {
     const inputElements = elements.filter(e => e.element.isInput);
-    const submitElements = elements.filter(e => e.element.isButton);
+    // const _submitElements = elements.filter(e => e.element.isButton);
 
     if (inputElements.length === 0) return null;
 
@@ -682,7 +685,7 @@ export class PageExplorationService {
     );
   }
 
-  getExplorationHistory(url?: string): ExplorationResult | Map<string, ExplorationResult> {
+  getExplorationHistory(url?: string): ExplorationResult | Map<string, ExplorationResult> | null {
     if (url) {
       return this.explorationHistory.get(url) || null;
     }

@@ -181,7 +181,7 @@ export class CypressFileOrganizer {
   private createProjectManifest(
     files: GeneratedCypressFiles,
     context: CypressTemplateContext,
-    project: OrganizedProject
+    _project: OrganizedProject
   ): ProjectManifest {
     return {
       projectName: context.projectName,

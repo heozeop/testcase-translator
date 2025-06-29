@@ -287,7 +287,7 @@ export class CypressTemplateRegistry {
       return null;
     }
     
-    return new TemplateClass(context);
+    return new (TemplateClass as any)(context);
   }
 }
 
@@ -419,5 +419,78 @@ Cypress.Commands.add('waitForPageLoad', () => {
 
   registerCustomTemplate(name: string, templateClass: typeof BaseCypressTemplate): void {
     this.registry.registerTemplate(name, templateClass);
+  }
+
+  getAllTemplates(): { id: string; name: string; description: string; type: string }[] {
+    const templateNames = this.registry.getAllTemplateNames();
+    return templateNames.map(name => ({
+      id: name,
+      name: name.charAt(0).toUpperCase() + name.slice(1) + ' Template',
+      description: `Generates ${name} test cases`,
+      type: name
+    }));
+  }
+
+  getTemplate(id: string): { id: string; name: string; description: string; type: string; template: string } | null {
+    const TemplateClass = this.registry.getTemplate(id);
+    if (!TemplateClass) {
+      return null;
+    }
+
+    // Create a dummy context to get template structure
+    const dummyContext: CypressTemplateContext = {
+      projectName: 'Sample Project',
+      testCaseName: 'Sample Test',
+      baseUrl: 'https://example.com',
+      actions: [],
+      pageStates: [],
+      collectedInputs: [],
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        version: '1.0.0'
+      }
+    };
+
+    const template = new (TemplateClass as any)(dummyContext);
+    const testCase = template.generateTestCase();
+
+    return {
+      id,
+      name: id.charAt(0).toUpperCase() + id.slice(1) + ' Template',
+      description: `Generates ${id} test cases`,
+      type: id,
+      template: JSON.stringify(testCase, null, 2)
+    };
+  }
+
+  previewTemplate(id: string, variables: Record<string, any> = {}): { preview: string; variables: string[] } {
+    const template = this.getTemplate(id);
+    if (!template) {
+      return {
+        preview: 'Template not found',
+        variables: []
+      };
+    }
+
+    // Extract variable names from the template
+    const variablePattern = /\{\{\s*(\w+)\s*\}\}/g;
+    const variables_found = new Set<string>();
+    let match;
+
+    while ((match = variablePattern.exec(template.template)) !== null) {
+      variables_found.add(match[1]);
+    }
+
+    // Replace variables in template with provided values
+    let preview = template.template;
+    for (const [key, value] of Object.entries(variables)) {
+      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g');
+      preview = preview.replace(regex, String(value));
+    }
+
+    return {
+      preview,
+      variables: Array.from(variables_found)
+    };
   }
 }

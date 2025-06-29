@@ -5,7 +5,7 @@ import {
   UserInputRequestPayload,
   ProjectUpdatePayload,
   ProcessingStepPayload,
-  NotificationPayload
+  // NotificationPayload
 } from './MessageTypes';
 
 export class WebSocketEndpoints {
@@ -76,7 +76,7 @@ export class WebSocketEndpoints {
     progress: number,
     currentStep?: string,
     message?: string,
-    estimatedTimeRemaining?: number
+    _estimatedTimeRemaining?: number
   ): number {
     return this.wsManager.broadcastStatusUpdateToProject(
       projectId,
@@ -279,8 +279,8 @@ export class WebSocketEndpoints {
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
     projectId?: string,
-    duration?: number,
-    actions?: Array<{
+    _duration?: number,
+    _actions?: Array<{
       id: string;
       label: string;
       action: string;
@@ -298,8 +298,8 @@ export class WebSocketEndpoints {
     title: string,
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
-    duration?: number,
-    actions?: Array<{
+    _duration?: number,
+    _actions?: Array<{
       id: string;
       label: string;
       action: string;
@@ -316,7 +316,7 @@ export class WebSocketEndpoints {
     title: string,
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
-    duration?: number
+    _duration?: number
   ): number {
     const notification = MessageFactory.createNotificationMessage(
       this.generateNotificationId(),
@@ -452,7 +452,7 @@ export class WebSocketEndpoints {
   public cleanupExpiredRequests(): void {
     // This could be called periodically to clean up any stuck requests
     // Most cleanup is handled by timeouts, but this provides additional safety
-    this.activeInputRequests.forEach((request, requestId) => {
+    this.activeInputRequests.forEach((_request, _requestId) => {
       // Additional cleanup logic if needed
     });
   }

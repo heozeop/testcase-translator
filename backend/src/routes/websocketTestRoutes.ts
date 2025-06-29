@@ -10,10 +10,11 @@ router.post('/test/notification', async (req: Request, res: Response): Promise<v
     const { projectId, title, message, type = 'info' } = req.body;
 
     if (!projectId || !title || !message) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'projectId, title, and message are required' }
       });
+      return;
     }
 
     const sentCount = wsEndpoints.broadcastNotificationToProject(
@@ -43,10 +44,11 @@ router.post('/test/status', async (req: Request, res: Response): Promise<void> =
     const { projectId, status, progress, currentStep, message } = req.body;
 
     if (!projectId || typeof progress !== 'number') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'projectId and progress are required' }
       });
+      return;
     }
 
     const sentCount = wsEndpoints.broadcastStatusUpdate(
@@ -77,10 +79,11 @@ router.post('/test/input-request', async (req: Request, res: Response): Promise<
     const { projectId, title, description, fields, timeout = 60 } = req.body;
 
     if (!projectId || !title || !fields) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'projectId, title, and fields are required' }
       });
+      return;
     }
 
     const inputs = await wsEndpoints.requestUserInput(
@@ -111,10 +114,11 @@ router.post('/test/file-progress', async (req: Request, res: Response): Promise<
     const { projectId, fileName = 'test.xlsx' } = req.body;
 
     if (!projectId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: { message: 'projectId is required' }
       });
+      return;
     }
 
     const fileId = `file_${Date.now()}`;

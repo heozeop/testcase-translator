@@ -318,7 +318,7 @@ export class CypressSyntaxGenerator {
     return lines.join('\n');
   }
 
-  private generateConfigFile(testSuite: CypressTestSuite, context: CypressTemplateContext): string {
+  private generateConfigFile(testSuite: CypressTestSuite, _context: CypressTemplateContext): string {
     const config = {
       e2e: {
         baseUrl: testSuite.baseUrl,

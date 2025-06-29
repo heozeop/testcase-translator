@@ -6,7 +6,7 @@ import {
   TestCaseStatus, 
   TestCaseData 
 } from '../types/database';
-import { ParsedTestCase, TestStep, Assertion } from './PromptTemplateService';
+import { ParsedTestCase } from './PromptTemplateService';
 import { ProcessingResult } from './LLMProcessingService';
 import { transaction } from '../db';
 
@@ -139,7 +139,7 @@ export class TestCaseStorageService {
       }
     };
 
-    return transaction(async (client) => {
+    return transaction(async (_client) => {
       for (let i = 0; i < batch.length; i++) {
         const testCase = batch[i];
         const testCaseIndex = startIndex + i;
@@ -375,7 +375,7 @@ export class TestCaseStorageService {
 
       // Count by tags
       const tags = testCase.test_data.metadata?.tags || [];
-      tags.forEach(tag => {
+      tags.forEach((tag: any) => {
         stats.byTags[tag] = (stats.byTags[tag] || 0) + 1;
       });
 

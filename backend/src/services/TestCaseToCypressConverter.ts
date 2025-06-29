@@ -1,6 +1,6 @@
-import { TestCase, TestStep } from '../types/TestCase';
+import { TestCase, TestStep } from '../types/database';
 import { LinkedTestData } from './TestCaseLinkingService';
-import { PageAnalysis, FormInfo, ElementInfo } from './PuppeteerService';
+import { PageAnalysis } from './PuppeteerService';
 import { CypressScriptGenerator, CypressCommand, GeneratedScript } from './CypressScriptGenerator';
 
 export interface ConversionResult {
@@ -54,9 +54,9 @@ export class TestCaseToCypressConverter {
     testCase: TestCase,
     linkedData: LinkedTestData,
     pageAnalysis: PageAnalysis,
-    options: ConversionOptions = {}
+    _options: ConversionOptions = {}
   ): Promise<ConversionResult> {
-    const cacheKey = this.generateCacheKey(testCase, options);
+    const cacheKey = this.generateCacheKey(testCase, _options);
     
     // Check cache first
     if (this.conversionCache.has(cacheKey)) {
@@ -83,7 +83,7 @@ export class TestCaseToCypressConverter {
         result.errors.push(...validationResult.errors);
         result.warnings.push(...validationResult.warnings);
         
-        if (options.strictMode) {
+        if (_options.strictMode) {
           return result;
         }
       }
@@ -93,7 +93,7 @@ export class TestCaseToCypressConverter {
         testCase,
         linkedData,
         pageAnalysis,
-        options
+_options
       );
 
       // Analyze conversion results
@@ -107,7 +107,7 @@ export class TestCaseToCypressConverter {
       result.statistics.assertionsGenerated = this.countAssertions(stepConversions);
 
       // Generate the actual Cypress script
-      if (result.errors.length === 0 || !options.strictMode) {
+      if (result.errors.length === 0 || !_options.strictMode) {
         result.generatedScript = await this.scriptGenerator.generateScript(
           testCase,
           linkedData,
@@ -132,7 +132,7 @@ export class TestCaseToCypressConverter {
     testCases: TestCase[],
     linkedDataMap: Map<string, LinkedTestData>,
     pageAnalysisMap: Map<string, PageAnalysis>,
-    options: ConversionOptions = {}
+    _options: ConversionOptions = {}
   ): Promise<Map<string, ConversionResult>> {
     const results = new Map<string, ConversionResult>();
 
@@ -142,7 +142,7 @@ export class TestCaseToCypressConverter {
 
       if (linkedData && pageAnalysis) {
         try {
-          const result = await this.convertTestCase(testCase, linkedData, pageAnalysis, options);
+          const result = await this.convertTestCase(testCase, linkedData, pageAnalysis, _options);
           results.set(testCase.id, result);
         } catch (error) {
           results.set(testCase.id, {
@@ -181,7 +181,7 @@ export class TestCaseToCypressConverter {
     testCase: TestCase,
     linkedData: LinkedTestData,
     pageAnalysis: PageAnalysis,
-    options: ConversionOptions
+    _options: ConversionOptions
   ): Promise<StepConversionResult[]> {
     const conversions: StepConversionResult[] = [];
 
@@ -191,19 +191,19 @@ export class TestCaseToCypressConverter {
         step,
         linkedData,
         pageAnalysis,
-        options
+_options
       );
       conversions.push(conversion);
     }
 
     // If no generated steps, try to convert original test case steps
-    if (conversions.length === 0 && testCase.steps) {
-      for (const step of testCase.steps) {
+    if (conversions.length === 0 && testCase.test_data?.steps) {
+      for (const step of testCase.test_data.steps) {
         const conversion = await this.convertOriginalStep(
           step,
           linkedData,
           pageAnalysis,
-          options
+  _options
         );
         conversions.push(conversion);
       }
@@ -216,7 +216,7 @@ export class TestCaseToCypressConverter {
     step: any,
     linkedData: LinkedTestData,
     pageAnalysis: PageAnalysis,
-    options: ConversionOptions
+    _options: ConversionOptions
   ): Promise<StepConversionResult> {
     const result: StepConversionResult = {
       cypressCommands: [],
@@ -232,18 +232,18 @@ export class TestCaseToCypressConverter {
       );
 
       // Convert each input to Cypress commands
-      for (const [inputId, inputData] of stepInputs) {
+      for (const [_inputId, inputData] of stepInputs) {
         const commands = await this.convertInputToCypressCommands(
           inputData,
           pageAnalysis,
-          options
+  _options
         );
         result.cypressCommands.push(...commands);
       }
 
       // Add step-specific commands
       if (step.action) {
-        const actionCommands = this.parseActionToCypressCommands(step.action, options);
+        const actionCommands = this.parseActionToCypressCommands(step.action, _options);
         result.cypressCommands.push(...actionCommands);
       }
 
@@ -268,7 +268,7 @@ export class TestCaseToCypressConverter {
     step: TestStep,
     linkedData: LinkedTestData,
     pageAnalysis: PageAnalysis,
-    options: ConversionOptions
+    _options: ConversionOptions
   ): Promise<StepConversionResult> {
     const result: StepConversionResult = {
       cypressCommands: [],
@@ -279,7 +279,7 @@ export class TestCaseToCypressConverter {
 
     try {
       // Parse the step description to understand the action
-      const actionType = this.inferActionType(step.description, step.action);
+      const actionType = this.inferActionType(step.description || '', step.action);
       
       switch (actionType) {
         case 'navigate':
@@ -302,7 +302,7 @@ export class TestCaseToCypressConverter {
       result.complexity = this.calculateStepComplexity(result.cypressCommands);
 
     } catch (error) {
-      result.errors.push(`Failed to convert original step ${step.step}: ${error}`);
+      result.errors.push(`Failed to convert original step ${step.action}: ${error}`);
       result.complexity = 5;
     }
 
@@ -312,11 +312,11 @@ export class TestCaseToCypressConverter {
   private async convertInputToCypressCommands(
     inputData: any,
     pageAnalysis: PageAnalysis,
-    options: ConversionOptions
+    _options: ConversionOptions
   ): Promise<CypressCommand[]> {
     const commands: CypressCommand[] = [];
     const mapping = inputData.mapping;
-    const selector = options.optimizeSelectors ? 
+    const selector = _options.optimizeSelectors ? 
       await this.optimizeSelector(mapping.fieldMapping.selector, pageAnalysis) :
       mapping.fieldMapping.selector;
 
@@ -393,7 +393,7 @@ export class TestCaseToCypressConverter {
     return commands;
   }
 
-  private parseActionToCypressCommands(action: string, options: ConversionOptions): CypressCommand[] {
+  private parseActionToCypressCommands(action: string, _options: ConversionOptions): CypressCommand[] {
     const commands: CypressCommand[] = [];
     
     // Split action into individual lines/commands
@@ -493,7 +493,7 @@ export class TestCaseToCypressConverter {
     return commands;
   }
 
-  private generateNavigationCommands(step: TestStep, pageAnalysis: PageAnalysis): CypressCommand[] {
+  private generateNavigationCommands(_step: TestStep, pageAnalysis: PageAnalysis): CypressCommand[] {
     return [{
       command: 'visit',
       target: pageAnalysis.url,
@@ -502,9 +502,9 @@ export class TestCaseToCypressConverter {
   }
 
   private generateFormFillCommands(
-    step: TestStep,
+    _step: TestStep,
     pageAnalysis: PageAnalysis,
-    linkedData: LinkedTestData
+    _linkedData: LinkedTestData
   ): CypressCommand[] {
     const commands: CypressCommand[] = [];
     
@@ -543,17 +543,17 @@ export class TestCaseToCypressConverter {
     }];
   }
 
-  private generateVerificationCommands(step: TestStep, pageAnalysis: PageAnalysis): CypressCommand[] {
+  private generateVerificationCommands(step: TestStep, _pageAnalysis: PageAnalysis): CypressCommand[] {
     return [{
       command: 'should',
       target: 'body',
       value: 'contain.text',
-      options: { text: this.extractExpectedText(step.expectedResult || step.description) },
+      options: { text: this.extractExpectedText(step.description || '') },
       description: step.description
     }];
   }
 
-  private generateGenericCommands(step: TestStep, pageAnalysis: PageAnalysis): CypressCommand[] {
+  private generateGenericCommands(step: TestStep, _pageAnalysis: PageAnalysis): CypressCommand[] {
     return [{
       command: 'get',
       target: 'body',
@@ -614,15 +614,15 @@ export class TestCaseToCypressConverter {
     pageAnalysis: PageAnalysis
   ): SelectorOptimization {
     // Priority order for selectors
-    const priorities = [
-      'data-testid',
-      'data-cy',
-      'id',
-      'name',
-      'class',
-      'type',
-      'tag'
-    ];
+    // const _priorities = [
+    //   'data-testid',
+    //   'data-cy', 
+    //   'id',
+    //   'name',
+    //   'class',
+    //   'type',
+    //   'tag'
+    // ];
 
     let optimized = selector;
     let confidence = 0.5;
@@ -702,7 +702,7 @@ export class TestCaseToCypressConverter {
     };
   }
 
-  private inferActionType(description: string, action?: string): string {
+  private inferActionType(description: string, _action?: string): string {
     const lower = description.toLowerCase();
     
     if (lower.includes('navigate') || lower.includes('visit') || lower.includes('go to')) {

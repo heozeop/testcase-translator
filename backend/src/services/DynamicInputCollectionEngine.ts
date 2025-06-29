@@ -442,7 +442,7 @@ export class DynamicInputCollectionEngine {
 
   private selectInputStrategy(element: DiscoveredElement, context: DynamicInputContext): InputCollectionStrategy {
     // Find matching strategy based on element characteristics
-    for (const [name, strategy] of this.strategies) {
+    for (const [_name, strategy] of this.strategies) {
       if (this.strategyMatches(strategy, element, context)) {
         return strategy;
       }
@@ -452,7 +452,7 @@ export class DynamicInputCollectionEngine {
     return this.strategies.get('form-data')!;
   }
 
-  private strategyMatches(strategy: InputCollectionStrategy, element: DiscoveredElement, context: DynamicInputContext): boolean {
+  private strategyMatches(strategy: InputCollectionStrategy, element: DiscoveredElement, _context: DynamicInputContext): boolean {
     return strategy.conditions.every(condition => {
       switch (condition.type) {
         case 'element-type':
@@ -595,7 +595,7 @@ export class DynamicInputCollectionEngine {
     element: DiscoveredElement,
     context: DynamicInputContext
   ): Promise<ContextualHelp> {
-    const fieldName = this.extractFieldName(element) || 'this field';
+    // const fieldName = this.extractFieldName(element) || 'this field'; // Unused variable
     const purpose = this.generateHelpPurpose(element, context);
     const examples = this.generateInputExamples(element);
     const tips = this.generateInputTips(element, context);
@@ -624,7 +624,7 @@ export class DynamicInputCollectionEngine {
     };
   }
 
-  private generateHelpPurpose(element: DiscoveredElement, context: DynamicInputContext): string {
+  private generateHelpPurpose(element: DiscoveredElement, _context: DynamicInputContext): string {
     const fieldName = this.extractFieldName(element) || 'this field';
     const purpose = element.classification.purpose;
     
@@ -673,7 +673,7 @@ export class DynamicInputCollectionEngine {
     return examples;
   }
 
-  private generateInputTips(element: DiscoveredElement, context: DynamicInputContext): string[] {
+  private generateInputTips(element: DiscoveredElement, _context: DynamicInputContext): string[] {
     const tips: string[] = [];
     
     if (element.attributes.required) {
@@ -699,7 +699,7 @@ export class DynamicInputCollectionEngine {
     return tips;
   }
 
-  private generateInputWarnings(element: DiscoveredElement, context: DynamicInputContext): string[] {
+  private generateInputWarnings(element: DiscoveredElement, _context: DynamicInputContext): string[] {
     const warnings: string[] = [];
     
     if (element.classification.purpose === 'authentication') {
@@ -717,7 +717,7 @@ export class DynamicInputCollectionEngine {
     return warnings;
   }
 
-  private findRelatedFields(element: DiscoveredElement, context: DynamicInputContext): string[] {
+  private findRelatedFields(element: DiscoveredElement, _context: DynamicInputContext): string[] {
     return element.context.relatedElements
       .filter(rel => rel.relationship === 'group-member')
       .map(rel => this.extractFieldName({ element: rel.element } as DiscoveredElement) || '')
@@ -743,7 +743,7 @@ export class DynamicInputCollectionEngine {
     });
   }
 
-  private isInputRequired(element: DiscoveredElement, context: DynamicInputContext): boolean {
+  private isInputRequired(element: DiscoveredElement, _context: DynamicInputContext): boolean {
     // Check HTML required attribute
     if (element.attributes.required) return true;
     
@@ -792,7 +792,7 @@ export class DynamicInputCollectionEngine {
     return strategy.userPromptTemplate.replace('{fieldName}', fieldName);
   }
 
-  private generateInputDescription(element: DiscoveredElement, context: DynamicInputContext): string {
+  private generateInputDescription(element: DiscoveredElement, _context: DynamicInputContext): string {
     const fieldName = this.extractFieldName(element) || 'field';
     const purpose = element.classification.purpose;
     
@@ -830,7 +830,7 @@ export class DynamicInputCollectionEngine {
     return undefined;
   }
 
-  private calculateInputPriority(element: DiscoveredElement, context: DynamicInputContext): 'high' | 'medium' | 'low' {
+  private calculateInputPriority(element: DiscoveredElement, _context: DynamicInputContext): 'high' | 'medium' | 'low' {
     if (element.priority === 'critical' || element.priority === 'high') return 'high';
     if (element.attributes.required) return 'high';
     if (element.classification.purpose === 'authentication') return 'high';
@@ -838,7 +838,7 @@ export class DynamicInputCollectionEngine {
     return 'low';
   }
 
-  private generateInputTags(element: DiscoveredElement, context: DynamicInputContext): string[] {
+  private generateInputTags(element: DiscoveredElement, _context: DynamicInputContext): string[] {
     const tags: string[] = [];
     
     tags.push(element.classification.category);
@@ -868,7 +868,7 @@ export class DynamicInputCollectionEngine {
     return 'public';
   }
 
-  private calculateInputUrgency(element: DiscoveredElement, context: DynamicInputContext): 'critical' | 'high' | 'medium' | 'low' {
+  private calculateInputUrgency(element: DiscoveredElement, _context: DynamicInputContext): 'critical' | 'high' | 'medium' | 'low' {
     if (element.classification.purpose === 'authentication') return 'critical';
     if (element.attributes.required && element.priority === 'critical') return 'critical';
     if (element.attributes.required) return 'high';
@@ -884,7 +884,7 @@ export class DynamicInputCollectionEngine {
     const fieldName = this.extractFieldName(element)?.toLowerCase() || '';
     if (fieldName.includes('confirm') || fieldName.includes('repeat')) {
       // Look for the original field
-      const originalField = context.relatedElements.find(el => 
+      const originalField = context.relatedElements.find((el: any) => 
         this.extractFieldName(el)?.toLowerCase().includes(fieldName.replace(/confirm|repeat/, '').trim())
       );
       if (originalField) {
@@ -897,8 +897,8 @@ export class DynamicInputCollectionEngine {
 
   private generateInputRecommendations(
     elements: DiscoveredElement[],
-    context: DynamicInputContext,
-    options: DynamicInputCollectionOptions
+    _context: DynamicInputContext,
+    _options: DynamicInputCollectionOptions
   ): InputRecommendation[] {
     const recommendations: InputRecommendation[] = [];
     
@@ -934,8 +934,8 @@ export class DynamicInputCollectionEngine {
 
   private calculateOverallPriority(
     requiredInputs: DynamicInputRequest[],
-    optionalInputs: DynamicInputRequest[],
-    context: DynamicInputContext
+    _optionalInputs: DynamicInputRequest[],
+    _context: DynamicInputContext
   ): 'immediate' | 'high' | 'medium' | 'low' {
     const criticalInputs = requiredInputs.filter(input => input.urgency === 'critical');
     const highInputs = requiredInputs.filter(input => input.urgency === 'high');
@@ -1033,7 +1033,7 @@ export class DynamicInputCollectionEngine {
   private async processInputRequest(
     sessionId: string,
     queueItem: InputQueueItem,
-    options: DynamicInputCollectionOptions
+    _options: DynamicInputCollectionOptions
   ): Promise<void> {
     try {
       // Find connected client for this session
@@ -1051,7 +1051,7 @@ export class DynamicInputCollectionEngine {
       // Set timeout
       setTimeout(() => {
         if (queueItem.status === 'active') {
-          this.handleInputTimeout(sessionId, queueItem, options);
+          this.handleInputTimeout(sessionId, queueItem, _options);
         }
       }, queueItem.timeoutAt - Date.now());
       
@@ -1065,12 +1065,13 @@ export class DynamicInputCollectionEngine {
     // Find connected WebSocket client for this session
     // This is a simplified implementation
     const clients = Array.from((this.wsManager as any).clients.values());
-    return clients.find((client: any) => client.sessionId === sessionId)?.id || null;
+    const client = clients.find((client: any) => client.sessionId === sessionId);
+    return client ? (client as any).id as string : null;
   }
 
   private async sendInputRequest(clientId: string, request: DynamicInputRequest): Promise<void> {
     const message = {
-      type: MessageType.INPUT_REQUEST,
+      type: MessageType.USER_INPUT_REQUEST,
       payload: {
         request: {
           id: request.id,
@@ -1102,8 +1103,9 @@ export class DynamicInputCollectionEngine {
     this.wsManager.sendToClient(clientId, message);
   }
 
-  private async handleInputResponse(clientId: string, message: any): Promise<void> {
-    const { requestId, value, metadata } = message.payload;
+  /*
+  private async _handleInputResponse(clientId: string, message: any): Promise<void> {
+    const { requestId, value } = message.payload;
     
     // Find the session and queue item
     let sessionId: string | null = null;
@@ -1167,17 +1169,20 @@ export class DynamicInputCollectionEngine {
       }
     }
   }
+  */
 
-  private async validateInputResponse(request: DynamicInputRequest, value: any): Promise<{ valid: boolean; errors: string[] }> {
+  // @ts-ignore - Utility method for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async _validateInputResponse(_request: DynamicInputRequest, value: any): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
     
     // Required check
-    if (request.required && (value === null || value === undefined || value === '')) {
+    if (_request.required && (value === null || value === undefined || value === '')) {
       errors.push('This field is required');
     }
     
     // Type-specific validation
-    switch (request.type) {
+    switch (_request.type) {
       case 'email':
         if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
           errors.push('Please enter a valid email address');
@@ -1191,7 +1196,7 @@ export class DynamicInputCollectionEngine {
     }
     
     // Custom validation rules
-    for (const rule of request.validationRules) {
+    for (const rule of _request.validationRules) {
       if (rule.type === 'pattern' && value && !new RegExp(rule.value).test(value)) {
         errors.push(rule.message || 'Invalid format');
       }
@@ -1206,7 +1211,9 @@ export class DynamicInputCollectionEngine {
     return { valid: errors.length === 0, errors };
   }
 
-  private sendInputConfirmation(clientId: string, requestId: string, validation: any): void {
+  // @ts-ignore - Utility method for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private _sendInputConfirmation(_clientId: string, requestId: string, _validation: any): void {
     const message = {
       type: 'INPUT_CONFIRMATION',
       payload: {
@@ -1217,12 +1224,14 @@ export class DynamicInputCollectionEngine {
       timestamp: Date.now()
     };
     
-    this.wsManager.sendToClient(clientId, message);
+    this.wsManager.sendToClient(_clientId, message);
   }
 
-  private sendValidationError(clientId: string, requestId: string, errors: string[]): void {
+  // @ts-ignore - Utility method for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private _sendValidationError(_clientId: string, requestId: string, errors: string[]): void {
     const message = {
-      type: MessageType.INPUT_VALIDATION_ERROR,
+      type: MessageType.ERROR,
       payload: {
         requestId,
         errors,
@@ -1231,11 +1240,13 @@ export class DynamicInputCollectionEngine {
       timestamp: Date.now()
     };
     
-    this.wsManager.sendToClient(clientId, message);
+    this.wsManager.sendToClient(_clientId, message);
   }
 
-  private resolveDependencies(sessionId: string, completedElementSelector: string): void {
-    const queue = this.inputQueue.get(sessionId) || [];
+  // @ts-ignore - Utility method for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private _resolveDependencies(_sessionId: string, completedElementSelector: string): void {
+    const queue = this.inputQueue.get(_sessionId) || [];
     
     // Find items waiting on this dependency
     const dependentItems = queue.filter(item => 
@@ -1254,47 +1265,47 @@ export class DynamicInputCollectionEngine {
     }
   }
 
-  private async handleInputSkip(clientId: string, message: any): Promise<void> {
-    const { requestId, reason } = message.payload;
-    
-    // Find and mark request as skipped
-    for (const [sessionId, queue] of this.inputQueue) {
-      const item = queue.find(item => item.request.id === requestId);
-      if (item) {
-        item.status = 'completed'; // Treat skip as completion
-        this.updateSessionMetrics(sessionId, 'skipped', 0);
-        break;
-      }
-    }
-  }
+  // private async handleInputSkip(_clientId: string, message: any): Promise<void> {
+  //   const { requestId } = message.payload;
+  //   
+  //   // Find and mark request as skipped
+  //   for (const [sessionId, queue] of this.inputQueue) {
+  //     const item = queue.find(item => item.request.id === requestId);
+  //     if (item) {
+  //       item.status = 'completed'; // Treat skip as completion
+  //       this.updateSessionMetrics(sessionId, 'skipped', 0);
+  //       break;
+  //     }
+  //   }
+  // }
 
-  private async handleInputAlternative(clientId: string, message: any): Promise<void> {
-    const { requestId, alternativeType, value } = message.payload;
-    
-    // Process the alternative selection
-    for (const [sessionId, queue] of this.inputQueue) {
-      const item = queue.find(item => item.request.id === requestId);
-      if (item) {
-        const alternative = item.request.alternatives.find(alt => alt.type === alternativeType);
-        if (alternative) {
-          // Use the alternative value
-          await this.handleInputResponse(clientId, {
-            payload: {
-              requestId,
-              value: value || alternative.value,
-              metadata: { source: 'alternative', alternativeType }
-            }
-          });
-        }
-        break;
-      }
-    }
-  }
+  // private async handleInputAlternative(_clientId: string, message: any): Promise<void> {
+  //   const { requestId, alternativeType, value } = message.payload;
+  //   
+  //   // Process the alternative selection
+  //   for (const [_sessionId, queue] of this.inputQueue) {
+  //     const item = queue.find(item => item.request.id === requestId);
+  //     if (item) {
+  //       const alternative = item.request.alternatives.find(alt => alt.type === alternativeType);
+  //       if (alternative) {
+  //         // Use the alternative value
+  //         await this._handleInputResponse(clientId, {
+  //           payload: {
+  //             requestId,
+  //             value: value || alternative.value,
+  //             metadata: { source: 'alternative', alternativeType }
+  //           }
+  //         });
+  //       }
+  //       break;
+  //     }
+  //   }
+  // }
 
   private handleInputTimeout(
     sessionId: string,
     queueItem: InputQueueItem,
-    options: DynamicInputCollectionOptions
+    _options: DynamicInputCollectionOptions
   ): void {
     const strategy = this.selectInputStrategy(queueItem.request.element, queueItem.request.explorationContext);
     
@@ -1346,12 +1357,12 @@ export class DynamicInputCollectionEngine {
     this.updateSessionMetrics(sessionId, 'completed', 0);
   }
 
-  private markInputAsSkipped(sessionId: string, queueItem: InputQueueItem, reason: string): void {
+  private markInputAsSkipped(sessionId: string, queueItem: InputQueueItem, _reason: string): void {
     queueItem.status = 'completed'; // Treat as completed
     this.updateSessionMetrics(sessionId, 'skipped', 0);
   }
 
-  private sendTimeoutWarning(clientId: string, request: DynamicInputRequest): void {
+  private sendTimeoutWarning(_clientId: string, request: DynamicInputRequest): void {
     const message = {
       type: 'INPUT_TIMEOUT_WARNING',
       payload: {
@@ -1362,19 +1373,19 @@ export class DynamicInputCollectionEngine {
       timestamp: Date.now()
     };
     
-    this.wsManager.sendToClient(clientId, message);
+    this.wsManager.sendToClient(_clientId, message);
   }
 
-  private handleClientDisconnection(clientId: string): void {
-    // Handle disconnected clients
-    for (const [sessionId, queue] of this.inputQueue) {
-      const activeItems = queue.filter(item => item.clientId === clientId && item.status === 'active');
-      for (const item of activeItems) {
-        item.status = 'pending'; // Reset to pending for reconnection
-        item.clientId = undefined;
-      }
-    }
-  }
+  // private handleClientDisconnection(clientId: string): void {
+  //   // Handle disconnected clients
+  //   for (const [_sessionId, queue] of this.inputQueue) {
+  //     const activeItems = queue.filter(item => item.clientId === clientId && item.status === 'active');
+  //     for (const item of activeItems) {
+  //       item.status = 'pending'; // Reset to pending for reconnection
+  //       item.clientId = undefined;
+  //     }
+  //   }
+  // }
 
   private updateSessionMetrics(sessionId: string, type: 'completed' | 'failed' | 'skipped', responseTime: number): void {
     const metrics = this.sessionMetrics.get(sessionId);

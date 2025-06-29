@@ -607,4 +607,107 @@ export class GeneratedCodeRepository {
       client.release();
     }
   }
+
+  async countByProjectId(projectId: string): Promise<number> {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT COUNT(*) as count FROM generated_code WHERE project_id = $1',
+        [projectId]
+      );
+      return parseInt(result.rows[0].count, 10);
+    } finally {
+      client.release();
+    }
+  }
+
+  async create(data: {
+    project_id: string;
+    test_case_id?: string;
+    file_name: string;
+    file_path: string;
+    content: string;
+    metadata?: any;
+    status?: string;
+  }) {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(`
+        INSERT INTO generated_code (
+          id, project_id, test_case_id, file_name, file_path, content, metadata, status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *
+      `, [
+        uuidv4(),
+        data.project_id,
+        data.test_case_id || null,
+        data.file_name,
+        data.file_path,
+        data.content,
+        JSON.stringify(data.metadata || {}),
+        data.status || 'generated',
+        new Date(),
+        new Date()
+      ]);
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async update(id: string, data: Partial<{
+    file_name: string;
+    file_path: string;
+    content: string;
+    metadata: any;
+    status: string;
+  }>) {
+    const client = await this.pool.connect();
+    try {
+      const setParts: string[] = [];
+      const params: any[] = [];
+      let paramIndex = 1;
+
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          setParts.push(`${key} = $${paramIndex}`);
+          params.push(key === 'metadata' ? JSON.stringify(value) : value);
+          paramIndex++;
+        }
+      });
+
+      if (setParts.length === 0) {
+        return this.findById(id);
+      }
+
+      setParts.push(`updated_at = $${paramIndex}`);
+      params.push(new Date());
+      paramIndex++;
+      params.push(id);
+
+      const result = await client.query(`
+        UPDATE generated_code 
+        SET ${setParts.join(', ')}
+        WHERE id = $${paramIndex}
+        RETURNING *
+      `, params);
+
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+
+  async findByProjectId(projectId: string) {
+    const client = await this.pool.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM generated_code WHERE project_id = $1 ORDER BY created_at DESC',
+        [projectId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
 }

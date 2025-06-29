@@ -66,12 +66,12 @@ export interface ExcelValidationResult {
 }
 
 export class ExcelParserService {
-  private static readonly SUPPORTED_FORMATS = [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-    'application/vnd.ms-excel', // .xls
-    'text/csv', // .csv
-    'application/vnd.oasis.opendocument.spreadsheet' // .ods
-  ];
+  // private static readonly SUPPORTED_FORMATS = [
+  //   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  //   'application/vnd.ms-excel', // .xls
+  //   'text/csv', // .csv
+  //   'application/vnd.oasis.opendocument.spreadsheet' // .ods
+  // ];
 
   private static readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
   private static readonly MAX_ROWS = 10000;
@@ -299,7 +299,7 @@ export class ExcelParserService {
     let formattedValue: string | undefined;
 
     // Determine cell type
-    switch (cell.t) {
+    switch (cell.t as string) {
       case 'n': // Number
         type = 'number';
         break;
@@ -311,7 +311,7 @@ export class ExcelParserService {
         break;
       case 'd': // Date
         type = 'date';
-        value = cell.v instanceof Date ? cell.v : new Date(cell.v);
+        value = cell.v instanceof Date ? cell.v : (cell.v != null && typeof cell.v !== 'boolean' ? new Date(cell.v) : new Date());
         break;
       case 'f': // Formula
         type = 'formula';

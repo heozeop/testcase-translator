@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
 import { UrlValidationService } from './UrlValidationService';
 
 export interface HttpClientOptions {
@@ -14,7 +14,7 @@ export interface HttpResponse<T = any> {
   status: number;
   statusText: string;
   headers: Record<string, string>;
-  config: AxiosRequestConfig;
+  config: any;
   url: string;
   redirectChain?: string[];
 }
@@ -34,7 +34,7 @@ export interface HttpError {
 }
 
 export class HttpClientService {
-  private client: AxiosInstance;
+  private client: any;
   private defaultOptions: Required<HttpClientOptions>;
 
   constructor(options: HttpClientOptions = {}) {
@@ -46,12 +46,12 @@ export class HttpClientService {
       validateStatus: options.validateStatus || ((status: number) => status >= 200 && status < 400)
     };
 
-    this.client = this.createAxiosInstance();
+    this.client = this.createany();
     this.setupInterceptors();
   }
 
-  private createAxiosInstance(): AxiosInstance {
-    const config: AxiosRequestConfig = {
+  private createany(): any {
+    const config: any = {
       timeout: this.defaultOptions.timeout,
       maxRedirects: this.defaultOptions.maxRedirects,
       validateStatus: this.defaultOptions.validateStatus,
@@ -67,7 +67,7 @@ export class HttpClientService {
   private setupInterceptors(): void {
     // Request interceptor for logging and validation
     this.client.interceptors.request.use(
-      (config) => {
+      (config: any) => {
         console.log(`HTTP Request: ${config.method?.toUpperCase()} ${config.url}`);
         
         // Validate URL before making request
@@ -84,7 +84,7 @@ export class HttpClientService {
         
         return config;
       },
-      (error) => {
+      (error: any) => {
         console.error('Request interceptor error:', error);
         return Promise.reject(error);
       }
@@ -92,11 +92,11 @@ export class HttpClientService {
 
     // Response interceptor for logging and error handling
     this.client.interceptors.response.use(
-      (response) => {
+      (response: any) => {
         console.log(`HTTP Response: ${response.status} ${response.statusText} from ${response.config.url}`);
         return response;
       },
-      (error: AxiosError) => {
+      (error: any) => {
         const httpError = this.formatError(error);
         console.error('HTTP Error:', httpError);
         return Promise.reject(httpError);
@@ -104,7 +104,7 @@ export class HttpClientService {
     );
   }
 
-  private formatError(error: AxiosError): HttpError {
+  private formatError(error: any): HttpError {
     const httpError: HttpError = {
       message: error.message,
       code: error.code,
@@ -172,7 +172,7 @@ export class HttpClientService {
     }
   }
 
-  private mergeOptions(options: HttpClientOptions): AxiosRequestConfig {
+  private mergeOptions(options: HttpClientOptions): any {
     return {
       timeout: options.timeout || this.defaultOptions.timeout,
       maxRedirects: options.maxRedirects || this.defaultOptions.maxRedirects,
@@ -184,7 +184,7 @@ export class HttpClientService {
     };
   }
 
-  private formatResponse(response: AxiosResponse): HttpResponse {
+  private formatResponse(response: any): HttpResponse {
     return {
       data: response.data,
       status: response.status,
@@ -196,7 +196,7 @@ export class HttpClientService {
     };
   }
 
-  private extractRedirectChain(response: AxiosResponse): string[] | undefined {
+  private extractRedirectChain(response: any): string[] | undefined {
     // Extract redirect chain if available
     const redirects: string[] = [];
     

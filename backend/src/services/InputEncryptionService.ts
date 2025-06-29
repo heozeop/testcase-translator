@@ -92,7 +92,7 @@ export class InputEncryptionService {
         encryptedValue = CryptoJS.AES.encrypt(serializedValue, derivedKey, {
           iv: CryptoJS.enc.Hex.parse(iv),
           mode: CryptoJS.mode.CBC,
-          padding: CryptoJS.pad.PKCS7
+          padding: CryptoJS.pad.Pkcs7
         }).toString();
         break;
       
@@ -100,7 +100,7 @@ export class InputEncryptionService {
         encryptedValue = CryptoJS.TripleDES.encrypt(serializedValue, derivedKey, {
           iv: CryptoJS.enc.Hex.parse(iv),
           mode: CryptoJS.mode.CBC,
-          padding: CryptoJS.pad.PKCS7
+          padding: CryptoJS.pad.Pkcs7
         }).toString();
         break;
       
@@ -145,7 +145,7 @@ export class InputEncryptionService {
           const decryptedAES = CryptoJS.AES.decrypt(encryptedData.encryptedValue, derivedKey, {
             iv: CryptoJS.enc.Hex.parse(encryptedData.iv),
             mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.PKCS7
+            padding: CryptoJS.pad.Pkcs7
           });
           decryptedValue = decryptedAES.toString(CryptoJS.enc.Utf8);
           break;
@@ -154,7 +154,7 @@ export class InputEncryptionService {
           const decryptedDES = CryptoJS.TripleDES.decrypt(encryptedData.encryptedValue, derivedKey, {
             iv: CryptoJS.enc.Hex.parse(encryptedData.iv),
             mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.PKCS7
+            padding: CryptoJS.pad.Pkcs7
           });
           decryptedValue = decryptedDES.toString(CryptoJS.enc.Utf8);
           break;

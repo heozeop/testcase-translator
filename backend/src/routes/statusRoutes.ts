@@ -4,7 +4,7 @@ import { testConnection } from '../db';
 import { ProjectRepository } from '../repositories/ProjectRepository';
 import { TestCaseRepository } from '../repositories/TestCaseRepository';
 import { GeneratedCodeRepository } from '../repositories/GeneratedCodeRepository';
-import { Pool } from 'pg';
+// import { Pool } from 'pg';
 import { asyncHandler } from '../middleware/errorHandler';
 import { sendSuccess } from '../utils/apiHelpers';
 
@@ -12,14 +12,14 @@ const router = express.Router();
 
 // Initialize repositories
 // Note: In a real implementation, pool would be injected or imported properly
-const projectRepository = new ProjectRepository({} as Pool);
-const testCaseRepository = new TestCaseRepository({} as Pool);
-const generatedCodeRepository = new GeneratedCodeRepository({} as Pool);
+const projectRepository = new ProjectRepository();
+const testCaseRepository = new TestCaseRepository();
+const generatedCodeRepository = new GeneratedCodeRepository(require('../db').getPool());
 
 // GET /api/status
 // Comprehensive system status endpoint
 router.get('/',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
     const startTime = Date.now();
     
     try {
@@ -35,7 +35,7 @@ router.get('/',
       ] = await Promise.allSettled([
         projectRepository.getProjectStatistics?.() || Promise.resolve(null),
         testCaseRepository.getTestCaseStatistics?.() || Promise.resolve(null),
-        generatedCodeRepository.getGenerationStatistics()
+        generatedCodeRepository.getGenerationStatistics() || Promise.resolve(null)
       ]);
 
       // System metrics
@@ -202,7 +202,7 @@ router.get('/',
 // GET /api/status/services
 // Detailed service health status
 router.get('/services',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
     const checks = await Promise.allSettled([
       // Database check
       testConnection().then(connected => ({
@@ -253,7 +253,7 @@ router.get('/services',
 // GET /api/status/metrics
 // Performance metrics and usage statistics
 router.get('/metrics',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
     const memoryUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
     
@@ -293,7 +293,7 @@ router.get('/metrics',
 // GET /api/status/errors
 // Recent error information (last 24 hours)
 router.get('/errors',
-  asyncHandler(async (req: Request, res: Response) => {
+  asyncHandler(async (_req: Request, res: Response) => {
     // In a real implementation, this would query an error logging system
     // For now, return a mock response
     sendSuccess(res, {

@@ -282,7 +282,10 @@ export const validateSchema = (schema: any, target: 'body' | 'query' | 'params' 
     }
 
     // Replace the request data with validated and sanitized data
-    req[target] = value;
+    // Note: req.query is read-only in newer Express versions, so skip assignment for query
+    if (target !== 'query') {
+      req[target] = value;
+    }
     next();
   };
 };

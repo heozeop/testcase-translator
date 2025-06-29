@@ -263,11 +263,12 @@ export class PuppeteerService {
   }
 
   private async analyzeForms(page: Page): Promise<FormInfo[]> {
-    return await page.evaluate(() => {
+    // Use string evaluation to avoid TypeScript DOM checking
+    return await page.evaluate(`() => {
       const forms = Array.from(document.querySelectorAll('form'));
       
       return forms.map((form, index) => {
-        const selector = `form:nth-of-type(${index + 1})`;
+        const selector = 'form:nth-of-type(' + (index + 1) + ')';
         
         // Get form attributes
         const action = form.getAttribute('action') || undefined;
@@ -283,16 +284,16 @@ export class PuppeteerService {
             tagName: element.tagName.toLowerCase(),
             id: element.id || undefined,
             className: element.className || undefined,
-            name: (element as HTMLInputElement).name || undefined,
-            type: (element as HTMLInputElement).type || undefined,
-            placeholder: (element as HTMLInputElement).placeholder || undefined,
+            name: element.name || undefined,
+            type: element.type || undefined,
+            placeholder: element.placeholder || undefined,
             text: element.textContent?.trim() || undefined,
-            value: (element as HTMLInputElement).value || undefined,
-            selector: `${selector} ${element.tagName.toLowerCase()}:nth-of-type(${fieldIndex + 1})`,
+            value: element.value || undefined,
+            selector: selector + ' ' + element.tagName.toLowerCase() + ':nth-of-type(' + (fieldIndex + 1) + '),',
             isVisible,
             isClickable: !element.hasAttribute('disabled'),
             isInput: ['input', 'textarea', 'select'].includes(element.tagName.toLowerCase()),
-            isButton: element.tagName.toLowerCase() === 'button' || (element as HTMLInputElement).type === 'submit',
+            isButton: element.tagName.toLowerCase() === 'button' || element.type === 'submit',
             isLink: false,
             boundingBox: isVisible ? {
               x: rect.x,
@@ -316,7 +317,7 @@ export class PuppeteerService {
             type: (element as HTMLInputElement).type || undefined,
             text: element.textContent?.trim() || (element as HTMLInputElement).value || undefined,
             value: (element as HTMLInputElement).value || undefined,
-            selector: `${selector} ${element.tagName.toLowerCase()}[type="submit"]:nth-of-type(${buttonIndex + 1})`,
+            selector: selector + ' ' + element.tagName.toLowerCase() + '[type="submit"]:nth-of-type(' + (buttonIndex + 1) + '),',
             isVisible,
             isClickable: !element.hasAttribute('disabled'),
             isInput: false,
@@ -339,11 +340,12 @@ export class PuppeteerService {
           submitButtons
         };
       });
-    });
+    }`) as FormInfo[];
   }
 
   private async analyzeInteractiveElements(page: Page): Promise<ElementInfo[]> {
-    return await page.evaluate(() => {
+    // Use string evaluation to avoid TypeScript DOM checking
+    const result = await page.evaluate(`() => {
       const interactiveSelectors = [
         'button:not([type="submit"])',
         'input[type="button"]',
@@ -374,7 +376,7 @@ export class PuppeteerService {
           type: (element as HTMLInputElement).type || undefined,
           text: element.textContent?.trim() || undefined,
           value: (element as HTMLInputElement).value || undefined,
-          selector: `${element.tagName.toLowerCase()}:nth-of-type(${index + 1})`,
+          selector: element.tagName.toLowerCase() + ':nth-of-type(' + (index + 1) + '),',
           isVisible,
           isClickable: !element.hasAttribute('disabled'),
           isInput: false,
@@ -388,11 +390,13 @@ export class PuppeteerService {
           } : undefined
         };
       });
-    });
+    }`);
+    return result as ElementInfo[];
   }
 
   private async analyzeLinks(page: Page): Promise<ElementInfo[]> {
-    return await page.evaluate(() => {
+    // Use string evaluation to avoid TypeScript DOM checking
+    const result = await page.evaluate(`() => {
       const links = Array.from(document.querySelectorAll('a[href]'));
       
       return links.map((link, index) => {
@@ -405,7 +409,7 @@ export class PuppeteerService {
           className: link.className || undefined,
           text: link.textContent?.trim() || undefined,
           href: link.getAttribute('href') || undefined,
-          selector: `a:nth-of-type(${index + 1})`,
+          selector: 'a:nth-of-type(' + (index + 1) + '),',
           isVisible,
           isClickable: true,
           isInput: false,
@@ -419,11 +423,13 @@ export class PuppeteerService {
           } : undefined
         };
       });
-    });
+    }`);
+    return result as ElementInfo[];
   }
 
   private async analyzeImages(page: Page): Promise<ElementInfo[]> {
-    return await page.evaluate(() => {
+    // Use string evaluation to avoid TypeScript DOM checking
+    const result = await page.evaluate(`() => {
       const images = Array.from(document.querySelectorAll('img'));
       
       return images.map((img, index) => {
@@ -436,7 +442,7 @@ export class PuppeteerService {
           className: img.className || undefined,
           src: img.src || undefined,
           text: img.alt || undefined,
-          selector: `img:nth-of-type(${index + 1})`,
+          selector: 'img:nth-of-type(' + (index + 1) + ')',
           isVisible,
           isClickable: false,
           isInput: false,
@@ -450,7 +456,8 @@ export class PuppeteerService {
           } : undefined
         };
       });
-    });
+    }`);
+    return result as ElementInfo[];
   }
 
   async waitForElement(pageId: string, selector: string, timeout?: number): Promise<ElementHandle | null> {
@@ -530,7 +537,7 @@ export class PuppeteerService {
   async close(): Promise<void> {
     // Close all pages
     const pageEntries = Array.from(this.pages.entries());
-    for (const [pageId, page] of pageEntries) {
+    for (const [_pageId, page] of pageEntries) {
       await page.close();
     }
     this.pages.clear();
@@ -554,10 +561,10 @@ export class PuppeteerService {
     try {
       switch (state) {
         case 'load':
-          await page.waitForFunction(() => document.readyState === 'complete');
+          await page.waitForFunction('() => document.readyState === "complete"');
           break;
         case 'domcontentloaded':
-          await page.waitForFunction(() => document.readyState !== 'loading');
+          await page.waitForFunction('() => document.readyState !== "loading"');
           break;
         case 'networkidle':
           // Wait for network to be idle - no new requests for 500ms
@@ -615,7 +622,7 @@ export class PuppeteerService {
         throw new Error(`Checkbox ${selector} not found`);
       }
 
-      const isChecked = await page.evaluate((el) => (el as HTMLInputElement).checked, checkbox);
+      const isChecked = await page.evaluate('(el) => el.checked', checkbox);
       if (isChecked !== checked) {
         await page.click(selector);
       }
@@ -638,7 +645,7 @@ export class PuppeteerService {
         throw new Error(`File input ${selector} not found`);
       }
 
-      await (input as ElementHandle<HTMLInputElement>).uploadFile(filePath);
+      await (input as any).uploadFile(filePath);
       return true;
     } catch (error) {
       console.error(`Failed to upload file to ${selector}:`, error);
@@ -751,7 +758,7 @@ export class PuppeteerService {
 
     const version = await this.browser!.version();
     const page = await this.browser!.newPage();
-    const userAgent = await page.evaluate(() => navigator.userAgent);
+    const userAgent = await page.evaluate('() => navigator.userAgent') as string;
     await page.close();
 
     return { version, userAgent };

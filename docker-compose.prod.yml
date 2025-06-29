@@ -25,6 +25,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:password@db:5432/testcase_translator
+      - FRONTEND_URL=http://frontend:3000
     depends_on:
       - db
     networks:

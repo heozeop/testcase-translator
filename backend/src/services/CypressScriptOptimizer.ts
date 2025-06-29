@@ -1,5 +1,5 @@
 import { GeneratedScript } from './CypressScriptGenerator';
-import { ConversionResult } from './TestCaseToCypressConverter';
+// import { ConversionResult } from './TestCaseToCypressConverter'; // Unused import
 
 export interface OptimizationRule {
   id: string;
@@ -319,7 +319,7 @@ export class CypressScriptOptimizer {
 
   private calculateCodeStats(code: string): CodeStats {
     const lines = code.split('\n');
-    const nonEmptyLines = lines.filter(line => line.trim());
+    // const nonEmptyLines = lines.filter(line => line.trim());
 
     return {
       lineCount: lines.length,
@@ -603,7 +603,7 @@ export class CypressScriptOptimizer {
       category: 'selector-optimization',
       priority: 9,
       pattern: /cy\.get\(['"`]([^'"`]*)\['"`]\)/,
-      replacement: (match: string, selector: string) => {
+      replacement: (match: string, _selector: string) => {
         // This would need access to actual DOM to check for data-testid
         return match; // Simplified for this example
       },
@@ -642,7 +642,7 @@ export class CypressScriptOptimizer {
       category: 'assertion-improvement',
       priority: 6,
       pattern: /cy\.get\((['"`][^'"`]+['"`])\);\s*cy\.get\(\1\)\.should\('be\.visible'\);/,
-      replacement: (match: string, selector: string) => `cy.get(${selector}).should('be.visible');`,
+      replacement: (_match: string, selector: string) => `cy.get(${selector}).should('be.visible');`,
       impact: 'readability'
     });
 
@@ -654,7 +654,7 @@ export class CypressScriptOptimizer {
       category: 'code-structure',
       priority: 5,
       pattern: /cy\.get\((['"`][^'"`]+['"`])\)\.(\w+\([^)]*\));\s*cy\.get\(\1\)\.(\w+\([^)]*\));/,
-      replacement: (match: string, selector: string, cmd1: string, cmd2: string) => 
+      replacement: (_match: string, selector: string, cmd1: string, cmd2: string) => 
         `cy.get(${selector}).${cmd1}.${cmd2};`,
       impact: 'readability'
     });
@@ -667,7 +667,7 @@ export class CypressScriptOptimizer {
       category: 'best-practices',
       priority: 4,
       pattern: /cy\.get\([^)]+\)\.should\('contain\.text',\s*['"`]([^'"`]+)['"`]\)/,
-      replacement: (match: string, text: string) => `cy.contains('${text}')`,
+      replacement: (_match: string, text: string) => `cy.contains('${text}')`,
       impact: 'readability'
     });
   }

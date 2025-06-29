@@ -371,6 +371,7 @@ export class InputCollectionService {
         this.generateFieldPrompt(field),
         {
           ...context,
+          sessionId: context.sessionId || 'default',
           formSelector: form.selector,
           elementSelector: field.selector
         },
@@ -423,7 +424,7 @@ export class InputCollectionService {
         const request = await this.createInputRequest(
           'email',
           'Enter your username or email address',
-          { ...context, formSelector: form.selector, elementSelector: usernameField.selector },
+          { ...context, sessionId: context.sessionId || 'default', formSelector: form.selector, elementSelector: usernameField.selector },
           {
             category: 'authentication',
             required: true,
@@ -444,7 +445,7 @@ export class InputCollectionService {
         const request = await this.createInputRequest(
           'password',
           'Enter your password',
-          { ...context, formSelector: form.selector, elementSelector: passwordField.selector },
+          { ...context, sessionId: context.sessionId || 'default', formSelector: form.selector, elementSelector: passwordField.selector },
           {
             category: 'authentication',
             required: true,
@@ -473,8 +474,8 @@ export class InputCollectionService {
 
     // Look for API endpoints that might need configuration
     if (explorationResult.ajaxRequests) {
-      const uniqueEndpoints = new Set(
-        explorationResult.ajaxRequests.map((req: any) => req.url)
+      const uniqueEndpoints = new Set<string>(
+        explorationResult.ajaxRequests.map((req: any) => req.url as string)
       );
 
       for (const endpoint of uniqueEndpoints) {
@@ -482,7 +483,7 @@ export class InputCollectionService {
           const request = await this.createInputRequest(
             'api-key',
             `Enter API key for ${this.extractServiceName(endpoint)}`,
-            context,
+            { ...context, sessionId: context.sessionId || 'default' },
             {
               category: 'api-parameter',
               required: false,
@@ -673,7 +674,7 @@ export class InputCollectionService {
 
   private calculatePriorityLevel(
     missingInputs: InputRequest[],
-    suggestedInputs: InputRequest[]
+    _suggestedInputs: InputRequest[]
   ): 'critical' | 'important' | 'optional' {
     const hasAuth = missingInputs.some(input => input.category === 'authentication');
     const hasRequired = missingInputs.length > 0;
@@ -697,7 +698,7 @@ export class InputCollectionService {
 
   private calculateDependencies(
     missingInputs: InputRequest[],
-    suggestedInputs: InputRequest[]
+    _suggestedInputs: InputRequest[]
   ): string[] {
     const dependencies: string[] = [];
     
@@ -829,5 +830,83 @@ export class InputCollectionService {
 
   updateConfig(newConfig: Partial<InputCollectionConfig>): void {
     this.config = { ...this.config, ...newConfig };
+  }
+
+  async analyzeTestCaseInputs(testCase: any): Promise<InputAnalysisResult> {
+    const context: Partial<InputContext> = {
+      sessionId: this.generateRequestId(),
+      testCaseId: testCase.id
+    };
+
+    // Mock page analysis based on test case data
+    const pageAnalysis = {
+      forms: testCase.test_data?.steps?.filter((step: any) => 
+        step.action === 'input' || step.action === 'type'
+      ).map((step: any) => ({
+        selector: step.target,
+        elements: [{
+          name: step.target,
+          type: 'text',
+          required: true,
+          value: step.value
+        }]
+      })) || []
+    };
+
+    // Mock exploration result
+    const explorationResult = {
+      discoveredInputs: testCase.test_data?.inputs || {}
+    };
+
+    return this.analyzeInputRequirements(pageAnalysis, explorationResult, context);
+  }
+
+  async getTestCaseInputs(testCaseId: string): Promise<InputRequest[]> {
+    const requests: InputRequest[] = [];
+    
+    // Find all requests for this test case
+    for (const [_requestId, request] of this.activeRequests) {
+      if (request.context.testCaseId === testCaseId) {
+        requests.push(request);
+      }
+    }
+    
+    return requests;
+  }
+
+  async submitTestCaseInputs(testCaseId: string, inputs: Record<string, any>): Promise<{
+    success: boolean;
+    submittedCount: number;
+    errors: string[];
+  }> {
+    const requests = await this.getTestCaseInputs(testCaseId);
+    const errors: string[] = [];
+    let submittedCount = 0;
+
+    for (const request of requests) {
+      const inputKey = request.context.elementSelector || request.prompt;
+      const value = inputs[inputKey] || inputs[request.id];
+      
+      if (value !== undefined) {
+        try {
+          const success = await this.submitInputResponse(request.id, value);
+          if (success) {
+            submittedCount++;
+          } else {
+            errors.push(`Failed to submit input for ${request.prompt}`);
+          }
+        } catch (error: any) {
+          errors.push(`Error submitting ${request.prompt}: ${error.message}`);
+        }
+      } else if (request.required) {
+        errors.push(`Required input missing: ${request.prompt}`);
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      submittedCount,
+      errors
+    };
   }
 }

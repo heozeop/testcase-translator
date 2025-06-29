@@ -585,8 +585,8 @@ export class ElementDiscoveryEngine {
     pageId: string,
     pageAnalysis: PageAnalysis,
     options: DiscoveryOptions,
-    errors: string[],
-    warnings: string[]
+    _errors: string[],
+    _warnings: string[]
   ): Promise<DiscoveredElement[]> {
     const elements: DiscoveredElement[] = [];
 
@@ -716,7 +716,7 @@ export class ElementDiscoveryEngine {
 
   private async discoverAdditionalElements(
     pageId: string,
-    options: DiscoveryOptions
+    _options: DiscoveryOptions
   ): Promise<DiscoveredElement[]> {
     const elements: DiscoveredElement[] = [];
 
@@ -1037,7 +1037,7 @@ export class ElementDiscoveryEngine {
 
   private calculateSelectorReliability(
     css: ElementSelectors['css'],
-    xpath: ElementSelectors['xpath'],
+    _xpath: ElementSelectors['xpath'],
     element: EnhancedElementInfo
   ): ElementSelectors['reliability'] {
     const factors: SelectorReliabilityFactor[] = [];
@@ -1121,7 +1121,7 @@ export class ElementDiscoveryEngine {
     const type = (element.type || '').toLowerCase();
     const role = element.dataAttributes['role'] || '';
     const className = (element.className || '').toLowerCase();
-    const text = (element.text || '').toLowerCase();
+    // const text = (element.text || '').toLowerCase();
 
     let category: ElementCategory = 'interactive';
     let subType: ElementSubType = 'unknown';
@@ -1192,15 +1192,15 @@ export class ElementDiscoveryEngine {
         // Use role and class hints
         if (role) {
           const roleClassification = this.classifyByRole(role);
-          category = roleClassification.category;
-          subType = roleClassification.subType;
-          interaction = roleClassification.interaction;
+          category = roleClassification.category || 'interactive';
+          subType = roleClassification.subType || 'button';
+          interaction = roleClassification.interaction || 'none';
           confidence = 0.7;
         } else if (className) {
           const classClassification = this.classifyByClassName(className);
-          category = classClassification.category;
-          subType = classClassification.subType;
-          interaction = classClassification.interaction;
+          category = classClassification.category || 'interactive';
+          subType = classClassification.subType || 'button';
+          interaction = classClassification.interaction || 'none';
           confidence = 0.6;
         }
     }
@@ -1476,7 +1476,7 @@ export class ElementDiscoveryEngine {
     };
   }
 
-  private getBasicAccessibilityInfo(element: EnhancedElementInfo): AccessibilityInfo {
+  private getBasicAccessibilityInfo(_element: EnhancedElementInfo): AccessibilityInfo {
     return {
       compliance: {
         wcag: { level: 'A', criteria: [] },
@@ -1708,7 +1708,7 @@ export class ElementDiscoveryEngine {
     return detectedFrameworks;
   }
 
-  private async findNearbyElements(pageId: string, element: EnhancedElementInfo): Promise<ElementInfo[]> {
+  private async findNearbyElements(_pageId: string, element: EnhancedElementInfo): Promise<ElementInfo[]> {
     // Find elements within a certain distance (simplified implementation)
     return element.childElements.slice(0, 3);
   }
@@ -1977,17 +1977,17 @@ export class ElementDiscoveryEngine {
     return selectors[0] || element.selector;
   }
 
-  private async findElementsByAttribute(pageId: string, attribute: string): Promise<DiscoveredElement[]> {
+  private async findElementsByAttribute(_pageId: string, _attribute: string): Promise<DiscoveredElement[]> {
     // Implementation would find all elements with specific attribute
     return [];
   }
 
-  private async findAriaLandmarks(pageId: string): Promise<DiscoveredElement[]> {
+  private async findAriaLandmarks(_pageId: string): Promise<DiscoveredElement[]> {
     // Implementation would find ARIA landmark elements
     return [];
   }
 
-  private async findCustomComponents(pageId: string): Promise<DiscoveredElement[]> {
+  private async findCustomComponents(_pageId: string): Promise<DiscoveredElement[]> {
     // Implementation would find custom web components
     return [];
   }
@@ -2075,7 +2075,7 @@ export class ElementDiscoveryEngine {
     `);
   }
 
-  private async getLoadedResources(pageId: string): Promise<LoadedResource[]> {
+  private async getLoadedResources(_pageId: string): Promise<LoadedResource[]> {
     // Implementation would capture network resources
     return [];
   }
@@ -2096,7 +2096,7 @@ export class ElementDiscoveryEngine {
     `);
   }
 
-  private async getPageErrors(pageId: string): Promise<PageError[]> {
+  private async getPageErrors(_pageId: string): Promise<PageError[]> {
     // Implementation would capture JavaScript errors and other issues
     return [];
   }
@@ -2134,7 +2134,7 @@ export class ElementDiscoveryEngine {
     };
   }
 
-  private generateRecommendations(elements: DiscoveredElement[], pageState?: PageState): DiscoveryRecommendation[] {
+  private generateRecommendations(elements: DiscoveredElement[], _pageState?: PageState): DiscoveryRecommendation[] {
     const recommendations: DiscoveryRecommendation[] = [];
 
     // Selector improvement recommendations
@@ -2179,7 +2179,7 @@ export class ElementDiscoveryEngine {
     return this.discoveryCache.size;
   }
 
-  async getElementBySelector(pageId: string, selector: string): Promise<DiscoveredElement | null> {
+  async getElementBySelector(_pageId: string, _selector: string): Promise<DiscoveredElement | null> {
     // Implementation would find a specific element by selector
     return null;
   }

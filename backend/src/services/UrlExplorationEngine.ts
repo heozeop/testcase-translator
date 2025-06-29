@@ -391,7 +391,7 @@ export class UrlExplorationEngine {
   ): Promise<SitemapEntry[]> {
     const sitemap: SitemapEntry[] = [];
     const visited = new Set<string>();
-    const toVisit = [{ url: startUrl, depth: 0, parent: undefined }];
+    const toVisit: Array<{ url: string; depth: number; parent: string | undefined }> = [{ url: startUrl, depth: 0, parent: undefined }];
     
     while (toVisit.length > 0 && sitemap.length < (options.maxPages || 50)) {
       const { url, depth, parent } = toVisit.shift()!;

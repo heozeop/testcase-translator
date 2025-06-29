@@ -68,6 +68,8 @@ export interface UpdateTestCaseInput {
   scenario_name?: string;
   test_data?: TestCaseData;
   status?: TestCaseStatus;
+  processed_at?: Date;
+  error_message?: string;
 }
 
 export interface GeneratedCode {
@@ -114,12 +116,6 @@ export interface CreateExecutionResultInput {
   duration_ms?: number;
 }
 
-export interface QueryOptions {
-  limit?: number;
-  offset?: number;
-  orderBy?: string;
-  order?: 'ASC' | 'DESC';
-}
 
 export interface ProjectWithStats extends Project {
   test_case_count?: number;

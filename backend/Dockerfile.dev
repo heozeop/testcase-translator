@@ -10,14 +10,20 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY .npmrc ./
 
 # Install all dependencies (including devDependencies)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy configuration files
 COPY tsconfig.json ./
 COPY nodemon.json ./
 
+# Copy source code
+COPY src ./src
+
+# Create uploads directory
+RUN mkdir -p /app/uploads
+
 # Expose port
-EXPOSE 8000
+EXPOSE 3000
 
 # Use nodemon for hot reload
 CMD ["pnpm", "run", "dev"]

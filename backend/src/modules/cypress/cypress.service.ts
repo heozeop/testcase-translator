@@ -57,7 +57,7 @@ export class CypressService {
     @InjectRepository(GeneratedCodeFile)
     private readonly generatedCodeFileRepository: EntityRepository<GeneratedCodeFile>,
     @InjectRepository(ExplorationResult)
-    private readonly explorationResultRepository: EntityRepository<ExplorationResult>,
+    // private readonly explorationResultRepository: EntityRepository<ExplorationResult>,
     @InjectRepository(ExplorationSession)
     // private readonly explorationSessionRepository: EntityRepository<ExplorationSession>, // Not used
     @InjectRepository(Project)

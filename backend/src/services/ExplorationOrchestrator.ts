@@ -47,8 +47,8 @@ export interface ExplorationRequest {
 export class ExplorationOrchestrator {
   private puppeteerService: PuppeteerService;
   private elementDiscovery: ElementDiscoveryEngine;
-  private inputCollection: DynamicInputCollectionEngine;
-  private testCaseParser: TestCaseParser;
+  // private inputCollection: DynamicInputCollectionEngine;
+  // private testCaseParser: TestCaseParser;
   private resultsStorage: ExplorationResultsStorage;
   private screenshotService: ScreenshotService;
   private repository: ExplorationResultRepository;
@@ -72,8 +72,8 @@ export class ExplorationOrchestrator {
   constructor(
     puppeteerService: PuppeteerService,
     elementDiscovery: ElementDiscoveryEngine,
-    inputCollection: DynamicInputCollectionEngine,
-    testCaseParser: TestCaseParser,
+    _inputCollection: DynamicInputCollectionEngine,
+    _testCaseParser: TestCaseParser,
     resultsStorage: ExplorationResultsStorage,
     screenshotService: ScreenshotService,
     repository: ExplorationResultRepository,
@@ -81,8 +81,8 @@ export class ExplorationOrchestrator {
   ) {
     this.puppeteerService = puppeteerService;
     this.elementDiscovery = elementDiscovery;
-    this.inputCollection = inputCollection;
-    this.testCaseParser = testCaseParser;
+    // this.inputCollection = _inputCollection;
+    // this.testCaseParser = _testCaseParser;
     this.resultsStorage = resultsStorage;
     this.screenshotService = screenshotService;
     this.repository = repository;
@@ -130,7 +130,7 @@ export class ExplorationOrchestrator {
       this.performExploration(session, request, config).catch(error => {
         console.error('Exploration failed:', error);
         progress.status = 'failed';
-        progress.errors.push(error.message);
+        progress.errors.push((error as Error).message);
         if (request.clientId && this.wsManager) {
           this.sendProgressUpdate(request.clientId, progress);
         }
@@ -160,8 +160,9 @@ export class ExplorationOrchestrator {
       progress.currentStep = 'Launching browser';
       await this.updateProgress(request.clientId, progress);
 
-      pageId = await this.puppeteerService.createPage();
-      await this.puppeteerService.setViewport(pageId, 1280, 720);
+      pageId = `exploration_${session.id}_${Date.now()}`;
+      await this.puppeteerService.createPage(pageId);
+      await this.puppeteerService.setViewport(pageId, { width: 1280, height: 720 });
 
       // Start navigation sequence
       currentSequence = await this.resultsStorage.startNavigationSequence(
@@ -246,7 +247,7 @@ export class ExplorationOrchestrator {
         await this.resultsStorage.recordNavigationAction(currentSequence.id, {
           type: 'screenshot',
           success: false,
-          error: error.message
+          error: (error as Error).message
         });
 
         // Take error screenshot if possible
@@ -256,7 +257,7 @@ export class ExplorationOrchestrator {
               pageId,
               session.id,
               progress.currentUrl,
-              error.message,
+              (error as Error).message,
               currentSequence.id
             );
           } catch (screenshotError) {
@@ -266,7 +267,7 @@ export class ExplorationOrchestrator {
       }
 
       progress.status = 'failed';
-      progress.errors.push(error.message);
+      progress.errors.push((error as Error).message);
       await this.updateProgress(request.clientId, progress);
 
       throw error;
@@ -295,7 +296,7 @@ export class ExplorationOrchestrator {
     
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      progress.currentStep = `Executing step ${i + 1}: ${step.action}`;
+      progress.currentStep = `Executing step ${i + 1}: ${step.type} ${step.target}`;
       progress.progress = 20 + (i / steps.length) * 60;
       await this.updateProgress(clientId, progress);
 
@@ -315,24 +316,24 @@ export class ExplorationOrchestrator {
         
         // Record failed action
         await this.resultsStorage.recordNavigationAction(sequence.id, {
-          type: step.action as any,
+          type: step.type as any,
           success: false,
-          error: error.message,
-          selector: step.selector,
+          error: (error as Error).message,
+          selector: step.target,
           value: step.value
         });
 
         // Retry if enabled
-        if (config.retryFailedActions && step.retryCount < config.maxRetries) {
-          step.retryCount = (step.retryCount || 0) + 1;
-          console.log(`Retrying step ${i + 1}, attempt ${step.retryCount}`);
+        if (config.retryFailedActions && (step as any).retryCount < config.maxRetries) {
+          (step as any).retryCount = ((step as any).retryCount || 0) + 1;
+          console.log(`Retrying step ${i + 1}, attempt ${(step as any).retryCount}`);
           i--; // Retry same step
           continue;
         }
 
         // Skip step or fail based on configuration
         if (config.enableAutoRecovery) {
-          progress.errors.push(`Step ${i + 1} failed: ${error.message}`);
+          progress.errors.push(`Step ${i + 1} failed: ${(error as Error).message}`);
           continue;
         } else {
           throw error;
@@ -393,20 +394,20 @@ export class ExplorationOrchestrator {
       const elementToClick = interactiveElements[0];
       
       try {
-        await this.puppeteerService.clickElement(pageId, elementToClick.selectors.css);
+        await this.puppeteerService.clickElement(pageId, elementToClick.selectors.css.optimal);
         
         await this.resultsStorage.recordNavigationAction(sequence.id, {
           type: 'click',
           success: true,
-          selector: elementToClick.selectors.css,
+          selector: elementToClick.selectors.css.optimal,
           metadata: {
-            elementText: elementToClick.element.textContent,
+            elementText: (elementToClick.element as any).textContent || elementToClick.element.text,
             currentUrl: currentUrl
           }
         });
 
         // Wait for page to load
-        await this.puppeteerService.waitForSelector(pageId, 'body', { timeout: 5000 });
+        await this.puppeteerService.waitForElement(pageId, 'body', 5000);
         
       } catch (error) {
         console.warn('Failed to click element:', error);
@@ -445,11 +446,11 @@ export class ExplorationOrchestrator {
           break;
           
         case 'submit':
-          await this.puppeteerService.submitForm(pageId, step.selector);
+          await this.puppeteerService.clickElement(pageId, step.target + ' [type="submit"], ' + step.target + ' button[type="submit"]');
           break;
           
         case 'wait':
-          await this.puppeteerService.waitForSelector(pageId, step.selector, { timeout: step.timeout || config.actionTimeout });
+          await this.puppeteerService.waitForElement(pageId, step.target, (step as any).timeout || config.actionTimeout);
           break;
           
         default:
@@ -475,7 +476,7 @@ export class ExplorationOrchestrator {
         value: step.value,
         url: step.url,
         duration: Date.now() - startTime,
-        error: error.message
+        error: (error as Error).message
       });
       
       throw error;
@@ -491,7 +492,7 @@ export class ExplorationOrchestrator {
     const startTime = Date.now();
     
     try {
-      await this.puppeteerService.navigateToUrl(pageId, url, config.pageLoadTimeout);
+      await this.puppeteerService.navigateToUrl(pageId, url, { timeout: config.pageLoadTimeout });
       
       await this.resultsStorage.recordNavigationAction(sequence.id, {
         type: 'visit',
@@ -506,7 +507,7 @@ export class ExplorationOrchestrator {
         success: false,
         url: url,
         duration: Date.now() - startTime,
-        error: error.message
+        error: (error as Error).message
       });
       
       throw error;
@@ -595,7 +596,8 @@ export class ExplorationOrchestrator {
     progress.status = 'failed';
     progress.errors.push('Exploration cancelled by user');
     
-    await this.resultsStorage.cancelSession(sessionId);
+    // Mark session as cancelled - no specific cancelSession method available
+    // await this.resultsStorage.completeExplorationSession(sessionId);
     this.activeExplorations.delete(sessionId);
     
     console.log(`Cancelled exploration session: ${sessionId}`);

@@ -4,8 +4,7 @@ import {
   WebSocketEventHandler,
   WebSocketEventMap,
   createWebSocketClient,
-  getWebSocketClient,
-  destroyWebSocketClient
+  getWebSocketClient
 } from '../services/websocketClient';
 import { WebSocketConnectionState } from '../types/websocket';
 
@@ -41,8 +40,12 @@ export interface UseWebSocketReturn {
  * React hook for managing WebSocket connections
  */
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
+  // Sanitize the URL from environment variable to remove quotes and fix malformed URLs
+  const envUrl = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:8000';
+  const sanitizedUrl = envUrl.replace(/^['"`]|['"`]$/g, '').replace(/^'ws.*/, 'http://localhost:8000');
+  
   const {
-    url = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8000/ws',
+    url = sanitizedUrl,
     autoConnect = false,
     projectId: initialProjectId,
     userId: initialUserId
@@ -180,7 +183,7 @@ export function useWebSocketEvent<K extends keyof WebSocketEventMap>(
     return () => {
       client.off(event, handler);
     };
-  }, [client, event, ...dependencies]);
+  }, [client, event, handler, ...dependencies]);
 }
 
 /**

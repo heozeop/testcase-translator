@@ -12,6 +12,7 @@ export interface ProcessingOptions {
 
 export interface ProcessingResult {
   testCases: ParsedTestCase[];
+  extractedTestCases: ParsedTestCase[]; // Alias for testCases for compatibility
   summary: {
     totalTestCases: number;
     testTypes: string[];
@@ -83,7 +84,7 @@ export class LLMProcessingService {
 
       // Prepare data for LLM processing
       const flatData = ExcelParserService.toFlatJSON(excelWorkbook);
-      const structure = ExcelParserService.extractTestCaseStructure(excelWorkbook);
+      // const structure = ExcelParserService.extractTestCaseStructure(excelWorkbook);
 
       this.updateProgress(sessionId, {
         stage: 'analyzing',
@@ -151,6 +152,7 @@ export class LLMProcessingService {
 
       const result: ProcessingResult = {
         testCases: finalResult.testCases,
+        extractedTestCases: finalResult.testCases, // Set alias for compatibility
         summary: finalResult.summary,
         metadata: {
           processingTime,
@@ -180,7 +182,7 @@ export class LLMProcessingService {
   private async extractTestCases(
     context: TestCasePromptContext,
     config: Required<ProcessingOptions>,
-    sessionId: string
+    _sessionId: string
   ): Promise<{
     testCases: ParsedTestCase[];
     summary: any;
@@ -224,8 +226,8 @@ export class LLMProcessingService {
 
   private async validateAndFixTestCases(
     extractionResult: any,
-    config: Required<ProcessingOptions>,
-    sessionId: string
+    _config: Required<ProcessingOptions>,
+    _sessionId: string
   ): Promise<any> {
     if (!extractionResult.testCases || extractionResult.testCases.length === 0) {
       return extractionResult;
@@ -267,7 +269,7 @@ export class LLMProcessingService {
   private async enhanceTestCases(
     result: any,
     targetUrl: string,
-    config: Required<ProcessingOptions>,
+    _config: Required<ProcessingOptions>,
     sessionId: string
   ): Promise<any> {
     const enhancedTestCases: ParsedTestCase[] = [];
@@ -484,12 +486,12 @@ export class LLMProcessingService {
     // Final validation and enhancement if requested
     let finalTestCases = allTestCases;
     if (options.validateResults || options.enhanceTestCases) {
-      const fullResult = await this.processExcelFile(
-        { ...excelWorkbook, sheets: [{ ...excelWorkbook.sheets[0], rows: [] }] },
-        projectContext,
-        options,
-        progressCallback
-      );
+      // const fullResult = await this.processExcelFile(
+      //   { ...excelWorkbook, sheets: [{ ...excelWorkbook.sheets[0], rows: [] }] },
+      //   projectContext,
+      //   options,
+      //   progressCallback
+      // );
       // Apply validation/enhancement logic to combined results
     }
 
@@ -497,6 +499,7 @@ export class LLMProcessingService {
     
     return {
       testCases: finalTestCases,
+      extractedTestCases: finalTestCases, // Alias for compatibility
       summary: {
         totalTestCases: finalTestCases.length,
         testTypes: [...new Set(finalTestCases.flatMap(tc => tc.tags))],

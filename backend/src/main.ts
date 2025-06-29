@@ -15,26 +15,15 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  // Security middleware
+  // Security middleware - disabled CSP for debugging
   app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
-        fontSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'"],
-        frameSrc: ["'none'"],
-      },
-    },
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
   }));
 
   // CORS configuration
   app.enableCors({
-    origin: configService.get('CORS_ORIGIN') || 'http://localhost:3000',
+    origin: configService.get('CORS_ORIGIN') || 'http://localhost:5173',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -75,8 +64,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // Start server
-  const port = configService.get('BACKEND_PORT') || 8000;
-  await app.listen(port);
+  const port = configService.get('BACKEND_PORT') || configService.get('PORT') || 3000;
+  await app.listen(port, '0.0.0.0');
   
   console.log(`🚀 NestJS application is running on: http://localhost:${port}`);
   console.log(`📚 API Documentation: http://localhost:${port}/api/docs`);

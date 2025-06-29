@@ -4,17 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { formatDate, truncateText } from '../utils/validation';
 import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
-
-interface Project {
-  id: string;
-  name: string;
-  target_url: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-  test_case_count?: number;
-  generated_code_count?: number;
-}
+import { Project } from '../types/api';
 
 interface ProjectDashboardProps {
   onCreateProject?: () => void;

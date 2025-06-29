@@ -57,7 +57,9 @@ export class ExecutionResultRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
     };
   }
 
@@ -85,7 +87,9 @@ export class ExecutionResultRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
     };
   }
 
@@ -124,7 +128,9 @@ export class ExecutionResultRepository {
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / limit),
+      hasNext: (page * limit) < total,
+      hasPrev: page > 1
     };
   }
 

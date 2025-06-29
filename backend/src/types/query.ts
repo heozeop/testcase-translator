@@ -9,6 +9,8 @@ export interface PaginatedResult<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface FilterParams {
@@ -18,6 +20,17 @@ export interface FilterParams {
 export interface SortParams {
   field: string;
   order: 'ASC' | 'DESC';
+}
+
+export interface QueryOptions {
+  limit?: number;
+  offset?: number;
+  page?: number;
+  orderBy?: string;
+  order?: 'ASC' | 'DESC';
+  filters?: FilterParams;
+  pagination?: PaginationParams;
+  sort?: SortParams;
 }
 
 export interface QueryParams {

@@ -84,49 +84,6 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
     autoConnect: true
   });
 
-  // Handle incoming WebSocket messages
-  useEffect(() => {
-    if (!webSocket.socket) return;
-
-    const handleMessage = (event: MessageEvent) => {
-      try {
-        const message = JSON.parse(event.data);
-        
-        switch (message.type) {
-          case 'INPUT_COLLECTION_REQUIRED':
-            handleInputCollectionRequired(message.payload);
-            break;
-          case 'INPUT_REQUEST':
-            handleInputRequest(message.payload);
-            break;
-          case 'INPUT_SESSION_UPDATE':
-            handleSessionUpdate(message.payload);
-            break;
-          case 'INPUT_VALIDATION_ERROR':
-            handleValidationError(message.payload);
-            break;
-          case 'INPUT_COLLECTION_COMPLETE':
-            handleCollectionComplete(message.payload);
-            break;
-          case 'INPUT_REQUEST_CANCELLED':
-            handleRequestCancelled(message.payload);
-            break;
-          case 'INPUT_SESSION_CANCELLED':
-            handleSessionCancelled(message.payload);
-            break;
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-
-    webSocket.socket.addEventListener('message', handleMessage);
-
-    return () => {
-      webSocket.socket?.removeEventListener('message', handleMessage);
-    };
-  }, [webSocket.socket]);
-
   const handleInputCollectionRequired = useCallback((payload: any) => {
     setState(prev => ({
       ...prev,
@@ -235,12 +192,13 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
   }, []);
 
   const submitInput = useCallback((requestId: string, value: any) => {
-    if (!webSocket.socket || webSocket.connectionState.status !== 'connected') {
+    if (!webSocket.client || webSocket.connectionState.status !== 'connected') {
       throw new Error('WebSocket is not connected');
     }
 
     const message = {
       type: 'INPUT_RESPONSE',
+      timestamp: Date.now(),
       payload: {
         requestId,
         value,
@@ -251,7 +209,7 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
       }
     };
 
-    webSocket.socket.send(JSON.stringify(message));
+    webSocket.client?.sendMessage(message);
 
     // Update local state
     setState(prev => ({
@@ -259,42 +217,44 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
       completedInputs: new Map(prev.completedInputs).set(requestId, value),
       errors: [] // Clear errors on successful submission
     }));
-  }, [webSocket.socket, webSocket.connectionState.status]);
+  }, [webSocket.client, webSocket.connectionState.status]);
 
   const skipInput = useCallback((requestId: string) => {
-    if (!webSocket.socket || webSocket.connectionState.status !== 'connected') {
+    if (!webSocket.client || webSocket.connectionState.status !== 'connected') {
       throw new Error('WebSocket is not connected');
     }
 
     const message = {
       type: 'INPUT_SKIP',
+      timestamp: Date.now(),
       payload: {
         requestId
       }
     };
 
-    webSocket.socket.send(JSON.stringify(message));
+    webSocket.client?.sendMessage(message);
 
     // Update local state
     setState(prev => ({
       ...prev,
       pendingRequests: prev.pendingRequests.filter(req => req.id !== requestId)
     }));
-  }, [webSocket.socket, webSocket.connectionState.status]);
+  }, [webSocket.client, webSocket.connectionState.status]);
 
   const cancelSession = useCallback((sessionId: string) => {
-    if (!webSocket.socket || webSocket.connectionState.status !== 'connected') {
+    if (!webSocket.client || webSocket.connectionState.status !== 'connected') {
       throw new Error('WebSocket is not connected');
     }
 
     const message = {
       type: 'INPUT_SESSION_CANCEL',
+      timestamp: Date.now(),
       payload: {
         sessionId
       }
     };
 
-    webSocket.socket.send(JSON.stringify(message));
+    webSocket.client?.sendMessage(message);
 
     // Update local state
     setState(prev => ({
@@ -304,7 +264,7 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
       pendingRequests: [],
       isModalOpen: false
     }));
-  }, [webSocket.socket, webSocket.connectionState.status]);
+  }, [webSocket.client, webSocket.connectionState.status]);
 
   const openModal = useCallback(() => {
     setState(prev => ({ ...prev, isModalOpen: true }));
@@ -333,6 +293,18 @@ export function useInputCollection(options: UseInputCollectionOptions = {}) {
   const getSessionProgress = useCallback(() => {
     return state.currentSession?.progress || null;
   }, [state.currentSession?.progress]);
+
+  // Handle incoming WebSocket messages
+  useEffect(() => {
+    if (!webSocket.client) return;
+
+    // Use the WebSocketClient's event system instead of raw WebSocket events
+    webSocket.client.on('user-input-request', handleInputRequest);
+
+    return () => {
+      webSocket.client?.off('user-input-request', handleInputRequest);
+    };
+  }, [webSocket.client, handleInputRequest]);
 
   return {
     // State

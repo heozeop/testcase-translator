@@ -360,9 +360,9 @@ export class InputValidationService {
     if (context.relatedInputs) {
       // Password confirmation
       if (request.type === 'password' && request.id.includes('confirm')) {
-        const originalPassword = Object.values(context.relatedInputs).find(
-          (_, key) => key.includes('password') && !key.includes('confirm')
-        );
+        const originalPassword = Object.entries(context.relatedInputs).find(
+          ([key, _]) => key.includes('password') && !key.includes('confirm')
+        )?.[1];
         
         if (originalPassword && originalPassword !== value) {
           result.errors.push({
@@ -446,7 +446,7 @@ export class InputValidationService {
   private async validateFormData(
     value: any,
     result: ValidationResult,
-    context?: ValidationContext
+    _context?: ValidationContext
   ): Promise<void> {
     // Generic form data validation
     if (typeof value === 'string') {
@@ -626,7 +626,7 @@ export class InputValidationService {
            !this.isCommonEmailProvider(domain);
   }
 
-  private getPatternSuggestion(pattern: string, inputType: string): string {
+  private getPatternSuggestion(_pattern: string, inputType: string): string {
     if (inputType === 'email') {
       return 'Enter a valid email address (e.g., user@example.com)';
     }

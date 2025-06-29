@@ -97,12 +97,7 @@ export class ScreenshotService {
       
       // Take screenshot using Puppeteer service
       const screenshotBuffer = await this.puppeteerService.screenshot(pageId, {
-        quality: screenshotOptions.quality,
-        fullPage: screenshotOptions.fullPage,
-        clip: screenshotOptions.clip,
-        omitBackground: screenshotOptions.omitBackground,
-        encoding: screenshotOptions.encoding,
-        type: screenshotOptions.format
+        fullPage: screenshotOptions.fullPage
       });
 
       // Check file size

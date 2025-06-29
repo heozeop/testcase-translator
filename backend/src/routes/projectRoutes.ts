@@ -11,6 +11,7 @@ import { TestCaseStorageService } from '../services/TestCaseStorageService';
 import { ProjectRepository } from '../repositories/ProjectRepository';
 import { TestCaseRepository } from '../repositories/TestCaseRepository';
 import { GeneratedCodeRepository } from '../repositories/GeneratedCodeRepository';
+import { TestCaseStatus } from '../types';
 import { getPool } from '../db';
 import { 
   asyncHandler, 
@@ -43,7 +44,7 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB
     files: 1
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedMimes = [
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
       'application/vnd.ms-excel', // .xls
@@ -59,7 +60,7 @@ const upload = multer({
 });
 
 // Initialize services
-const urlValidationService = new UrlValidationService();
+// const urlValidationService = new UrlValidationService();
 const urlAccessibilityService = new UrlAccessibilityService();
 const htmlRetrievalService = new HtmlRetrievalService();
 const testCaseStorageService = new TestCaseStorageService();
@@ -222,7 +223,7 @@ router.get('/',
 
     const result = await projectRepository.findAll({
       ...paginationOptions,
-      filters
+      ...filters
     });
 
     sendPaginatedResponse(res, result);
@@ -356,7 +357,7 @@ router.get('/:id/statistics',
       throw new NotFoundError('Project');
     }
 
-    const stats = await projectRepository.getProjectStatistics(id);
+    const stats = await projectRepository.getProjectStatisticsById(id);
     sendSuccess(res, stats);
   })
 );
@@ -550,7 +551,7 @@ router.post('/:id/test-cases/upload',
         storageResult.stored.map(tc => ({
           id: tc.id,
           name: tc.scenario_name,
-          status: tc.status === 'processed' ? 'valid' : 'invalid',
+          status: tc.status === TestCaseStatus.COMPLETED ? 'valid' : 'invalid',
           issues: []
         }))
       );
@@ -603,7 +604,7 @@ router.get('/:id/test-cases',
 
     const result = await testCaseRepository.findByProjectId(projectId, {
       ...paginationOptions,
-      filters
+      ...filters
     });
 
     sendPaginatedResponse(res, result);

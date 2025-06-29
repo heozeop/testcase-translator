@@ -1,25 +1,25 @@
 import { Module, Global } from '@nestjs/common';
-import { MikroOrmModule } from '@mikro-orm/nestjs';
-import mikroOrmConfig from '../../mikro-orm.config';
-import * as entities from '../../entities';
+import { Pool } from 'pg';
 
 @Global()
 @Module({
-  imports: [
-    MikroOrmModule.forRoot({
-      ...mikroOrmConfig,
-      autoLoadEntities: true,
-    }),
-    MikroOrmModule.forFeature([
-      entities.Project,
-      entities.TestCase,
-      entities.GeneratedCode,
-      entities.GeneratedCodeFile,
-      entities.ExplorationSession,
-      entities.ExplorationResult,
-      entities.ExecutionResult,
-    ]),
+  providers: [
+    {
+      provide: 'DATABASE_POOL',
+      useFactory: () => {
+        return new Pool({
+          host: process.env.DB_HOST || 'db',
+          port: parseInt(process.env.DB_PORT || '5432', 10),
+          user: process.env.DB_USER || 'postgres',
+          password: process.env.DB_PASSWORD || 'password',
+          database: process.env.DB_NAME || 'testcase_translator',
+          max: 10,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 2000,
+        });
+      },
+    },
   ],
-  exports: [MikroOrmModule],
+  exports: ['DATABASE_POOL'],
 })
 export class DatabaseModule {}

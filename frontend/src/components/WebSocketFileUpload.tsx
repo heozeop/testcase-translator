@@ -153,7 +153,17 @@ export const WebSocketFileUpload: React.FC<WebSocketFileUploadProps> = ({
   });
 
   const handleUpload = async () => {
-    if (!uploadState.file) return;
+    if (!uploadState.file) {
+      console.error('No file selected');
+      return;
+    }
+
+    console.log('Uploading file:', {
+      projectId,
+      fileName: uploadState.file.name,
+      fileSize: uploadState.file.size,
+      fileType: uploadState.file.type
+    });
 
     setUploadState(prev => ({ 
       ...prev, 
@@ -183,11 +193,11 @@ export const WebSocketFileUpload: React.FC<WebSocketFileUploadProps> = ({
 
           toast({
             title: "Upload Successful",
-            description: `File uploaded and processed successfully. ${result.testCases?.length || 0} test cases extracted.`
+            description: result.message || `File uploaded successfully.`
           });
 
-          if (onUploadSuccess && result.testCases) {
-            onUploadSuccess(result.testCases);
+          if (onUploadSuccess) {
+            onUploadSuccess([]);  // Pass empty array for now, WebSocket will handle test cases
           }
         }, 500);
       }

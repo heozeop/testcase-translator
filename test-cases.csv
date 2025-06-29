@@ -1,0 +1,4 @@
+Test Case Name,Description,Steps,Expected Result,Priority
+Login Test,Test user login functionality,1. Navigate to login page 2. Enter valid credentials 3. Click login,User should be redirected to dashboard,High
+Search Test,Test search functionality,1. Navigate to search page 2. Enter search term 3. Click search,Search results should be displayed,Medium
+Logout Test,Test user logout functionality,1. Click logout button 2. Confirm logout,User should be redirected to login page,High

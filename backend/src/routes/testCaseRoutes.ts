@@ -1,6 +1,7 @@
 import express from 'express';
 import { Request, Response } from 'express';
 import { TestCaseRepository } from '../repositories/TestCaseRepository';
+import { TestCaseStatus } from '../types';
 import { ProjectRepository } from '../repositories/ProjectRepository';
 import { TestCaseLinkingService } from '../services/TestCaseLinkingService';
 import { InputCollectionService } from '../services/InputCollectionService';
@@ -9,10 +10,10 @@ import { PuppeteerService } from '../services/PuppeteerService';
 import { 
   asyncHandler, 
   validateSchema, 
-  HttpError, 
+  // HttpError, 
   NotFoundError, 
   ConflictError,
-  ServiceUnavailableError
+  // ServiceUnavailableError
 } from '../middleware/errorHandler';
 import { 
   sendSuccess, 
@@ -30,8 +31,8 @@ const testCaseRepository = new TestCaseRepository();
 const projectRepository = new ProjectRepository();
 const testCaseLinkingService = new TestCaseLinkingService();
 const inputCollectionService = new InputCollectionService();
-const pageExplorationService = new PageExplorationService();
-const puppeteerService = new PuppeteerService();
+const puppeteerService = new PuppeteerService({ headless: true, timeout: 30000 });
+const pageExplorationService = new PageExplorationService(puppeteerService);
 
 // GET /api/test-cases
 router.get('/',
@@ -45,7 +46,7 @@ router.get('/',
 
     const result = await testCaseRepository.findAll({
       ...paginationOptions,
-      filters
+      ...filters
     });
 
     sendPaginatedResponse(res, result);
@@ -252,10 +253,7 @@ router.post('/:id/process',
           );
         }
 
-        const inputRequirements = await inputCollectionService.analyzeTestCaseInputs(
-          testCase,
-          processingResult.explorationResult
-        );
+        const inputRequirements = await inputCollectionService.analyzeTestCaseInputs(testCase);
 
         processingResult.inputRequirements = inputRequirements;
       }
@@ -272,9 +270,8 @@ router.post('/:id/process',
         }
 
         const linkedData = await testCaseLinkingService.linkTestCaseData(
-          testCase,
-          processingResult.explorationResult || {},
-          processingResult.inputRequirements || []
+          testCase.id,
+          processingResult.explorationResult || {}
         );
 
         processingResult.linkedData = linkedData;
@@ -291,17 +288,14 @@ router.post('/:id/process',
           );
         }
 
-        const generatedSteps = await testCaseLinkingService.generateExecutableSteps(
-          testCase,
-          processingResult.linkedData || {}
-        );
+        const generatedSteps = await testCaseLinkingService.generateExecutableSteps(testCase.id);
 
         processingResult.steps = generatedSteps;
       }
 
       // Update test case status
       await testCaseRepository.update(id, {
-        status: 'processed',
+        status: TestCaseStatus.COMPLETED,
         processed_at: new Date()
       });
 
@@ -323,7 +317,7 @@ router.post('/:id/process',
 
       // Update test case status
       await testCaseRepository.update(id, {
-        status: 'failed',
+        status: TestCaseStatus.FAILED,
         error_message: error.message
       });
 
@@ -424,7 +418,7 @@ router.post('/batch-process',
 );
 
 // Helper function for processing individual test cases
-async function processTestCase(id: string, options: any, wsEndpoints: any) {
+async function processTestCase(id: string, options: any, _wsEndpoints: any) {
   // This is a simplified version of the individual processing logic
   const testCase = await testCaseRepository.findById(id);
   if (!testCase) {
@@ -453,25 +447,21 @@ async function processTestCase(id: string, options: any, wsEndpoints: any) {
   }
 
   if (options.collect_inputs) {
-    const inputRequirements = await inputCollectionService.analyzeTestCaseInputs(
-      testCase,
-      processingResult.explorationResult
-    );
+    const inputRequirements = await inputCollectionService.analyzeTestCaseInputs(testCase);
     processingResult.inputRequirements = inputRequirements;
   }
 
   if (options.link_data) {
     const linkedData = await testCaseLinkingService.linkTestCaseData(
-      testCase,
-      processingResult.explorationResult || {},
-      processingResult.inputRequirements || []
+      testCase.id,
+      processingResult.explorationResult || {}
     );
     processingResult.linkedData = linkedData;
   }
 
   // Update test case status
   await testCaseRepository.update(id, {
-    status: 'processed',
+    status: TestCaseStatus.COMPLETED,
     processed_at: new Date()
   });
 
@@ -526,7 +516,7 @@ router.get('/:id/linked-data',
       throw new NotFoundError('Test case');
     }
 
-    const linkedData = await testCaseLinkingService.getLinkedData(id);
+    const linkedData = await testCaseLinkingService.getLinkedTestData(id);
     sendSuccess(res, sanitizeOutput(linkedData));
   })
 );
@@ -548,7 +538,7 @@ router.get('/:id/exploration',
       throw new NotFoundError('Project');
     }
 
-    const explorationData = await pageExplorationService.getExplorationResult(project.target_url);
+    const explorationData = await pageExplorationService.exploreUrl(project.target_url);
     sendSuccess(res, sanitizeOutput(explorationData));
   })
 );

@@ -2,6 +2,7 @@ import { MikroOrmModuleOptions } from '@mikro-orm/nestjs';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
 import { Migrator } from '@mikro-orm/migrations';
+import * as entities from './entities';
 
 const config: MikroOrmModuleOptions = {
   driver: PostgreSqlDriver,
@@ -15,7 +16,7 @@ const config: MikroOrmModuleOptions = {
   dbName: process.env.DB_NAME || 'testcase_translator',
   
   // Entities configuration
-  entities: ['./dist/entities/**/*.entity.js'],
+  entities: [entities.Project, entities.TestCase, entities.GeneratedCode, entities.GeneratedCodeFile, entities.ExplorationSession, entities.ExplorationResult, entities.ExecutionResult],
   entitiesTs: ['./src/entities/**/*.entity.ts'],
   
   // Development settings
