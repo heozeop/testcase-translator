@@ -1692,14 +1692,17 @@ describe('Generated Test Suite - CSV to Automation', () => {
       // Launch browser with same config as test execution
       const browser = await puppeteer.launch({
         headless: true,
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-gpu',
           '--disable-blink-features=AutomationControlled',
-          '--lang=ko-KR,ko'
+          '--lang=ko-KR,ko',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
         ]
       });
 
@@ -2017,10 +2020,10 @@ describe('Generated Test Suite - CSV to Automation', () => {
       
       console.log(`Running tests with video recording against target URL: ${targetUrl}`);
       
-      // Launch browser with system Chromium (Alpine Linux) - enable video recording
+      // Launch browser with system Chromium - enable video recording
       const browser = await puppeteer.launch({
         headless: true,
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -2034,7 +2037,10 @@ describe('Generated Test Suite - CSV to Automation', () => {
           '--no-default-browser-check',
           '--lang=ko-KR,ko',
           '--enable-features=VaapiVideoDecoder',
-          '--use-fake-ui-for-media-stream'
+          '--use-fake-ui-for-media-stream',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
         ]
       });
 

@@ -1,5 +1,21 @@
 FROM node:20-alpine
 
+# Install system dependencies for Puppeteer and video recording
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    ffmpeg \
+    && rm -rf /var/cache/apk/*
+
+# Set Puppeteer to use system Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 
@@ -19,8 +35,11 @@ COPY nodemon.json ./
 # Copy source code
 COPY src ./src
 
-# Create uploads directory
-RUN mkdir -p /app/uploads
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/temp/screenshots /app/temp/videos /app/temp/cypress-executions
+
+# Set permissions for uploads and temp directories
+RUN chmod 755 /app/uploads /app/temp
 
 # Expose port
 EXPOSE 3000

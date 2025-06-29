@@ -1,6 +1,18 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Install system dependencies for Puppeteer and video recording
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    ffmpeg \
+    && rm -rf /var/cache/apk/*
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 
@@ -26,6 +38,22 @@ RUN pnpm build
 # Production stage
 FROM node:20-alpine AS production
 
+# Install system dependencies for Puppeteer and video recording
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    ffmpeg \
+    && rm -rf /var/cache/apk/*
+
+# Set Puppeteer to use system Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
 
@@ -46,6 +74,10 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
+# Create necessary directories with proper ownership
+RUN mkdir -p /app/uploads /app/temp/screenshots /app/temp/videos /app/temp/cypress-executions && \
+    chown -R nodejs:nodejs /app/uploads /app/temp
+
 # Switch to non-root user
 USER nodejs
 
@@ -53,4 +85,4 @@ USER nodejs
 EXPOSE 8000
 
 # Start the application
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/main.js"]

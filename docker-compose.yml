@@ -28,6 +28,7 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/uploads:/app/uploads
+      - ./backend/temp:/app/temp
       - /app/node_modules
     env_file:
       - .env
@@ -35,10 +36,14 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://postgres:password@db:5432/testcase_translator
       - BACKEND_PORT=8000
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+      - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
     depends_on:
       - db
     networks:
       - app-network
+    # Add shared memory size for Chromium
+    shm_size: 2gb
 
   db:
     image: postgres:15-alpine

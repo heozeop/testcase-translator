@@ -43,13 +43,26 @@ task-master tag create <tag-name>
 task-master tag use <tag-name>
 ```
 
-### Development Setup (Planned)
-```bash
-# Start all services with Docker Compose
-docker-compose up
+### Development Setup
 
+#### Docker Setup (Recommended)
+```bash
+# Quick setup with script
+./scripts/setup-docker.sh
+
+# Manual setup
+docker-compose up --build
+
+# Production setup
+./scripts/setup-docker-prod.sh
+# OR manually:
+docker-compose -f docker-compose.prod.yml up --build
+```
+
+#### Manual Setup
+```bash
 # Start individual services
-npm run dev:frontend    # React app on localhost:3000
+npm run dev:frontend    # React app on localhost:5173
 npm run dev:backend     # API server on localhost:8000
 npm run dev:db         # PostgreSQL on localhost:5432
 
@@ -92,17 +105,29 @@ DATABASE_URL=postgresql://user:password@localhost:5432/testcase_translator
 
 ## System Dependencies
 
+### Docker (Recommended)
+The Docker setup includes all necessary dependencies:
+- FFmpeg for video creation
+- Chromium browser for automated testing
+- All Node.js and system dependencies
+
+### Manual Installation
 For video recording functionality during test execution:
 ```bash
-# Install FFmpeg for video creation from screenshots
+# Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install ffmpeg
+sudo apt-get install ffmpeg chromium-browser
 
-# For macOS users:
+# Alpine Linux
+apk add --no-cache ffmpeg chromium
+
+# macOS
 brew install ffmpeg
+# Chrome/Chromium should be installed separately
 
 # Verify installation
 ffmpeg -version
+chromium-browser --version  # or google-chrome --version
 ```
 
 Note: Video recording will be automatically disabled if FFmpeg is not available, but screenshots will still work.
