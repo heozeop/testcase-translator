@@ -2110,6 +2110,17 @@ describe('Generated Test Suite - CSV to Automation', () => {
         
         try {
           const { spawn } = require('child_process');
+          const { promisify } = require('util');
+          const exec = promisify(require('child_process').exec);
+          
+          // Check if FFmpeg is available
+          try {
+            await exec('ffmpeg -version');
+          } catch (ffmpegError) {
+            console.log('FFmpeg not available, skipping video creation. Install with: apt-get install ffmpeg');
+            return null;
+          }
+          
           const outputVideoPath = path.join(videosDir, `${testName.replace(/[^a-zA-Z0-9]/g, '_')}.mp4`);
           
           // Create frame list file for FFmpeg

@@ -90,6 +90,23 @@ PERPLEXITY_API_KEY=
 DATABASE_URL=postgresql://user:password@localhost:5432/testcase_translator
 ```
 
+## System Dependencies
+
+For video recording functionality during test execution:
+```bash
+# Install FFmpeg for video creation from screenshots
+sudo apt-get update
+sudo apt-get install ffmpeg
+
+# For macOS users:
+brew install ffmpeg
+
+# Verify installation
+ffmpeg -version
+```
+
+Note: Video recording will be automatically disabled if FFmpeg is not available, but screenshots will still work.
+
 ## Development Workflow
 
 1. Use Task Master to manage development tasks
