@@ -595,6 +595,13 @@ export class ProjectsService {
       const testCasesResult = await this.getTestCases(projectId, { page: 1, limit: 100 });
       const testCases = testCasesResult.data;
       
+      console.log(`Found ${testCases.length} test cases for project ${projectId}`);
+      console.log('Test cases structure:', testCases.map(tc => ({ 
+        id: tc.id, 
+        scenarioName: tc.scenarioName,
+        steps: tc.steps?.length || 0
+      })));
+      
       if (testCases.length === 0) {
         throw new Error('No test cases found for this project');
       }
