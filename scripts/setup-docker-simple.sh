@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Setup script for Docker environment with video recording support
+# Simple Docker setup script with direct port mapping (no nginx)
 
-echo "🚀 Setting up Testcase Translator Docker environment..."
+echo "🚀 Setting up Testcase Translator Docker environment (Simple Mode)..."
 
 # Create necessary directories for development
 echo "📁 Creating development directories..."
@@ -29,28 +29,27 @@ fi
 
 echo "✅ Environment file found"
 
-# Build and start the Docker containers
-echo "🐳 Building Docker containers..."
-docker-compose down
-docker-compose build --no-cache
+# Build and start the Docker containers with simple configuration
+echo "🐳 Building Docker containers (Simple Mode)..."
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml down
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml build --no-cache
 
 echo "🚀 Starting containers..."
-docker-compose up -d
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml up -d
 
 echo "⏳ Waiting for services to be ready..."
 sleep 10
 
 # Check if services are running
 echo "🔍 Checking service status..."
-docker-compose ps
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml ps
 
 echo ""
-echo "🎉 Docker environment setup complete!"
+echo "🎉 Docker environment setup complete (Simple Mode)!"
 echo ""
 echo "📋 Service URLs:"
-echo "   Application: http://localhost (nginx reverse proxy)"
-echo "   Frontend: Available through nginx at http://localhost"
-echo "   Backend API: Available through nginx at http://localhost/api"
+echo "   Frontend: http://localhost:5173"
+echo "   Backend:  http://localhost:8000"
 echo "   Database: localhost:5432"
 echo ""
 echo "🎥 Video recording features:"
@@ -59,8 +58,11 @@ echo "   ✅ Chromium browser available"
 echo "   ✅ Video recording enabled for test execution"
 echo ""
 echo "📝 To view logs:"
-echo "   docker-compose logs -f backend"
-echo "   docker-compose logs -f frontend"
+echo "   docker-compose -f docker-compose.yml -f docker-compose.simple.yml logs -f backend"
+echo "   docker-compose -f docker-compose.yml -f docker-compose.simple.yml logs -f frontend"
 echo ""
 echo "🛑 To stop services:"
-echo "   docker-compose down"
+echo "   docker-compose -f docker-compose.yml -f docker-compose.simple.yml down"
+echo ""
+echo "ℹ️  This is the simple mode with direct port mapping."
+echo "   Use ./scripts/setup-docker.sh for nginx reverse proxy mode."

@@ -47,16 +47,22 @@ task-master tag use <tag-name>
 
 #### Docker Setup (Recommended)
 ```bash
-# Quick setup with script
+# Quick setup with nginx reverse proxy (recommended)
 ./scripts/setup-docker.sh
+# Access: http://localhost
 
-# Manual setup
-docker-compose up --build
+# Simple setup with direct port mapping
+./scripts/setup-docker-simple.sh
+# Access: Frontend http://localhost:5173, Backend http://localhost:8000
 
 # Production setup
 ./scripts/setup-docker-prod.sh
-# OR manually:
-docker-compose -f docker-compose.prod.yml up --build
+# Access: http://localhost:3000
+
+# Manual setup options
+docker-compose up --build                                          # nginx proxy
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml up --build  # direct ports
+docker-compose -f docker-compose.prod.yml up --build              # production
 ```
 
 #### Manual Setup

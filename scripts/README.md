@@ -19,8 +19,9 @@ Sets up the development environment using Docker with video recording support.
 ```
 
 **Services started:**
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000  
+- Application: http://localhost (nginx reverse proxy)
+- Frontend: Available through nginx
+- Backend API: Available at http://localhost/api
 - Database: localhost:5432
 
 ### `setup-docker-prod.sh`
@@ -90,11 +91,18 @@ docker-compose exec backend ffmpeg -version
 
 If you prefer to run Docker commands manually:
 
-**Development:**
+**Development (with nginx reverse proxy):**
 ```bash
 docker-compose up --build
 docker-compose logs -f backend
 docker-compose down
+```
+
+**Development (direct port access):**
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml up --build
+# Access frontend at http://localhost:5173
+# Access backend at http://localhost:8000
 ```
 
 **Production:**
@@ -103,3 +111,23 @@ docker-compose -f docker-compose.prod.yml up --build
 docker-compose -f docker-compose.prod.yml logs -f backend
 docker-compose -f docker-compose.prod.yml down
 ```
+
+## Docker Configuration Options
+
+### 1. Default (with nginx reverse proxy)
+- **File**: `docker-compose.override.yml`
+- **Access**: http://localhost
+- **Benefits**: Proper container communication, production-like setup
+- **Use case**: Recommended for development
+
+### 2. Simple (direct port mapping)
+- **File**: `docker-compose.simple.yml`
+- **Access**: Frontend http://localhost:5173, Backend http://localhost:8000
+- **Benefits**: Direct access to individual services
+- **Use case**: Debugging individual services
+
+### 3. Production
+- **File**: `docker-compose.prod.yml`
+- **Access**: http://localhost:3000
+- **Benefits**: Optimized containers, persistent volumes
+- **Use case**: Production deployment

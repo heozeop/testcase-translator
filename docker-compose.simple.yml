@@ -1,24 +1,13 @@
-services:
-  # Nginx reverse proxy for proper container communication
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./docker/nginx.dev.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - app-network
+# Simple override for direct container access (without nginx)
+# Use this if you prefer direct port mapping: docker-compose -f docker-compose.yml -f docker-compose.simple.yml up
 
+services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    # Remove external port mapping - nginx will handle it
-    expose:
-      - "3000"
+    ports:
+      - "5173:3000"
     depends_on:
       - backend
     networks:
@@ -27,8 +16,8 @@ services:
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - WDS_SOCKET_PORT=0
-      - REACT_APP_API_BASE_URL=http://localhost/api
-      - REACT_APP_WEBSOCKET_URL=ws://localhost/ws
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_WEBSOCKET_URL=ws://localhost:8000
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
@@ -38,9 +27,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    # Remove external port mapping - nginx will handle it
-    expose:
-      - "3000"
+    ports:
+      - "8000:3000"
     env_file:
       - .env
     environment:
