@@ -1,6 +1,0 @@
-Test Case Name,Description,Steps,Expected Result,Priority
-User Login,Verify user can log in with valid credentials,1. Navigate to login page 2. Enter username and password 3. Click Login button,User is successfully logged in and redirected to dashboard,High
-Product Search,Test the search functionality for products,1. Go to homepage 2. Enter product name in search box 3. Click search button 4. Review results,Relevant products are displayed in search results,Medium
-Add to Cart,Verify items can be added to shopping cart,1. Search for a product 2. Click on product details 3. Select quantity 4. Click Add to Cart,Product is added to cart with correct quantity,High
-User Registration,Test new user account creation,1. Click Register link 2. Fill in all required fields 3. Accept terms and conditions 4. Submit form,New account is created and confirmation email is sent,Medium
-Password Reset,Verify password reset functionality,1. Click Forgot Password 2. Enter email address 3. Check email for reset link 4. Follow link and enter new password,Password is successfully reset and user can login with new password,Low
