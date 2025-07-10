@@ -48,25 +48,22 @@ export interface Project {
 
 export interface TestCase {
   id: string;
-  project_id: string;
-  scenario_name: string;
-  test_data: {
-    steps: TestStep[];
-    assertions: TestAssertion[];
-    inputs: Record<string, any>;
-    metadata: {
-      priority: 'high' | 'medium' | 'low';
-      tags: string[];
-      sourceRow?: number;
-      sourceSheet?: string;
-      estimatedDuration?: number;
-      expectedResults?: string;
-      description?: string;
-    };
-  };
+  scenarioName: string;
+  description: string;
+  steps: string[];
+  expectedResult: string;
+  priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  originalFilename: string;
+  metadata: {
+    priority: 'high' | 'medium' | 'low';
+    tags: string[];
+    rowNumber?: number;
+    sourceFile?: string;
+    uploadDate?: string;
+  };
 }
 
 export interface TestStep {

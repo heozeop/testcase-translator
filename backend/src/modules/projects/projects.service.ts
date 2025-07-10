@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Pool } from 'pg';
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto } from './dto/project.dto';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class ProjectsService {
@@ -197,11 +198,24 @@ export class ProjectsService {
       throw new Error('Project not found');
     }
     
-    // Parse the CSV file
+    // Parse the file based on its type
     let parsedTestCases = [];
     try {
-      const fileContent = fs.readFileSync(file.path, 'utf8');
-      parsedTestCases = this.parseCSVContent(fileContent, file.originalname);
+      const fileName = file.originalname.toLowerCase();
+      console.log(`Processing file: ${fileName}, detected extension: ${fileName.split('.').pop()}`);
+      
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        console.log('Using Excel parser');
+        // Parse Excel file
+        parsedTestCases = this.parseExcelFile(file.path, file.originalname);
+      } else if (fileName.endsWith('.csv')) {
+        console.log('Using CSV parser');
+        // Parse CSV file
+        const fileContent = fs.readFileSync(file.path, 'utf8');
+        parsedTestCases = this.parseCSVContent(fileContent, file.originalname);
+      } else {
+        throw new Error('Unsupported file format. Only Excel (.xlsx, .xls) and CSV files are supported.');
+      }
     } catch (error) {
       console.error('Error parsing file:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -249,8 +263,16 @@ export class ProjectsService {
         'pending'
       ];
       
-      const result = await this.pool.query(insertQuery, values);
-      insertedTestCases.push(result.rows[0]);
+      console.log(`Inserting test case ${testCase.testCaseName} with data:`, testData);
+      
+      try {
+        const result = await this.pool.query(insertQuery, values);
+        console.log(`Successfully inserted test case:`, result.rows[0].id);
+        insertedTestCases.push(result.rows[0]);
+      } catch (error) {
+        console.error(`Failed to insert test case ${testCase.testCaseName}:`, error);
+        throw error;
+      }
     }
     
     return {
@@ -273,27 +295,208 @@ export class ProjectsService {
     };
   }
 
-  private parseCSVContent(content: string, _filename: string): any[] {
-    const lines = content.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+  private parseExcelFile(filePath: string, filename: string): any[] {
+    const workbook = XLSX.readFile(filePath);
+    console.log('Excel file sheets:', workbook.SheetNames);
     
-    if (lines.length === 0) {
+    // Look for the test case sheet - prefer Korean names first, then English
+    let sheetName = workbook.SheetNames.find(name => 
+      name.includes('원가입력') || // Cost Input
+      name.includes('테스트') ||  // Test
+      name.includes('시나리오') || // Scenario
+      name.includes('케이스')     // Case
+    );
+    
+    // If no Korean sheet found, use first sheet that's not dashboard
+    if (!sheetName) {
+      sheetName = workbook.SheetNames.find(name => 
+        !name.includes('대시보드') && !name.includes('dashboard')
+      ) || workbook.SheetNames[1] || workbook.SheetNames[0]; // Try second sheet first
+    }
+    
+    console.log(`Using sheet: ${sheetName}`);
+    const worksheet = workbook.Sheets[sheetName];
+    
+    // Convert sheet to JSON with header row
+    // First, find the header row by looking for the first row with substantial content
+    const allData = XLSX.utils.sheet_to_json(worksheet, { 
+      header: 1,
+      defval: '', // Default value for empty cells
+      raw: false  // Get formatted strings instead of raw values
+    });
+    
+    if (allData.length === 0) {
+      throw new Error('Excel sheet is empty');
+    }
+    
+    // Find the header row - look for a row that contains expected header keywords
+    let headerRowIndex = -1;
+    let headers: string[] = [];
+    
+    for (let i = 0; i < allData.length; i++) {
+      const row = allData[i] as string[];
+      const rowText = row.join('').toLowerCase();
+      
+      // Check if this row looks like headers (contains key terms)
+      if (rowText.includes('index') || rowText.includes('category') || 
+          rowText.includes('depth') || rowText.includes('step') ||
+          rowText.includes('expect') || rowText.includes('result')) {
+        headerRowIndex = i;
+        headers = row;
+        break;
+      }
+    }
+    
+    if (headerRowIndex === -1) {
+      // Fallback: use first non-empty row as headers
+      for (let i = 0; i < allData.length; i++) {
+        const row = allData[i] as string[];
+        if (row.some(cell => cell && cell.trim())) {
+          headerRowIndex = i;
+          headers = row;
+          break;
+        }
+      }
+    }
+    
+    if (headerRowIndex === -1) {
+      throw new Error('No valid headers found in Excel sheet');
+    }
+    
+    console.log(`Excel Headers found at row ${headerRowIndex}:`, headers);
+    console.log('Excel Headers (with indices):', headers.map((h, i) => `${i}: "${h}"`));
+    
+    const testCases = [];
+    
+    // Parse data rows (starting from after the header row)
+    for (let i = headerRowIndex + 1; i < allData.length; i++) {
+      const values = allData[i] as string[];
+      
+      if (!values || values.length === 0 || values.every(val => !val || val.toString().trim() === '')) {
+        continue; // Skip empty rows
+      }
+      
+      const testCase: any = {
+        rowNumber: i - headerRowIndex,
+        testCaseId: '',
+        testCaseName: '',
+        description: '',
+        steps: [],
+        expectedResult: '',
+        priority: 'medium',
+        category: '',
+        depth1: '',
+        depth2: '',
+        depth3: '',
+        preCondition: '',
+        comment: ''
+      };
+      
+      // Map values to headers for Korean/English format
+      for (let j = 0; j < headers.length && j < values.length; j++) {
+        const header = headers[j] ? headers[j].toLowerCase().trim() : '';
+        const value = values[j] ? values[j].toString().trim() : '';
+        
+        if (!value) continue;
+        
+        // Map Korean headers
+        if (header.includes('index') || header.includes('no')) {
+          testCase.testCaseId = value;
+        } else if (header.includes('category') || header === 'category') {
+          testCase.category = value;
+        } else if (header.includes('depth 1') || header === 'depth 1') {
+          testCase.depth1 = value;
+        } else if (header.includes('depth 2') || header === 'depth 2') {
+          testCase.depth2 = value;
+        } else if (header.includes('depth 3') || header === 'depth 3') {
+          testCase.depth3 = value;
+        } else if (header.includes('pre-condition') || header.includes('precondition')) {
+          testCase.preCondition = value;
+        } else if (header.includes('step') || header === 'step') {
+          testCase.steps = this.parseSteps(value);
+        } else if (header.includes('expect result') || header.includes('expected result')) {
+          testCase.expectedResult = value;
+        } else if (header.includes('comment')) {
+          testCase.comment = value;
+        }
+        // Also handle English headers
+        else if (header.includes('test case id') || header.includes('test id') || header.includes('id')) {
+          testCase.testCaseId = value;
+        } else if (header.includes('test case name') || header.includes('name') || header.includes('scenario')) {
+          testCase.testCaseName = value;
+        } else if (header.includes('description') || header.includes('desc')) {
+          testCase.description = value;
+        } else if (header.includes('steps') || header.includes('step')) {
+          testCase.steps = this.parseSteps(value);
+        } else if (header.includes('expected result') || header.includes('expected')) {
+          testCase.expectedResult = value;
+        } else if (header.includes('priority')) {
+          testCase.priority = value.toLowerCase();
+        }
+      }
+      
+      // Create test case name from depth hierarchy if not explicitly named
+      if (!testCase.testCaseName) {
+        const nameComponents = [testCase.depth1, testCase.depth2, testCase.depth3]
+          .filter(component => component && component.trim())
+          .join(' > ');
+        testCase.testCaseName = nameComponents || testCase.category || `Test Case ${i}`;
+      }
+      
+      // Use pre-condition as description if no description provided
+      if (!testCase.description && testCase.preCondition) {
+        testCase.description = `Pre-condition: ${testCase.preCondition}`;
+      }
+      
+      // Add comment to description if exists
+      if (testCase.comment) {
+        testCase.description = testCase.description 
+          ? `${testCase.description}. Comment: ${testCase.comment}`
+          : `Comment: ${testCase.comment}`;
+      }
+      
+      // Ensure we have at least a test case name
+      if (!testCase.testCaseName) {
+        testCase.testCaseName = testCase.testCaseId || `Test Case ${testCase.rowNumber}`;
+      }
+      
+      // Debug logging for test cases with content
+      if (testCase.steps.length > 0 || testCase.expectedResult || testCase.description) {
+        console.log(`\n=== Parsed Excel test case ${testCase.rowNumber}: ${testCase.testCaseName} ===`);
+        console.log('Steps:', testCase.steps);
+        console.log('Expected Result:', testCase.expectedResult);
+        console.log('Description:', testCase.description);
+      }
+      
+      testCases.push(testCase);
+    }
+    
+    return testCases;
+  }
+
+  private parseCSVContent(content: string, _filename: string): any[] {
+    // Use a proper CSV parser that handles multi-line quoted values
+    const rows = this.parseCSV(content);
+    
+    if (rows.length === 0) {
       throw new Error('File is empty');
     }
     
-    // Parse header row
-    const headers = this.parseCSVLine(lines[0]);
+    // First row is headers
+    const headers = rows[0];
     console.log('CSV Headers detected:', headers);
     const testCases = [];
     
     // Parse data rows
-    for (let i = 1; i < lines.length; i++) {
-      const values = this.parseCSVLine(lines[i]);
+    for (let i = 1; i < rows.length; i++) {
+      const values = rows[i];
       
       if (values.length === 0) continue; // Skip empty lines
       
       // Map values to headers
       const testCase: any = {
         rowNumber: i,
+        testCaseId: '',
         testCaseName: '',
         description: '',
         steps: [],
@@ -307,7 +510,9 @@ export class ProjectsService {
         const value = values[j].trim();
         
         // Check for English headers
-        if (header === 'test case name' || header.includes('name') || header.includes('scenario')) {
+        if (header === 'test case id' || header === 'test id' || header === 'id') {
+          testCase.testCaseId = value;
+        } else if (header === 'test case name' || header.includes('name') || header.includes('scenario')) {
           testCase.testCaseName = value;
         } else if (header === 'description' || header.includes('desc')) {
           testCase.description = value;
@@ -345,18 +550,24 @@ export class ProjectsService {
       
       // Ensure we have at least a test case name
       if (!testCase.testCaseName) {
-        testCase.testCaseName = `Test Case ${i}`;
+        if (testCase.testCaseId) {
+          testCase.testCaseName = testCase.testCaseId;
+        } else {
+          testCase.testCaseName = `Test Case ${i}`;
+        }
       }
       
       // Debug logging
-      if (i <= 3) { // Log first 3 test cases for debugging
-        console.log(`Parsed test case ${i}:`, {
-          testCaseName: testCase.testCaseName,
-          description: testCase.description,
-          steps: testCase.steps,
-          expectedResult: testCase.expectedResult
-        });
-      }
+      console.log(`\n=== Parsing test case ${i} ===`);
+      console.log('Raw values:', values);
+      console.log('Mapped test case:', {
+        testCaseId: testCase.testCaseId,
+        testCaseName: testCase.testCaseName,
+        description: testCase.description,
+        steps: testCase.steps,
+        expectedResult: testCase.expectedResult,
+        priority: testCase.priority
+      });
       
       testCases.push(testCase);
     }
@@ -364,26 +575,68 @@ export class ProjectsService {
     return testCases;
   }
   
-  private parseCSVLine(line: string): string[] {
-    const result = [];
-    let current = '';
+  private parseCSV(content: string): string[][] {
+    const rows: string[][] = [];
+    const lines = content.split('\n');
+    let currentRow: string[] = [];
+    let currentField = '';
     let inQuotes = false;
+    let i = 0;
     
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
+    while (i < lines.length) {
+      const line = lines[i];
+      let j = 0;
       
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current);
-        current = '';
+      while (j < line.length) {
+        const char = line[j];
+        
+        if (inQuotes) {
+          if (char === '"' && line[j + 1] === '"') {
+            // Escaped quote
+            currentField += '"';
+            j += 2;
+          } else if (char === '"') {
+            // End of quoted field
+            inQuotes = false;
+            j++;
+          } else {
+            currentField += char;
+            j++;
+          }
+        } else {
+          if (char === '"') {
+            // Start of quoted field
+            inQuotes = true;
+            j++;
+          } else if (char === ',') {
+            // End of field
+            currentRow.push(currentField.trim());
+            currentField = '';
+            j++;
+          } else {
+            currentField += char;
+            j++;
+          }
+        }
+      }
+      
+      if (inQuotes) {
+        // Multi-line field, add newline and continue
+        currentField += '\n';
+        i++;
       } else {
-        current += char;
+        // End of row
+        currentRow.push(currentField.trim());
+        if (currentRow.some(field => field.length > 0)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentField = '';
+        i++;
       }
     }
     
-    result.push(current);
-    return result.map(item => item.replace(/^"(.*)"$/, '$1')); // Remove surrounding quotes
+    return rows;
   }
   
   private parseSteps(stepsText: string): string[] {

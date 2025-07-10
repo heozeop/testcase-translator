@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { apiService } from '../services/api';
 
 interface SimpleFileUploadProps {
   projectId: string;
@@ -73,27 +73,17 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
     setIsUploading(true);
 
     try {
-      // Create FormData and append file
-      const formData = new FormData();
-      formData.append('file', file);
+      console.log('Starting upload with apiService');
       
-      console.log('FormData created, uploading to:', `/api/projects/${projectId}/test-cases/upload`);
-      
-      // Direct API call to ensure file is passed
-      const response = await fetch(`http://backend:8000/api/projects/${projectId}/test-cases/upload`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Origin': window.location.origin
+      // Use the apiService which properly handles the base URL
+      const result = await apiService.uploadTestCases(
+        projectId, 
+        file,
+        (progress) => {
+          console.log('Upload progress:', progress);
         }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Upload failed');
-      }
-
-      const result = await response.json();
+      );
+      
       console.log('Upload successful:', result);
 
       toast({
@@ -108,7 +98,7 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       }
 
       if (onUploadSuccess) {
-        onUploadSuccess(result.data?.testCases || []);
+        onUploadSuccess(result.testCases || []);
       }
 
     } catch (error: any) {

@@ -51,9 +51,9 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
       console.log('Final result received:', result);
       console.log('Result structure:', {
         data: !!result?.data,
-        files: result?.data?.files?.length || 0,
-        filesGenerated: result?.data?.filesGenerated || 0,
-        testCasesCount: result?.data?.testCasesCount || 0
+        files: result?.files?.length || 0,
+        filesGenerated: result?.filesGenerated || 0,
+        testCasesCount: result?.testCasesCount || 0
       });
       
       setGenerationResult(result);
@@ -61,7 +61,7 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
       
       toast({
         title: "Success",
-        description: `Generated ${result?.data?.filesGenerated || 0} Cypress files from ${result?.data?.testCasesCount || 0} test cases using intelligent crawling`
+        description: `Generated ${result?.filesGenerated || 0} Cypress files from ${result?.testCasesCount || 0} test cases using intelligent crawling`
       });
     } catch (error: any) {
       console.error('Error generating Cypress code:', error);
@@ -96,9 +96,9 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
   };
 
   const downloadAllFiles = () => {
-    if (!generationResult?.data?.files) return;
+    if (!generationResult?.files) return;
     
-    generationResult.data.files.forEach(file => {
+    generationResult.files.forEach(file => {
       setTimeout(() => downloadFile(file), 100); // Small delay to avoid blocking
     });
   };
@@ -323,7 +323,7 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
         <div>
           <h2 className="text-2xl font-semibold">Generated Cypress Code</h2>
           <p className="text-muted-foreground">
-            {generationResult?.data?.filesGenerated || 0} files generated from {generationResult?.data?.testCasesCount || 0} test cases
+            {generationResult?.filesGenerated || 0} files generated from {generationResult?.testCasesCount || 0} test cases
           </p>
         </div>
         <div className="space-x-2">
@@ -352,19 +352,19 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <p className="font-medium text-muted-foreground">Project</p>
-              <p>{generationResult?.data?.projectName || 'Unknown'}</p>
+              <p>{generationResult?.projectName || 'Unknown'}</p>
             </div>
             <div>
               <p className="font-medium text-muted-foreground">Target URL</p>
-              <p className="truncate">{generationResult?.data?.projectUrl || 'N/A'}</p>
+              <p className="truncate">{generationResult?.projectUrl || 'N/A'}</p>
             </div>
             <div>
               <p className="font-medium text-muted-foreground">Test Cases</p>
-              <p>{generationResult?.data?.testCasesCount || 0}</p>
+              <p>{generationResult?.testCasesCount || 0}</p>
             </div>
             <div>
               <p className="font-medium text-muted-foreground">Generated</p>
-              <p>{generationResult?.data?.createdAt ? new Date(generationResult.data.createdAt).toLocaleString() : 'N/A'}</p>
+              <p>{generationResult?.createdAt ? new Date(generationResult.createdAt).toLocaleString() : 'N/A'}</p>
             </div>
           </div>
         </CardContent>
@@ -599,22 +599,22 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
       )}
 
       {/* Generated Files or No Files Message */}
-      {generationResult?.data?.files && generationResult.data.files.length > 0 ? (
+      {generationResult?.files && generationResult.files.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Generated Files</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={generationResult.data.files[0]?.fileName || 'generated-tests.cy.js'} className="w-full">
-            <TabsList className={`grid w-full ${generationResult.data.files.length === 1 ? 'grid-cols-1' : generationResult.data.files.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-              {generationResult.data.files.map((file) => (
+            <Tabs defaultValue={generationResult.files[0]?.fileName || 'generated-tests.cy.js'} className="w-full">
+            <TabsList className={`grid w-full ${generationResult.files.length === 1 ? 'grid-cols-1' : generationResult.files.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+              {generationResult.files.map((file) => (
                 <TabsTrigger key={file.fileName} value={file.fileName}>
                   {file.fileName}
                 </TabsTrigger>
               ))}
             </TabsList>
             
-            {generationResult.data.files.map((file) => (
+            {generationResult.files.map((file) => (
               <TabsContent key={file.fileName} value={file.fileName} className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div>

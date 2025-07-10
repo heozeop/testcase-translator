@@ -22,14 +22,14 @@ interface DisplayTestCase {
 const convertToDisplayTestCase = (apiTestCase: TestCase): DisplayTestCase => {
   return {
     id: apiTestCase.id,
-    scenarioName: apiTestCase.scenario_name || 'Unnamed Test',
-    description: apiTestCase.test_data?.metadata?.description || 'No description',
-    steps: apiTestCase.test_data?.steps?.map(step => step.description) || [],
-    expectedResult: apiTestCase.test_data?.metadata?.expectedResults || 'No expected result specified',
-    priority: apiTestCase.test_data?.metadata?.priority || 'medium',
+    scenarioName: apiTestCase.scenarioName || 'Unnamed Test',
+    description: apiTestCase.description || 'No description',
+    steps: apiTestCase.steps || [],
+    expectedResult: apiTestCase.expectedResult || 'No expected result specified',
+    priority: apiTestCase.priority || 'medium',
     status: apiTestCase.status,
-    createdAt: apiTestCase.created_at,
-    originalFilename: apiTestCase.test_data?.metadata?.sourceSheet || 'Unknown'
+    createdAt: apiTestCase.createdAt,
+    originalFilename: apiTestCase.originalFilename || 'Unknown'
   };
 };
 
@@ -62,8 +62,13 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
       setLoading(true);
       const response = await apiService.getTestCases(projectId, page, 10);
       
+      console.log('📋 Raw API response:', response);
+      console.log('📋 Raw test cases data:', response.data);
+      
       // Convert API test cases to display format
       const displayTestCases = response.data.map(convertToDisplayTestCase);
+      console.log('📋 Converted display test cases:', displayTestCases);
+      
       setTestCases(displayTestCases);
       setPagination(response.pagination);
     } catch (error: any) {

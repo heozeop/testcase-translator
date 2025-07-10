@@ -167,16 +167,19 @@ class ApiService {
       console.log(`  ${key}:`, value);
     }
 
-    const response = await this.api.post(`/api/projects/${projectId}/test-cases/upload`, formData, {
-      // Don't set Content-Type manually - let browser set it with boundary
-      headers: {},
+    // Create a new axios instance without default headers for file upload
+    const uploadApi = axios.create({
+      baseURL: this.api.defaults.baseURL,
+      timeout: 300000, // 5 minutes for file upload
+    });
+    
+    const response = await uploadApi.post(`/api/projects/${projectId}/test-cases/upload`, formData, {
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(progress);
         }
       },
-      timeout: 300000, // 5 minutes for file upload and processing
     });
 
     return this.handleResponse<FileUploadResult>(response);
