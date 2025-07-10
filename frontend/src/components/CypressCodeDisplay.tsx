@@ -445,10 +445,10 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                                 </summary>
                                 <div className="mt-2 p-2 border border-blue-200 rounded">
                                   <img 
-                                    src={`http://localhost:8000${test.screenshotUrl}`}
+                                    src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${test.screenshotUrl}`}
                                     alt={`Screenshot for ${test.name}`}
                                     className="w-full rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => window.open(`http://localhost:8000${test.screenshotUrl}`, '_blank')}
+                                    onClick={() => window.open(`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}${test.screenshotUrl}`, '_blank')}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
@@ -474,7 +474,7 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                                 </summary>
                                 <div className="mt-2 p-2 border border-purple-200 rounded">
                                   <video 
-                                    src={`http://localhost:8000/api/projects/${executionResult.projectId}/executions/${executionResult.executionId}/videos/${test.video}`}
+                                    src={`${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/projects/${executionResult.projectId}/executions/${executionResult.executionId}/videos/${test.video}`}
                                     controls
                                     className="w-full rounded-lg border"
                                     preload="metadata"

@@ -41,11 +41,11 @@ export interface UseWebSocketReturn {
  */
 export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketReturn {
   // Sanitize the URL from environment variable to remove quotes and fix malformed URLs
-  const envUrl = process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:8000';
+  const envUrl = process.env.REACT_APP_WEBSOCKET_URL || 'ws://localhost:8000';
   // If URL starts with '/', make it relative to current host
   const sanitizedUrl = envUrl.startsWith('/') 
     ? window.location.origin + envUrl 
-    : envUrl.replace(/^['"`]|['"`]$/g, '').replace(/^'ws.*/, 'http://localhost:8000');
+    : envUrl.replace(/^['"`]|['"`]$/g, '').replace(/^'ws.*/, 'ws://localhost:8000');
   
   const {
     url = sanitizedUrl,

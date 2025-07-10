@@ -9,13 +9,13 @@ docker-compose ps
 
 echo ""
 echo "🌐 Testing service connectivity..."
-# Test services directly
-echo "Frontend (http://localhost:3000):"
-curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "❌ Frontend not accessible"
+# Test services through nginx proxy
+echo "Application (http://localhost):"
+curl -s -o /dev/null -w "%{http_code}" http://localhost || echo "❌ Application not accessible"
 
 echo ""
-echo "Backend API (http://localhost:8000/api/health):"
-curl -s http://localhost:8000/api/health || echo "❌ Backend not accessible"
+echo "Backend API through proxy (http://localhost/api/health):"
+curl -s http://localhost/api/health || echo "❌ Backend API not accessible through proxy"
 
 echo ""
 echo "🔗 Testing container-to-container communication..."

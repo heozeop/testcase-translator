@@ -315,7 +315,7 @@ class ApiService {
 
   // Get base URL for WebSocket connections
   getWebSocketUrl(): string {
-    return process.env.REACT_APP_WEBSOCKET_URL || 'http://localhost:8000';
+    return process.env.REACT_APP_WEBSOCKET_URL || 'http://backend:8000';
   }
 }
 

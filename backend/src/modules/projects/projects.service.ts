@@ -2111,7 +2111,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
       };
 
       // Function to create MP4 from captured frames
-      const createVideoFromFrames = async (testName: string, testFrames: string[]) => {
+      const createVideoFromFrames = async (testName: string, testFrames: string[]): Promise<string | null> => {
         if (testFrames.length === 0) return null;
         
         try {
@@ -2151,11 +2151,11 @@ describe('Generated Test Suite - CSV to Automation', () => {
             });
             
             let stderr = '';
-            ffmpeg.stderr.on('data', (data) => {
+            ffmpeg.stderr.on('data', (data: Buffer) => {
               stderr += data.toString();
             });
             
-            ffmpeg.on('close', (code) => {
+            ffmpeg.on('close', (code: number | null) => {
               if (code === 0) {
                 console.log(`Video created successfully: ${outputVideoPath}`);
                 // Clean up frame list file
@@ -2167,7 +2167,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
               }
             });
             
-            ffmpeg.on('error', (error) => {
+            ffmpeg.on('error', (error: Error) => {
               console.error('FFmpeg spawn error:', error);
               reject(error);
             });

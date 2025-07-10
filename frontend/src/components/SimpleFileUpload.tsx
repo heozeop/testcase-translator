@@ -80,7 +80,7 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       console.log('FormData created, uploading to:', `/api/projects/${projectId}/test-cases/upload`);
       
       // Direct API call to ensure file is passed
-      const response = await fetch(`http://localhost:8000/api/projects/${projectId}/test-cases/upload`, {
+      const response = await fetch(`http://backend:8000/api/projects/${projectId}/test-cases/upload`, {
         method: 'POST',
         body: formData,
         headers: {
