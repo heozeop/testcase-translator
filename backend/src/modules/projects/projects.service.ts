@@ -2,6 +2,8 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Pool } from 'pg';
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto } from './dto/project.dto';
 import * as XLSX from 'xlsx';
+import { MastraService } from '../../services/MastraService';
+import { EnhancedCypressPrompts } from '../../services/EnhancedCypressPrompts';
 
 @Injectable()
 export class ProjectsService {
@@ -207,7 +209,7 @@ export class ProjectsService {
       if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
         console.log('Using Excel parser');
         // Parse Excel file
-        parsedTestCases = this.parseExcelFile(file.path, file.originalname);
+        parsedTestCases = this.parseExcelFile(file.path);
       } else if (fileName.endsWith('.csv')) {
         console.log('Using CSV parser');
         // Parse CSV file
@@ -295,7 +297,7 @@ export class ProjectsService {
     };
   }
 
-  private parseExcelFile(filePath: string, filename: string): any[] {
+  private parseExcelFile(filePath: string): any[] {
     const workbook = XLSX.readFile(filePath);
     console.log('Excel file sheets:', workbook.SheetNames);
     
@@ -866,6 +868,14 @@ export class ProjectsService {
     const startTime = Date.now();
     
     try {
+      // Check if AI enhancement is enabled
+      const useAIGeneration = process.env.ENABLE_AI_CYPRESS_GENERATION === 'true' || 
+                             process.env.ANTHROPIC_API_KEY;
+      
+      if (useAIGeneration) {
+        return this.generateAIEnhancedCypressCode(projectId, progressCallback);
+      }
+      
       // Step 1: Get project details
       this.sendProgress(progressCallback, {
         stage: 'initialization',
@@ -998,6 +1008,349 @@ export class ProjectsService {
     }
   }
 
+  async generateAIEnhancedCypressCode(projectId: string, progressCallback?: (progress: any) => void): Promise<any> {
+    const startTime = Date.now();
+    
+    try {
+      // Initialize Mastra service
+      const mastraService = new MastraService({
+        anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
+        model: "claude-sonnet-4-20250514",
+        maxTokens: 8000,
+        temperature: 0.1
+      });
+
+      // Step 1: Get project details
+      this.sendProgress(progressCallback, {
+        stage: 'initialization',
+        progress: 10,
+        message: 'Loading project details for AI generation...',
+        startTime
+      });
+
+      const project = await this.findOne(projectId);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+
+      // Step 2: Get test cases
+      this.sendProgress(progressCallback, {
+        stage: 'loading_testcases',
+        progress: 20,
+        message: 'Loading test cases for AI analysis...',
+        startTime
+      });
+
+      const testCasesResult = await this.getTestCases(projectId, { page: 1, limit: 100 });
+      const testCases = testCasesResult.data;
+      
+      if (testCases.length === 0) {
+        throw new Error('No test cases found for this project');
+      }
+
+      const baseUrl = project.data.target_url;
+
+      // Step 3: Crawl website structure
+      this.sendProgress(progressCallback, {
+        stage: 'crawling',
+        progress: 30,
+        message: `Analyzing website ${baseUrl} for AI enhancement...`,
+        startTime
+      });
+
+      const siteStructure = await this.crawlWebsiteStructure(baseUrl, progressCallback, startTime);
+
+      // Step 4: Generate AI-enhanced test file
+      this.sendProgress(progressCallback, {
+        stage: 'ai_generating',
+        progress: 50,
+        message: 'Generating intelligent Cypress test file with AI...',
+        startTime
+      });
+
+      const testFilePrompt = EnhancedCypressPrompts.createAdvancedCypressPrompt(
+        testCases, 
+        siteStructure, 
+        baseUrl
+      );
+
+      const testFileResponse = await mastraService.generateCompletion(
+        testFilePrompt.userPrompt,
+        testFilePrompt.systemPrompt,
+        {
+          maxTokens: testFilePrompt.maxTokens || 8000,
+          temperature: testFilePrompt.temperature || 0.1
+        }
+      );
+
+      // Step 5: Generate AI-optimized configuration
+      this.sendProgress(progressCallback, {
+        stage: 'ai_configuring',
+        progress: 70,
+        message: 'Creating optimized Cypress configuration with AI...',
+        startTime
+      });
+
+      const configPrompt = EnhancedCypressPrompts.createOptimizedConfigPrompt(
+        baseUrl, 
+        { name: project.data.name, description: project.data.description }
+      );
+
+      const configResponse = await mastraService.generateCompletion(
+        configPrompt.userPrompt,
+        configPrompt.systemPrompt,
+        {
+          maxTokens: configPrompt.maxTokens || 3000,
+          temperature: configPrompt.temperature || 0.05
+        }
+      );
+
+      // Step 6: Generate support utilities if needed
+      this.sendProgress(progressCallback, {
+        stage: 'ai_enhancing',
+        progress: 85,
+        message: 'Creating support utilities and Page Objects...',
+        startTime
+      });
+
+      let supportUtilities = '';
+      let pageObjects = '';
+
+      if (testCases.length >= 3) {
+        // Generate support utilities
+        const supportPrompt = {
+          systemPrompt: `You are a Cypress utilities expert. Create reusable custom commands and helper functions.`,
+          userPrompt: `Create Cypress support utilities for ${testCases.length} test scenarios including common patterns for web application testing. Focus on reusable commands, smart waiting strategies, and error handling.`
+        };
+
+        try {
+          const supportResponse = await mastraService.generateCompletion(
+            supportPrompt.userPrompt,
+            supportPrompt.systemPrompt,
+            { maxTokens: 3000, temperature: 0.1 }
+          );
+          supportUtilities = supportResponse.content;
+        } catch (error) {
+          console.warn('Failed to generate support utilities:', error);
+        }
+
+        // Generate Page Objects for complex scenarios
+        if (testCases.length >= 5) {
+          const pageObjectPrompt = EnhancedCypressPrompts.createPageObjectPrompt(
+            siteStructure,
+            testCases.map(tc => tc.scenarioName)
+          );
+
+          try {
+            const pageObjectResponse = await mastraService.generateCompletion(
+              pageObjectPrompt.userPrompt,
+              pageObjectPrompt.systemPrompt,
+              {
+                maxTokens: pageObjectPrompt.maxTokens || 4000,
+                temperature: pageObjectPrompt.temperature || 0.1
+              }
+            );
+            pageObjects = pageObjectResponse.content;
+          } catch (error) {
+            console.warn('Failed to generate page objects:', error);
+          }
+        }
+      }
+
+      // Clean up generated code
+      const cleanTestFile = this.cleanupAIGeneratedCode(testFileResponse.content);
+      const cleanConfig = this.cleanupAIGeneratedCode(configResponse.content);
+
+      // Create enhanced package.json
+      const enhancedPackageJson = this.generateEnhancedPackageJson();
+
+      // Compile all generated files
+      const generatedFiles = [
+        {
+          fileName: 'ai-generated-tests.cy.js',
+          content: cleanTestFile,
+          type: 'test'
+        },
+        {
+          fileName: 'cypress.config.js',
+          content: cleanConfig,
+          type: 'config'
+        },
+        {
+          fileName: 'package.json',
+          content: enhancedPackageJson,
+          type: 'config'
+        }
+      ];
+
+      // Add support utilities if generated
+      if (supportUtilities) {
+        generatedFiles.push({
+          fileName: 'cypress/support/commands.js',
+          content: this.cleanupAIGeneratedCode(supportUtilities),
+          type: 'support'
+        });
+      }
+
+      // Add page objects if generated
+      if (pageObjects) {
+        generatedFiles.push({
+          fileName: 'cypress/support/page-objects.js',
+          content: this.cleanupAIGeneratedCode(pageObjects),
+          type: 'support'
+        });
+      }
+
+      this.sendProgress(progressCallback, {
+        stage: 'completed',
+        progress: 100,
+        message: 'AI-powered code generation completed successfully!',
+        startTime
+      });
+
+      const processingTime = Date.now() - startTime;
+
+      const result = {
+        data: {
+          generationId: `ai-gen-${Date.now()}`,
+          projectId,
+          projectName: project.data.name,
+          projectUrl: baseUrl,
+          testCasesCount: testCases.length,
+          filesGenerated: generatedFiles.length,
+          files: generatedFiles,
+          createdAt: new Date().toISOString(),
+          siteStructure: siteStructure,
+          processingTime,
+          aiEnhanced: true,
+          codeQualityScore: this.calculateCodeQualityScore(generatedFiles),
+          features: this.extractGeneratedFeatures(generatedFiles),
+          tokenUsage: {
+            testFile: testFileResponse.usage,
+            config: configResponse.usage
+          }
+        },
+        message: `Successfully generated ${generatedFiles.length} AI-enhanced Cypress files from ${testCases.length} test cases with advanced patterns and best practices`
+      };
+
+      console.log(`AI code generation completed in ${processingTime}ms`);
+      return result;
+
+    } catch (error: any) {
+      this.sendProgress(progressCallback, {
+        stage: 'error',
+        progress: 0,
+        message: `AI code generation failed: ${error.message}`,
+        error: error.message,
+        startTime
+      });
+      throw error;
+    }
+  }
+
+  private cleanupAIGeneratedCode(content: string): string {
+    // Remove code block markers if present
+    let cleaned = content.replace(/^```(?:javascript|js|typescript|ts)?\s*\n/, '');
+    cleaned = cleaned.replace(/\n```\s*$/, '');
+    
+    // Remove any leading/trailing whitespace
+    cleaned = cleaned.trim();
+    
+    // Ensure proper line endings
+    cleaned = cleaned.replace(/\r\n/g, '\n');
+    
+    // Remove any AI chat artifacts
+    cleaned = cleaned.replace(/^(Here's|Here is).*?:\s*\n/gm, '');
+    cleaned = cleaned.replace(/^(This code).*?\n/gm, '');
+    
+    return cleaned;
+  }
+
+  private generateEnhancedPackageJson(): string {
+    return JSON.stringify({
+      "name": "ai-generated-cypress-tests",
+      "version": "1.0.0",
+      "description": "AI-generated Cypress tests with enhanced capabilities",
+      "scripts": {
+        "cypress:open": "cypress open",
+        "cypress:run": "cypress run",
+        "cypress:run:chrome": "cypress run --browser chrome",
+        "cypress:run:firefox": "cypress run --browser firefox",
+        "cypress:run:edge": "cypress run --browser edge",
+        "cypress:run:headless": "cypress run --headless",
+        "cypress:run:mobile": "cypress run --config viewportWidth=375,viewportHeight=667",
+        "test": "cypress run",
+        "test:headed": "cypress run --headed",
+        "test:dev": "cypress run --env configFile=dev",
+        "test:staging": "cypress run --env configFile=staging"
+      },
+      "devDependencies": {
+        "cypress": "^13.15.0",
+        "@cypress/grep": "^4.1.0",
+        "cypress-axe": "^1.5.0",
+        "cypress-real-events": "^1.12.0",
+        "cypress-image-snapshot": "^4.0.1",
+        "cypress-file-upload": "^5.0.8",
+        "cypress-wait-until": "^3.0.1",
+        "cypress-localstorage-commands": "^2.2.5"
+      },
+      "dependencies": {
+        "faker": "^6.6.6"
+      }
+    }, null, 2);
+  }
+
+  private calculateCodeQualityScore(files: any[]): number {
+    let score = 70; // Base score for AI generation
+    
+    const testFile = files.find(f => f.type === 'test');
+    if (testFile?.content) {
+      const content = testFile.content.toLowerCase();
+      
+      // Add points for best practices
+      if (content.includes('cy.intercept')) score += 5;
+      if (content.includes('beforeeach')) score += 5;
+      if (content.includes('data-cy') || content.includes('data-testid')) score += 5;
+      if (content.includes('should(')) score += 5;
+      if (content.includes('custom command')) score += 5;
+      if (content.includes('page object')) score += 5;
+      if (content.includes('accessibility') || content.includes('a11y')) score += 5;
+      if (content.includes('performance')) score += 3;
+      if (content.includes('wait-until') || content.includes('smart wait')) score += 3;
+    }
+    
+    // Add points for additional files
+    if (files.some(f => f.fileName.includes('page-objects'))) score += 10;
+    if (files.some(f => f.fileName.includes('commands'))) score += 5;
+    
+    return Math.min(score, 100);
+  }
+
+  private extractGeneratedFeatures(files: any[]): string[] {
+    const features = ['AI-Generated', 'Modern Cypress Patterns', 'Best Practices'];
+    
+    const testFile = files.find(f => f.type === 'test');
+    if (testFile?.content) {
+      const content = testFile.content.toLowerCase();
+      
+      if (content.includes('cy.intercept')) features.push('API Interception');
+      if (content.includes('viewport') || content.includes('mobile')) features.push('Responsive Testing');
+      if (content.includes('accessibility') || content.includes('a11y')) features.push('Accessibility Testing');
+      if (content.includes('performance')) features.push('Performance Monitoring');
+      if (content.includes('custom command')) features.push('Custom Commands');
+      if (content.includes('data-cy') || content.includes('data-testid')) features.push('Stable Selectors');
+      if (content.includes('retry') || content.includes('wait-until')) features.push('Smart Waiting');
+    }
+    
+    if (files.some(f => f.fileName.includes('page-objects'))) {
+      features.push('Page Object Model');
+    }
+    if (files.some(f => f.fileName.includes('commands'))) {
+      features.push('Custom Utilities');
+    }
+    
+    return features;
+  }
 
   private generateIntelligentCypressTestFile(testCases: any[], baseUrl: string, siteStructure: any): string {
     const timestamp = new Date().toISOString();
@@ -1011,7 +1364,7 @@ export class ProjectsService {
 describe('Intelligent Test Suite for ${siteStructure.title}', () => {
   beforeEach(() => {
     // Visit the page and wait for it to load completely
-    cy.visit('${baseUrl}', { timeout: 60000 });
+    cy.visit('${baseUrl}', { timeout: 300000 }); // 5 minutes timeout
     
     // Wait for the page to be fully loaded with multiple indicators
     cy.get('body').should('be.visible');
@@ -1178,7 +1531,7 @@ describe('Intelligent Test Suite for ${siteStructure.title}', () => {
       
     } else if (stepLower.includes('navigate') || stepLower.includes('go to')) {
       if (stepLower.includes('homepage') || stepLower.includes('home')) {
-        return `cy.visit('/', { timeout: 60000 });
+        return `cy.visit('/', { timeout: 300000 }); // 5 minutes timeout
     cy.get('body').should('be.visible');
     cy.document().should('have.property', 'readyState', 'complete');
     cy.get('body').should(($body) => {
@@ -1196,7 +1549,7 @@ describe('Intelligent Test Suite for ${siteStructure.title}', () => {
     cy.document().should('have.property', 'readyState', 'complete');
     cy.wait(3000); // Wait for navigation to complete`;
         }
-        return `cy.visit('/', { timeout: 60000 });
+        return `cy.visit('/', { timeout: 300000 }); // 5 minutes timeout
     cy.get('body').should('be.visible');
     cy.document().should('have.property', 'readyState', 'complete');
     cy.wait(3000); // Wait for page to load`;
@@ -1992,7 +2345,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
 
       await page.goto(targetUrl, { 
         waitUntil: 'domcontentloaded', 
-        timeout: 60000  // Reduced to 60 seconds
+        timeout: 300000  // 5 minutes timeout
       });
 
       this.sendProgress(progressCallback, {
@@ -2453,7 +2806,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
             
             await page.goto(targetUrl, { 
               waitUntil: ['domcontentloaded', 'networkidle2'], 
-              timeout: 45000 
+              timeout: 300000 // 5 minutes timeout 
             });
             
             // Wait for CSS and fonts to load
@@ -2586,7 +2939,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
         if (page.url() !== targetUrl) {
           await page.goto(targetUrl, { 
             waitUntil: 'networkidle0', 
-            timeout: 60000 
+            timeout: 300000 // 5 minutes timeout 
           });
           await this.waitForCSSLoad(page);
         }
@@ -2778,7 +3131,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
                 try {
                   await page.goto(targetNavigationUrl, { 
                     waitUntil: ['domcontentloaded'], 
-                    timeout: 30000 
+                    timeout: 300000 // 5 minutes timeout 
                   });
                   
                   // Wait for content to load
@@ -2909,7 +3262,7 @@ describe('Generated Test Suite - CSV to Automation', () => {
             
             await page.goto(targetUrl, { 
               waitUntil: ['domcontentloaded', 'networkidle2'], 
-              timeout: 45000 
+              timeout: 300000 // 5 minutes timeout 
             });
             
             await this.waitForCSSLoad(page);

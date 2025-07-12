@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
@@ -53,11 +53,7 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
   const [downloading, setDownloading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchTestCases();
-  }, [projectId]);
-
-  const fetchTestCases = async (page: number = 1) => {
+  const fetchTestCases = useCallback(async (page: number = 1) => {
     try {
       setLoading(true);
       const response = await apiService.getTestCases(projectId, page, 10);
@@ -81,7 +77,11 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, toast]);
+
+  useEffect(() => {
+    fetchTestCases();
+  }, [fetchTestCases]);
 
   const handleDownload = async () => {
     try {

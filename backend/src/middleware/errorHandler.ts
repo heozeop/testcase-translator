@@ -317,7 +317,7 @@ export const securityHeaders = (_req: Request, res: Response, next: NextFunction
 };
 
 // Request timeout middleware
-export const requestTimeout = (timeoutMs: number = 30000) => {
+export const requestTimeout = (timeoutMs: number = 300000) => { // 5 minutes default timeout
   return (_req: Request, res: Response, next: NextFunction): void => {
     const timeout = setTimeout(() => {
       if (!res.headersSent) {

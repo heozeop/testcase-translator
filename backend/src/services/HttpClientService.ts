@@ -39,7 +39,7 @@ export class HttpClientService {
 
   constructor(options: HttpClientOptions = {}) {
     this.defaultOptions = {
-      timeout: options.timeout || 10000,
+      timeout: options.timeout || 300000, // 5 minutes default timeout
       maxRedirects: options.maxRedirects || 5,
       userAgent: options.userAgent || 'TestcaseTranslator/1.0 (Automated Testing Tool)',
       followRedirects: options.followRedirects !== false,

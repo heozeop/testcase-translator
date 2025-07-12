@@ -35,7 +35,7 @@ export class MastraService {
       model: config.model || "claude-sonnet-4-20250514",
       maxTokens: config.maxTokens || 4000,
       temperature: config.temperature || 0.1,
-      timeout: config.timeout || 30000
+      timeout: config.timeout || 300000 // 5 minutes timeout for AI requests
     };
 
     this.anthropic = new Anthropic({

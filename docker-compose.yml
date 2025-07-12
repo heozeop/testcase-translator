@@ -35,6 +35,8 @@ services:
       - DATABASE_URL=postgresql://postgres:password@db:5432/testcase_translator
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+      - PUPPETEER_TIMEOUT=300000
+      - REQUEST_TIMEOUT=300000
     depends_on:
       - db
     networks:

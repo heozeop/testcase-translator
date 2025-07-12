@@ -71,7 +71,7 @@ export class PuppeteerService {
     this.config = {
       headless: config.headless ?? true,
       viewport: config.viewport ?? { width: 1920, height: 1080 },
-      timeout: config.timeout ?? 30000,
+      timeout: config.timeout ?? 300000, // 5 minutes default timeout
       userAgent: config.userAgent ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       slowMo: config.slowMo ?? 0,
       devtools: config.devtools ?? false

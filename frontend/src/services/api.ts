@@ -6,7 +6,6 @@ import {
   TestCase,
   UrlValidationRequest,
   UrlValidationResponse,
-  ProcessingResult,
   FileUploadResult,
   PaginatedResponse
 } from '../types/api';
@@ -20,7 +19,7 @@ class ApiService {
     
     this.api = axios.create({
       baseURL: baseURL,
-      timeout: 30000,
+      timeout: 300000, // 5 minutes timeout
       headers: {
         'Content-Type': 'application/json',
       },
@@ -219,6 +218,7 @@ class ApiService {
       
       xhr.open('POST', url, true);
       xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.timeout = 900000; // 15 minutes timeout
       
       // Add authorization header if available
       const token = localStorage.getItem('auth_token');
@@ -227,6 +227,7 @@ class ApiService {
       }
 
       let buffer = '';
+      let resolved = false;
       
       xhr.onprogress = () => {
         const newData = xhr.responseText.substring(buffer.length);
@@ -234,15 +235,24 @@ class ApiService {
         
         // Process each line as a separate JSON message
         const lines = newData.split('\n').filter(line => line.trim());
+        console.log('Processing lines:', lines.length);
         
         for (const line of lines) {
           try {
             const message = JSON.parse(line);
+            console.log('Parsed message type:', message.type);
             
             if (message.type === 'progress' && onProgress) {
               onProgress(message.data);
             } else if (message.type === 'complete') {
+              if (resolved) {
+                console.log('Already resolved, ignoring duplicate complete message');
+                return;
+              }
+              resolved = true;
+              console.log('🎉 COMPLETE MESSAGE RECEIVED!');
               console.log('Generation completed:', message.data);
+              console.log('Full message structure:', JSON.stringify(message, null, 2));
               console.log('Files in response:', message.data?.data?.files?.length || 0);
               if (message.data?.data?.files) {
                 console.log('File details:', message.data.data.files.map((f: any) => ({ 
@@ -251,7 +261,12 @@ class ApiService {
                   type: f.type 
                 })));
               }
-              resolve(message.data);
+              // Handle double-nested data structure: { type: 'complete', data: { data: { files: [...] } } }
+              const result = message.data.data || message.data;
+              console.log('Final result to return:', result);
+              console.log('Files in final result:', result?.files?.length || 0);
+              console.log('🚀 RESOLVING WITH RESULT!');
+              resolve(result);
               return;
             } else if (message.type === 'error') {
               console.error('Generation error:', message.data);
@@ -260,28 +275,43 @@ class ApiService {
             }
           } catch (e) {
             // Ignore malformed JSON lines
-            console.debug('Ignoring malformed progress line:', line);
+            console.debug('Ignoring malformed progress line:', line.substring(0, 100));
           }
         }
       };
 
       xhr.onload = () => {
+        console.log('XHR onload triggered, status:', xhr.status);
         if (xhr.status >= 200 && xhr.status < 300) {
           // Try to parse the final response if not already resolved
           try {
             const lines = xhr.responseText.split('\n').filter(line => line.trim());
+            console.log('XHR onload - Total lines:', lines.length);
             const lastLine = lines[lines.length - 1];
+            console.log('XHR onload - Last line:', lastLine?.substring(0, 100) + '...');
             if (lastLine) {
               const finalMessage = JSON.parse(lastLine);
+              console.log('XHR onload - Final message type:', finalMessage.type);
               if (finalMessage.type === 'complete') {
-                resolve(finalMessage.data);
+                if (resolved) {
+                  console.log('Already resolved, ignoring onload complete message');
+                  return;
+                }
+                resolved = true;
+                const result = finalMessage.data.data || finalMessage.data;
+                console.log('🎯 XHR onload - Final fallback result:', result);
+                console.log('Files in fallback result:', result?.files?.length || 0);
+                resolve(result);
               } else {
+                console.error('XHR onload - Unexpected final response format:', finalMessage.type);
                 reject(new Error('Unexpected final response format'));
               }
             } else {
+              console.error('XHR onload - Empty response from server');
               reject(new Error('Empty response from server'));
             }
           } catch (e) {
+            console.error('XHR onload - Failed to parse final response:', e);
             reject(new Error('Failed to parse final response'));
           }
         } else {

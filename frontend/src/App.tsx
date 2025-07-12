@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
 import { URLInputForm } from './components/URLInputForm';
-import { WebSocketFileUpload } from './components/WebSocketFileUpload';
 import { SimpleFileUpload } from './components/SimpleFileUpload';
 import { ProjectDashboard } from './components/ProjectDashboard';
-import { WebSocketProcessingStatus } from './components/WebSocketProcessingStatus';
-import { UserInputModal } from './components/UserInputModal';
-import { EnhancedNotificationSystem } from './components/NotificationSystem';
-import { WebSocketStatusBadge } from './components/WebSocketStatus';
 import { Toaster } from './components/ui/toaster';
-import { TestFileUpload } from './components/TestFileUpload';
 import { TestCasesList } from './components/TestCasesList';
 import { CypressCodeDisplay } from './components/CypressCodeDisplay';
 import { ProjectDetail } from './components/ProjectDetail';
@@ -58,14 +52,6 @@ function App() {
     setCurrentProject(null);
   };
 
-  const handleProcessingError = (error: string) => {
-    console.error('Processing error:', error);
-  };
-
-  const handleProcessingCancel = () => {
-    setCurrentView('dashboard');
-    setCurrentProject(null);
-  };
 
   const handleGenerateCypress = () => {
     setCurrentView('cypress-code');

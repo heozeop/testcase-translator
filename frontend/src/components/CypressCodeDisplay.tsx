@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
@@ -37,34 +37,50 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
   const [generationProgress, setGenerationProgress] = useState<any>(null);
   const { toast } = useToast();
 
-  const generateCode = async () => {
+  const generateCode = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       setGenerationProgress(null);
+      
+      console.log('🚀 Starting code generation for project:', projectId);
       
       const result = await apiService.generateCypressCode(projectId, (progress) => {
         setGenerationProgress(progress);
         console.log('Generation progress:', progress);
       });
       
-      console.log('Final result received:', result);
+      console.log('🎉 Final result received:', result);
       console.log('Result structure:', {
-        data: !!result?.data,
         files: result?.files?.length || 0,
         filesGenerated: result?.filesGenerated || 0,
-        testCasesCount: result?.testCasesCount || 0
+        testCasesCount: result?.testCasesCount || 0,
+        generationId: result?.generationId || 'missing',
+        projectName: result?.projectName || 'missing'
       });
+      
+      console.log('About to setGenerationResult with:', result);
+      console.log('Result has files?', !!result?.files);
+      console.log('Result files length:', result?.files?.length || 0);
+      console.log('Result files array:', result?.files);
       
       setGenerationResult(result);
       setGenerationProgress(null);
+      
+      console.log('✅ GenerationResult state set successfully');
       
       toast({
         title: "Success",
         description: `Generated ${result?.filesGenerated || 0} Cypress files from ${result?.testCasesCount || 0} test cases using intelligent crawling`
       });
     } catch (error: any) {
-      console.error('Error generating Cypress code:', error);
+      console.error('❌ Error generating Cypress code:', error);
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        cause: error.cause
+      });
       const errorMessage = error.message || 'Failed to generate Cypress code';
       setError(errorMessage);
       setGenerationProgress(null);
@@ -76,7 +92,7 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, toast]);
 
   const downloadFile = (file: GeneratedFile) => {
     const blob = new Blob([file.content], { type: 'text/plain' });
@@ -232,7 +248,7 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
   // Auto-generate on component mount
   useEffect(() => {
     generateCode();
-  }, [projectId]);
+  }, [projectId, generateCode]);
 
   if (loading) {
     return (
@@ -316,6 +332,10 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
       </Card>
     );
   }
+
+  console.log('Render - generationResult:', generationResult);
+  console.log('Render - generationResult?.files:', generationResult?.files);
+  console.log('Render - generationResult?.files?.length:', generationResult?.files?.length);
 
   return (
     <div className="space-y-6">
@@ -599,7 +619,13 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
       )}
 
       {/* Generated Files or No Files Message */}
-      {generationResult?.files && generationResult.files.length > 0 ? (
+      {(() => {
+        console.log('Render check - generationResult:', generationResult);
+        console.log('Render check - files exists:', !!generationResult?.files);
+        console.log('Render check - files length:', generationResult?.files?.length);
+        console.log('Render check - condition result:', !!(generationResult?.files && generationResult.files.length > 0));
+        return generationResult?.files && generationResult.files.length > 0;
+      })() ? (
         <Card>
           <CardHeader>
             <CardTitle>Generated Files</CardTitle>

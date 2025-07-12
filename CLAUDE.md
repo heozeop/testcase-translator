@@ -154,3 +154,4 @@ Note: Video recording will be automatically disabled if FFmpeg is not available,
 - Follow React best practices for frontend components
 - Ensure proper error handling for all AI API calls
 - WebSocket connections require careful state management
+- Use task-master command to generate task and expand all the task before doing something. Use task master actively.

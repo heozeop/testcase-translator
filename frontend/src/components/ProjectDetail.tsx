@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Project } from '../types/api';
 import { apiService } from '../services/api';
 import { useToast } from '../hooks/use-toast';
@@ -30,11 +30,8 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadProjectStats();
-  }, [project.id]);
-
-  const loadProjectStats = async () => {
+  // Define the callback before using it in useEffect
+  const loadProjectStats = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -62,7 +59,12 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
     } finally {
       setLoading(false);
     }
-  };
+  }, [project.id, activeTab, toast]);
+
+  // Use the callback in useEffect
+  useEffect(() => {
+    loadProjectStats();
+  }, [loadProjectStats]);
 
   const handleUploadSuccess = (testCases: any[]) => {
     console.log('Upload successful, test cases:', testCases);
