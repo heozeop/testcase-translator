@@ -1,127 +1,181 @@
-# Overview
+# Test Case Code Generation and Execution PRD
 
-The MVP of this product addresses the challenge of automating Cypress test generation from user-provided URLs and test cases. It targets non-technical QA personnel and product managers by simplifying the process, reducing manual effort, and enabling rapid feedback loops for test script creation.
+## Project: Testcase Translator Enhancement
+## Date: 2025-07-12
+## Version: 1.0
 
-# Core Features
+## Overview
+Enhance the existing Testcase Translator application to support test case selection for code generation, local file management, individual test execution, and example-based prompt enhancement.
 
-1. **URL Input & Validation**
+## Objectives
+1. Enable selective test case code generation
+2. Implement local file storage for generated code
+3. Support individual Cypress test execution
+4. Enhance AI prompt quality with examples
 
-   * **Functionality:** Users enter a URL; the system ensures it is accessible and retrieves initial HTML.
-   * **Importance:** Ensures reliable test starting points.
-   * **Operation:** Basic HTTP requests and checks are performed.
+## Requirements
 
-2. **Test Case File Parsing (LLM-Assisted)**
+### 1. Test Case Selection for Code Generation
+**Description**: Users should be able to select specific test cases and generate Cypress code for the selected items.
 
-   * **Functionality:** Users upload Excel (.xlsx) files; an LLM (Claude model via Mastra.ai) parses and validates the file structure.
-   * **Importance:** Reduces manual validation and ensures consistency.
-   * **Operation:** Integrates Claude via Mastra.ai API for parsing structured data.
+**Functional Requirements**:
+- Add checkbox selection UI to test case list
+- Implement bulk selection (select all/none)
+- Add "Generate Code" button for selected test cases
+- Display generation progress for multiple selections
+- Store generated code with proper associations to test cases
 
-3. **Dynamic URL Exploration**
+**Technical Requirements**:
+- Update frontend components to support multi-selection
+- Create API endpoint for batch code generation
+- Implement queue system for multiple generation requests
+- Update database schema if needed for batch operations
 
-   * **Functionality:** Automatically navigates URLs based on test cases.
-   * **Importance:** Ensures comprehensive automated coverage.
-   * **Operation:** Script-driven navigation guided by parsed data.
+### 2. Generated Code File Management
+**Description**: Generated code files should be uploaded locally and their URLs stored in the database.
 
-4. **Interactive Input Collection**
+**Functional Requirements**:
+- Save generated Cypress code as .cy.js files
+- Create organized directory structure for test files
+- Generate unique filenames to avoid conflicts
+- Store file paths/URLs in database
+- Provide download functionality for generated files
 
-   * **Functionality:** System prompts users dynamically for necessary inputs during exploration.
-   * **Importance:** Enhances test accuracy and flexibility.
-   * **Operation:** Inputs linked and stored securely per test case.
+**Technical Requirements**:
+- Implement file upload service in backend
+- Create uploads directory structure (e.g., /uploads/projects/{projectId}/tests/)
+- Add file_url column to generated_code table
+- Implement file serving endpoint
+- Add file cleanup mechanism for old files
 
-5. **Automated Cypress Script Generation**
+### 3. Individual Cypress Test Execution
+**Description**: Users should be able to execute generated Cypress tests individually.
 
-   * **Functionality:** Generates Cypress test scripts for each scenario.
-   * **Importance:** Automates test script creation, reducing time-to-test significantly.
-   * **Operation:** Scripts organized into structured directories per scenario.
+**Functional Requirements**:
+- Add "Run Test" button for each generated test
+- Display test execution status (running/passed/failed)
+- Show test results and logs
+- Support video/screenshot capture during execution
+- Store execution results in database
 
-# User Experience
+**Technical Requirements**:
+- Integrate Cypress programmatic API
+- Implement test runner service
+- Create WebSocket connection for real-time status updates
+- Store execution logs and artifacts
+- Handle concurrent test executions
 
-**User Personas:**
+### 4. Example Test Cases and Results UI
+**Description**: Create an interface to input example test cases and their expected results to enhance AI prompt quality.
 
-* Non-technical QA personnel needing quick and easy test automation.
-* Product managers seeking reliable automated testing solutions without extensive setup.
+**Functional Requirements**:
+- Create form for entering example test scenarios
+- Support multiple input/output examples
+- Allow editing and deletion of examples
+- Preview how examples will be included in prompts
+- Toggle example inclusion in generation
 
-**Key User Flows:**
+**Technical Requirements**:
+- Create examples table in database
+- Design UI components for example management
+- Update Mastra AI service to include examples in prompts
+- Implement prompt template system
+- Add validation for example format
 
-1. Enter target URL.
-2. Upload and validate test case file.
-3. Provide additional inputs as prompted.
-4. System generates structured Cypress scripts.
+## Database Schema Updates
 
-**UI/UX Considerations:**
+```sql
+-- Add to generated_code table
+ALTER TABLE generated_code ADD COLUMN file_url VARCHAR(500);
+ALTER TABLE generated_code ADD COLUMN file_path VARCHAR(500);
 
-* Clear visual indicators for process stages.
-* User-friendly input forms for data collection.
-* Structured and intuitive file management interface.
+-- New table for examples
+CREATE TABLE test_examples (
+  id SERIAL PRIMARY KEY,
+  project_id INTEGER REFERENCES projects(id),
+  test_scenario TEXT NOT NULL,
+  expected_result TEXT NOT NULL,
+  cypress_code TEXT,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-# Technical Architecture
+-- Update execution_results table
+ALTER TABLE execution_results ADD COLUMN video_url VARCHAR(500);
+ALTER TABLE execution_results ADD COLUMN screenshot_urls TEXT[];
+```
 
-**System Components:**
+## API Endpoints
 
-* **Frontend:** React
-* **Backend:** Node.js (TypeScript), optionally NestJS
-* **Database:** PostgreSQL
-* **LLM Integration:** Claude model via Mastra.ai
-* **Infrastructure:** Docker Compose for local development only
+### Code Generation
+- `POST /api/test-cases/generate-batch` - Generate code for multiple test cases
+- `GET /api/generated-code/:id/download` - Download generated test file
 
-**Data Models:**
+### Test Execution
+- `POST /api/test-execution/run/:testId` - Execute individual test
+- `GET /api/test-execution/status/:executionId` - Get execution status
+- `WS /api/test-execution/live/:executionId` - WebSocket for live updates
 
-* **Projects:** Information on each URL test project.
-* **Test Cases:** Parsed details from uploaded files.
-* **Generated Code:** Cypress scripts generated per test.
-* **Execution Results:** Results and logs from test execution (future scope).
+### Examples Management
+- `GET /api/projects/:projectId/examples` - List all examples
+- `POST /api/projects/:projectId/examples` - Create new example
+- `PUT /api/examples/:id` - Update example
+- `DELETE /api/examples/:id` - Delete example
 
-**APIs and Integrations:**
+## UI Components
 
-* RESTful APIs for managing projects, test cases, and scripts.
-* WebSocket APIs for real-time user updates.
+### Test Case Selection
+- Checkbox column in test case table
+- Selection toolbar with bulk actions
+- Progress modal for batch generation
 
-**Infrastructure Requirements:**
+### Test Execution
+- Run button with status indicator
+- Execution results modal
+- Real-time log viewer
 
-* Docker Compose setup for consistent local development.
+### Examples Management
+- Examples list/grid view
+- Add/Edit example form
+- Prompt preview panel
 
-# Development Roadmap
+## Implementation Phases
 
-**MVP Requirements:**
+### Phase 1: Test Case Selection and File Management
+1. Implement multi-selection UI
+2. Create batch generation API
+3. Set up file storage system
+4. Update database schema
 
-* URL validation and initial HTML retrieval.
-* LLM-assisted Excel file parsing.
-* Automated exploration and interactive input handling.
-* Cypress script generation organized by scenario.
+### Phase 2: Individual Test Execution
+1. Integrate Cypress runner
+2. Implement execution tracking
+3. Create real-time status updates
+4. Store execution artifacts
 
-**Future Enhancements:**
+### Phase 3: Example-Based Prompt Enhancement
+1. Design examples management UI
+2. Create database schema for examples
+3. Update AI service to use examples
+4. Implement prompt templating
 
-* Automated script execution and detailed failure reporting.
-* Integration with GitHub for automated pull request creation.
+## Success Metrics
+- Code generation success rate > 95%
+- Test execution completion rate > 90%
+- Average generation time < 30 seconds per test case
+- User satisfaction with generated code quality
 
-# Logical Dependency Chain
+## Technical Considerations
+- Ensure file system security (validate paths, sanitize filenames)
+- Implement proper error handling for AI failures
+- Consider rate limiting for AI API calls
+- Plan for storage capacity and cleanup policies
+- Ensure thread safety for concurrent operations
 
-1. Set up URL validation and initial fetching infrastructure.
-2. Develop LLM-based file parsing capability.
-3. Implement dynamic URL exploration and input handling.
-4. Automate Cypress script generation and organization.
-
-# Risks and Mitigations
-
-**Technical Risks:**
-
-* Potential inaccuracies in LLM parsing.
-
-  * **Mitigation:** Prototype early, establish validation checks.
-
-* Dependency on external LLM API reliability and latency.
-
-  * **Mitigation:** Introduce caching and fallback methods.
-
-**Resource Constraints:**
-
-* Limited local development infrastructure capabilities.
-
-  * **Mitigation:** Focus strictly on essential Docker Compose setup, postpone extensive cloud infrastructure.
-
-# Appendix
-
-**Technical Specifications:**
-
-* Database schemas outlined in the detailed PRD.
-* REST API design and WebSocket specifications provided in base PRD.
+## Dependencies
+- Cypress programmatic API
+- File system access
+- WebSocket support
+- Additional storage capacity
+- AI API rate limits consideration

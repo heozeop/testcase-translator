@@ -5,3 +5,4 @@ export * from './GeneratedCodeFile.entity';
 export * from './ExplorationSession.entity';
 export * from './ExplorationResult.entity';
 export * from './ExecutionResult.entity';
+export * from './TestExample.entity';

@@ -38,6 +38,12 @@ export class ExecutionResult {
   @Property({ type: 'jsonb', nullable: true })
   metadata?: any;
 
+  @Property({ type: 'varchar', length: 500, nullable: true, fieldName: 'video_url' })
+  videoUrl?: string;
+
+  @Property({ type: 'jsonb', nullable: true, fieldName: 'screenshot_urls', default: [] })
+  screenshotUrls: string[] = [];
+
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 

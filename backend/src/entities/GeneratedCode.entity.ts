@@ -48,6 +48,12 @@ export class GeneratedCode {
   @Property({ type: 'text', nullable: true })
   errors?: string;
 
+  @Property({ type: 'varchar', length: 500, nullable: true, fieldName: 'file_url' })
+  fileUrl?: string;
+
+  @Property({ type: 'varchar', length: 500, nullable: true, fieldName: 'file_path' })
+  filePath?: string;
+
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 

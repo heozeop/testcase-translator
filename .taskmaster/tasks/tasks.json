@@ -2,941 +2,752 @@
   "master": {
     "tasks": [
       {
-        "id": 1,
-        "title": "Setup Project Infrastructure with Docker Compose",
-        "description": "Initialize the project repository with Docker Compose configuration for local development, including React frontend, Node.js/TypeScript backend, and PostgreSQL database",
-        "details": "Create project structure with separate directories for frontend (React) and backend (Node.js/TypeScript). Setup Docker Compose with services for: React app (port 3000), Node.js backend (port 8000), PostgreSQL database (port 5432). Include environment variables configuration, volume mounts for development, and hot reload capabilities. Initialize package.json files with necessary dependencies including TypeScript, Express, React, pg (PostgreSQL client), and development tools.",
-        "testStrategy": "Verify all Docker services start successfully, database connection is established, and both frontend and backend are accessible on their respective ports",
+        "id": 14,
+        "title": "Database Schema Updates and Migration",
+        "description": "Update database schema to support file URLs, test examples, and execution artifacts storage",
+        "details": "Execute SQL migrations to add file_url and file_path columns to generated_code table, create test_examples table with project_id foreign key, and add video_url and screenshot_urls columns to execution_results table. Implement migration scripts with proper rollback capabilities and data validation.",
+        "testStrategy": "Verify schema changes with database inspection, test foreign key constraints, validate column types and constraints, ensure migration can be rolled back safely",
         "priority": "high",
         "dependencies": [],
         "status": "done",
         "subtasks": [
           {
             "id": 1,
-            "title": "Create Project Directory Structure and Initialize Git Repository",
-            "description": "Set up the foundational project structure with separate directories for frontend and backend components, and initialize version control",
+            "title": "Create Migration Script for Generated Code Table Updates",
+            "description": "Create SQL migration script to add file_url and file_path columns to the existing generated_code table with proper data types and constraints",
             "dependencies": [],
-            "details": "Create root project directory with subdirectories: /frontend, /backend, /docker. Initialize git repository with .gitignore file excluding node_modules, .env files, and Docker volumes. Create README.md with project overview and setup instructions.",
+            "details": "Write migration script that adds VARCHAR columns for file_url and file_path to generated_code table. Include proper NULL constraints, indexing if needed, and ensure backward compatibility. Create corresponding rollback script to remove these columns.",
             "status": "done",
-            "testStrategy": "Verify directory structure exists and git repository is properly initialized with appropriate .gitignore rules"
+            "testStrategy": "Test migration on development database copy, verify column creation and data integrity"
           },
           {
             "id": 2,
-            "title": "Initialize Backend Node.js/TypeScript Project Structure",
-            "description": "Set up the backend directory with TypeScript configuration, Express server setup, and PostgreSQL client dependencies",
+            "title": "Create Test Examples Table Schema",
+            "description": "Design and implement the test_examples table with proper foreign key relationships to projects table",
             "dependencies": [
               1
             ],
-            "details": "Navigate to /backend directory and run npm init. Install dependencies: express, typescript, @types/node, @types/express, ts-node, nodemon, pg, @types/pg, cors, @types/cors, dotenv. Create tsconfig.json with appropriate TypeScript configuration. Set up basic Express server structure with src/index.ts, middleware setup, and npm scripts for development and build.",
+            "details": "Create migration script for test_examples table with columns: id (primary key), project_id (foreign key), example_name, input_data, expected_output, created_at, updated_at. Ensure proper foreign key constraints and cascading rules.",
             "status": "done",
-            "testStrategy": "Verify package.json contains all required dependencies and TypeScript compiles without errors"
+            "testStrategy": "Verify foreign key constraints work correctly and test data insertion/deletion scenarios"
           },
           {
             "id": 3,
-            "title": "Initialize Frontend React Project Structure",
-            "description": "Set up the React frontend application with TypeScript support and development dependencies",
-            "dependencies": [
-              1
-            ],
-            "details": "Navigate to /frontend directory and create React app using create-react-app with TypeScript template: npx create-react-app . --template typescript. Install additional development dependencies if needed. Configure proxy in package.json to point to backend API (http://localhost:8000). Set up basic component structure and ensure hot reload is configured.",
-            "status": "done",
-            "testStrategy": "Verify React app starts successfully and TypeScript compilation works without errors"
-          },
-          {
-            "id": 4,
-            "title": "Create Docker Compose Configuration",
-            "description": "Set up Docker Compose file with services for React frontend, Node.js backend, and PostgreSQL database with proper networking and volume mounts",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "Create docker-compose.yml in project root with three services: 1) frontend service using node:18-alpine, exposing port 3000, with volume mounts for hot reload 2) backend service using node:18-alpine, exposing port 8000, with volume mounts and nodemon for hot reload 3) postgres service using postgres:15-alpine, exposing port 5432, with named volume for data persistence. Configure networks for inter-service communication.",
-            "status": "done",
-            "testStrategy": "Run docker-compose up and verify all services start successfully and can communicate with each other"
-          },
-          {
-            "id": 5,
-            "title": "Configure Environment Variables and Development Setup",
-            "description": "Set up environment variable configuration for all services and ensure hot reload capabilities work across the Docker Compose setup",
-            "dependencies": [
-              4
-            ],
-            "details": "Create .env.example files for both frontend and backend with necessary environment variables (DATABASE_URL, PORT, etc.). Create docker-compose.override.yml for development-specific configurations. Configure volume mounts in Docker Compose to enable hot reload: bind mount source code directories, configure nodemon for backend auto-restart, ensure React development server hot reload works. Add npm scripts for easy development workflow (start, stop, logs).",
-            "status": "done",
-            "testStrategy": "Test hot reload by making changes to both frontend and backend code and verifying automatic rebuilds. Verify environment variables are properly loaded in all services."
-          }
-        ]
-      },
-      {
-        "id": 2,
-        "title": "Implement Database Schema and Models",
-        "description": "Create PostgreSQL database schema for Projects, Test Cases, Generated Code, and Execution Results entities with proper relationships",
-        "details": "Design and implement database tables: Projects (id, name, target_url, created_at, updated_at), TestCases (id, project_id, scenario_name, test_data, status, created_at), GeneratedCode (id, test_case_id, cypress_script, file_path, created_at), ExecutionResults (id, test_case_id, status, logs, executed_at). Create TypeScript interfaces/types for each entity. Implement database migration scripts and connection pooling. Use pg library for database operations.",
-        "testStrategy": "Run database migrations successfully, verify table creation with proper constraints and relationships, test CRUD operations for each entity",
-        "priority": "high",
-        "dependencies": [
-          1
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Design and Create PostgreSQL Database Schema",
-            "description": "Create the database schema with all required tables and their relationships, including proper indexing and constraints",
-            "dependencies": [],
-            "details": "Create SQL migration files for Projects table (id, name, target_url, created_at, updated_at), TestCases table (id, project_id, scenario_name, test_data, status, created_at), GeneratedCode table (id, test_case_id, cypress_script, file_path, created_at), and ExecutionResults table (id, test_case_id, status, logs, executed_at). Add foreign key constraints, indexes on frequently queried columns, and proper data types. Use UUID for IDs and ensure proper cascading rules.",
-            "status": "done",
-            "testStrategy": "Test schema creation with sample data insertion and verify all constraints work correctly"
-          },
-          {
-            "id": 2,
-            "title": "Implement Database Connection and Pool Management",
-            "description": "Set up PostgreSQL connection using pg library with connection pooling and configuration management",
-            "dependencies": [
-              1
-            ],
-            "details": "Install and configure pg library with connection pooling. Create database configuration module that reads from environment variables (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD). Implement connection pool with appropriate min/max connections, idle timeout, and error handling. Create database initialization function and health check endpoint.",
-            "status": "done",
-            "testStrategy": "Test connection establishment, pool behavior under load, and graceful error handling for connection failures"
-          },
-          {
-            "id": 3,
-            "title": "Create TypeScript Interfaces and Types",
-            "description": "Define TypeScript interfaces and types for all database entities with proper type safety",
-            "dependencies": [
-              1
-            ],
-            "details": "Create interfaces for Project, TestCase, GeneratedCode, and ExecutionResults entities matching the database schema. Include optional fields for updates, create separate types for database rows vs API responses. Add enums for status fields (e.g., TestCaseStatus, ExecutionStatus). Create utility types for partial updates and query filters.",
-            "status": "done",
-            "testStrategy": "Ensure type safety with TypeScript compiler and test type compatibility with database operations"
-          },
-          {
-            "id": 4,
-            "title": "Implement Database Migration System",
-            "description": "Create a migration system to manage database schema changes and versioning",
-            "dependencies": [
-              1,
-              2
-            ],
-            "details": "Create migration runner that tracks applied migrations in a migrations table. Implement up/down migration functions for schema changes. Create initial migration for all tables and sample migrations for future reference. Add CLI commands for running migrations (migrate up, migrate down, migrate status). Include rollback capabilities and migration validation.",
-            "status": "done",
-            "testStrategy": "Test migration execution, rollback functionality, and migration state tracking across different scenarios"
-          },
-          {
-            "id": 5,
-            "title": "Implement Database Access Layer with CRUD Operations",
-            "description": "Create repository pattern with CRUD operations for all entities using the pg library",
-            "dependencies": [
-              2,
-              3,
-              4
-            ],
-            "details": "Create repository classes for each entity (ProjectRepository, TestCaseRepository, GeneratedCodeRepository, ExecutionResultsRepository) with methods for create, read, update, delete operations. Implement query builders for complex queries, transaction support, and proper error handling. Add methods for relationship queries (e.g., get test cases by project). Use prepared statements for security and performance.",
-            "status": "done",
-            "testStrategy": "Unit tests for each repository method, integration tests with actual database, and performance testing for complex queries"
-          }
-        ]
-      },
-      {
-        "id": 3,
-        "title": "Develop URL Validation and HTML Retrieval Service",
-        "description": "Create backend service to validate URLs and retrieve initial HTML content for test case processing",
-        "details": "Implement URL validation service using Node.js with axios for HTTP requests. Create endpoint POST /api/projects/validate-url that: validates URL format using URL constructor, performs HEAD request to check accessibility, retrieves initial HTML content with GET request, extracts basic page metadata (title, meta tags), handles redirects and common HTTP errors. Include timeout handling (10s), user-agent headers, and basic security checks to prevent SSRF attacks.",
-        "testStrategy": "Test with valid/invalid URLs, unreachable domains, redirects, and various HTTP status codes. Verify HTML content extraction and metadata parsing",
-        "priority": "high",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement URL Format Validation and Security Checks",
-            "description": "Create URL validation logic with format checking and SSRF protection to ensure only valid and safe URLs are processed",
-            "dependencies": [],
-            "details": "Use Node.js URL constructor to validate URL format. Implement SSRF protection by blocking private IP ranges (127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), localhost, and non-HTTP/HTTPS protocols. Create utility functions for URL parsing and security validation. Include checks for malformed URLs and suspicious patterns.",
-            "status": "done",
-            "testStrategy": "Unit tests with valid/invalid URLs, private IP addresses, localhost variants, and malicious URL patterns"
-          },
-          {
-            "id": 2,
-            "title": "Configure HTTP Client with Timeout and Headers",
-            "description": "Set up axios HTTP client with proper configuration for timeout handling, user-agent headers, and redirect management",
-            "dependencies": [
-              1
-            ],
-            "details": "Configure axios instance with 10-second timeout, custom user-agent header, automatic redirect following (max 5 redirects), and proper error handling. Set up request interceptors for logging and response interceptors for error processing. Include configuration for handling different response types and status codes.",
-            "status": "done",
-            "testStrategy": "Integration tests for timeout scenarios, redirect handling, and various HTTP response codes"
-          },
-          {
-            "id": 3,
-            "title": "Implement URL Accessibility Check with HEAD Request",
-            "description": "Create service method to perform HEAD requests for checking URL accessibility before full content retrieval",
+            "title": "Update Execution Results Table Schema",
+            "description": "Add video_url and screenshot_urls columns to the execution_results table to support multimedia artifact storage",
             "dependencies": [
               2
             ],
-            "details": "Implement HEAD request functionality to verify URL accessibility without downloading full content. Handle common HTTP status codes (200, 301, 302, 404, 500, etc.) and provide meaningful error messages. Include logic for determining if a URL is accessible based on response status and headers.",
+            "details": "Create migration script to add video_url (VARCHAR) and screenshot_urls (JSON or TEXT array) columns to execution_results table. Consider storage format for multiple screenshot URLs and ensure proper indexing.",
             "status": "done",
-            "testStrategy": "Mock HTTP responses for different status codes and test accessibility determination logic"
+            "testStrategy": "Test JSON/array data insertion and retrieval, verify URL storage and validation"
           },
           {
             "id": 4,
-            "title": "Develop HTML Content Retrieval and Metadata Extraction",
-            "description": "Create functionality to retrieve full HTML content and extract basic page metadata including title and meta tags",
+            "title": "Implement Migration Execution Framework",
+            "description": "Create migration runner with proper rollback capabilities and transaction management",
             "dependencies": [
               3
             ],
-            "details": "Implement GET request to retrieve HTML content after accessibility verification. Use cheerio or similar library to parse HTML and extract title, meta description, meta keywords, and other relevant meta tags. Handle different character encodings and malformed HTML. Create structured metadata object for response.",
+            "details": "Implement migration execution system that runs all schema changes in proper order within transactions. Include rollback functionality, migration versioning, and logging. Ensure atomic operations and proper error handling.",
             "status": "done",
-            "testStrategy": "Test with various HTML structures, different encodings, and edge cases like missing titles or meta tags"
+            "testStrategy": "Test migration execution, rollback scenarios, and verify transaction integrity"
           },
           {
             "id": 5,
-            "title": "Create POST /api/projects/validate-url Endpoint",
-            "description": "Implement the main API endpoint that orchestrates URL validation, accessibility checking, and content retrieval",
+            "title": "Add Data Validation and Integrity Checks",
+            "description": "Implement validation scripts to ensure data integrity after migrations and add constraints for new columns",
             "dependencies": [
               4
             ],
-            "details": "Create Express.js POST endpoint that accepts URL in request body, validates input, calls validation and retrieval services in sequence, and returns structured response with validation status, accessibility info, and extracted metadata. Include comprehensive error handling with appropriate HTTP status codes and error messages. Implement request logging and response formatting.",
+            "details": "Create validation scripts to check data consistency, add appropriate constraints (URL format validation, file path validation), and implement data migration for existing records if needed. Include performance impact assessment.",
             "status": "done",
-            "testStrategy": "End-to-end API tests covering successful validation, various error scenarios, and response format validation"
-          }
-        ]
-      },
-      {
-        "id": 4,
-        "title": "Integrate Mastra.ai Claude LLM for Excel Parsing",
-        "description": "Implement LLM integration using Claude model via Mastra.ai API for parsing and validating Excel test case files",
-        "details": "Setup Mastra.ai SDK integration for Claude model. Create service for Excel file processing: use xlsx library to read .xlsx files, extract sheet data into JSON format, send structured data to Claude via Mastra.ai API with prompt for test case validation and parsing. Design prompt to identify test scenarios, expected actions, assertions, and input requirements. Implement error handling for API failures, rate limiting, and response validation. Store parsed results in TestCases table.",
-        "testStrategy": "Test with various Excel file formats, malformed files, and different test case structures. Verify Claude parsing accuracy and error handling for API failures",
-        "priority": "high",
-        "dependencies": [
-          2
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Setup Mastra.ai SDK Integration and Configuration",
-            "description": "Install and configure the Mastra.ai SDK for Claude model integration, including API key setup and basic connection testing",
-            "dependencies": [],
-            "details": "Install Mastra.ai SDK package, configure environment variables for API keys, create a basic Mastra client instance with Claude model configuration, implement connection validation and basic error handling for authentication failures",
-            "status": "done",
-            "testStrategy": "Unit tests for SDK initialization, connection tests with mock API responses, and authentication validation tests"
-          },
-          {
-            "id": 2,
-            "title": "Implement Excel File Reading and JSON Conversion",
-            "description": "Create service to read Excel files using xlsx library and convert sheet data into structured JSON format suitable for LLM processing",
-            "dependencies": [
-              1
-            ],
-            "details": "Install xlsx library, create ExcelParserService class with methods to read .xlsx files, extract worksheet data, handle multiple sheets, convert cell data to JSON with proper type handling (strings, numbers, dates), implement file validation and error handling for corrupted files",
-            "status": "done",
-            "testStrategy": "Unit tests with sample Excel files, edge case testing for different data types, empty cells, and malformed files"
-          },
-          {
-            "id": 3,
-            "title": "Design and Implement Claude Prompt for Test Case Parsing",
-            "description": "Create structured prompts for Claude to identify and extract test scenarios, expected actions, assertions, and input requirements from Excel data",
-            "dependencies": [
-              1
-            ],
-            "details": "Design prompt templates that instruct Claude to parse Excel data and identify: test case names, test steps, expected results, input parameters, assertions, and validation criteria. Create prompt engineering utilities for consistent formatting, implement response schema validation, and handle different Excel structures and formats",
-            "status": "done",
-            "testStrategy": "Prompt testing with various Excel formats, validation of Claude response structure, and accuracy testing against known test cases"
-          },
-          {
-            "id": 4,
-            "title": "Build LLM Processing Service with Error Handling",
-            "description": "Create service that sends structured Excel data to Claude via Mastra.ai API with comprehensive error handling for API failures and rate limiting",
-            "dependencies": [
-              2,
-              3
-            ],
-            "details": "Create LLMProcessingService class that combines Excel JSON data with prompts, sends requests to Claude via Mastra.ai, implements retry logic with exponential backoff for rate limiting, handles API timeouts and failures, validates response format, and implements response parsing to extract structured test case data",
-            "status": "done",
-            "testStrategy": "Integration tests with Mastra.ai API, error simulation tests for rate limiting and timeouts, response validation tests"
-          },
-          {
-            "id": 5,
-            "title": "Implement Database Storage for Parsed Test Cases",
-            "description": "Create database operations to store parsed test case results in TestCases table with proper data validation and conflict resolution",
-            "dependencies": [
-              4
-            ],
-            "details": "Design TestCases table schema if not exists, create data access layer for storing parsed test cases, implement data validation before database insertion, handle duplicate test cases with update/merge logic, create batch insertion for multiple test cases, implement transaction handling for data consistency, and add logging for successful/failed storage operations",
-            "status": "done",
-            "testStrategy": "Database integration tests, data validation tests, duplicate handling tests, and transaction rollback tests for error scenarios"
-          }
-        ]
-      },
-      {
-        "id": 5,
-        "title": "Create React Frontend with File Upload and URL Input",
-        "description": "Develop React frontend components for URL input, Excel file upload, and project management interface",
-        "details": "Create React components: URLInputForm (with validation feedback), FileUploadComponent (drag-drop support for .xlsx files), ProjectDashboard (list of projects), ProcessingStatus (real-time updates). Use React hooks for state management, axios for API calls, and react-dropzone for file uploads. Implement form validation, loading states, error handling, and success notifications. Style with CSS modules or styled-components for clean, intuitive interface.",
-        "testStrategy": "Test file upload functionality, URL input validation, form submissions, error states, and responsive design across different screen sizes",
-        "priority": "medium",
-        "dependencies": [
-          3
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Set up React project structure and dependencies",
-            "description": "Initialize React application with required dependencies and establish project structure for frontend components",
-            "dependencies": [],
-            "details": "Create React app using create-react-app or Vite. Install dependencies: axios for API calls, react-dropzone for file uploads, CSS modules or styled-components for styling. Set up folder structure with components/, hooks/, services/, and styles/ directories. Configure environment variables for API endpoints.",
-            "status": "done",
-            "testStrategy": "Verify project builds successfully and all dependencies are properly installed"
-          },
-          {
-            "id": 2,
-            "title": "Implement URLInputForm component with validation",
-            "description": "Create URL input form component with real-time validation, error handling, and user feedback",
-            "dependencies": [
-              1
-            ],
-            "details": "Build URLInputForm component using React hooks (useState, useEffect). Implement URL validation using regex or URL constructor. Add visual feedback for valid/invalid URLs, loading states during submission, and error/success notifications. Include form submission handling with axios API calls.",
-            "status": "done",
-            "testStrategy": "Test URL validation with various input formats, verify error states, and test successful form submission"
-          },
-          {
-            "id": 3,
-            "title": "Create FileUploadComponent with drag-and-drop functionality",
-            "description": "Develop file upload component supporting drag-and-drop for Excel files with validation and progress feedback",
-            "dependencies": [
-              1
-            ],
-            "details": "Implement FileUploadComponent using react-dropzone library. Add file type validation for .xlsx files, file size limits, and drag-and-drop visual feedback. Include upload progress indicators, error handling for invalid files, and success notifications. Integrate with backend API for file upload.",
-            "status": "done",
-            "testStrategy": "Test drag-and-drop functionality, file validation with various file types, and upload progress indicators"
-          },
-          {
-            "id": 4,
-            "title": "Build ProjectDashboard for project listing and management",
-            "description": "Create dashboard component to display list of projects with basic management functionality",
-            "dependencies": [
-              1,
-              2,
-              3
-            ],
-            "details": "Develop ProjectDashboard component to fetch and display projects list using axios. Include project cards/rows showing project details, creation date, and status. Add basic actions like view details, delete project. Implement loading states and error handling for API calls. Use React hooks for state management.",
-            "status": "done",
-            "testStrategy": "Test project list rendering, API integration, loading states, and project management actions"
-          },
-          {
-            "id": 5,
-            "title": "Implement ProcessingStatus component with real-time updates",
-            "description": "Create status component to show real-time processing updates and integrate all components into cohesive interface",
-            "dependencies": [
-              1,
-              2,
-              3,
-              4
-            ],
-            "details": "Build ProcessingStatus component with real-time updates using polling or WebSocket connection. Display processing stages, progress indicators, and completion status. Integrate all components (URLInputForm, FileUploadComponent, ProjectDashboard, ProcessingStatus) into main App component with proper routing and state management. Apply consistent styling using CSS modules or styled-components.",
-            "status": "done",
-            "testStrategy": "Test real-time status updates, component integration, responsive design, and overall user experience flow"
-          }
-        ]
-      },
-      {
-        "id": 6,
-        "title": "Implement WebSocket for Real-time Updates",
-        "description": "Setup WebSocket connection between frontend and backend for real-time processing updates and user prompts",
-        "details": "Implement WebSocket server using ws library in Node.js backend. Create WebSocket endpoints for: project processing updates, dynamic user input requests, status notifications. On frontend, use native WebSocket API or socket.io-client for connection management, message handling, and reconnection logic. Implement message types for different update categories and user interaction prompts. Handle connection states and error recovery.",
-        "testStrategy": "Test WebSocket connection establishment, message broadcasting, reconnection handling, and real-time UI updates during processing",
-        "priority": "medium",
-        "dependencies": [
-          5
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Setup WebSocket Server Infrastructure",
-            "description": "Initialize WebSocket server using ws library in Node.js backend with basic connection handling and message routing",
-            "dependencies": [],
-            "details": "Install ws library, create WebSocket server instance, implement basic connection event handlers (connection, close, error), set up message parsing and routing structure, configure server to run alongside existing HTTP server",
-            "status": "done",
-            "testStrategy": "Test basic WebSocket connection establishment and message echo functionality"
-          },
-          {
-            "id": 2,
-            "title": "Define WebSocket Message Types and Protocol",
-            "description": "Create standardized message format and define message types for different categories of real-time updates",
-            "dependencies": [
-              1
-            ],
-            "details": "Define JSON message structure with type, payload, and metadata fields. Create message types for: PROJECT_UPDATE, USER_INPUT_REQUEST, STATUS_NOTIFICATION, ERROR, HEARTBEAT. Implement message validation and type checking utilities",
-            "status": "done",
-            "testStrategy": "Unit tests for message validation and type checking functions"
-          },
-          {
-            "id": 3,
-            "title": "Implement Backend WebSocket Endpoints",
-            "description": "Create specific WebSocket endpoints for project processing updates, user input requests, and status notifications",
-            "dependencies": [
-              2
-            ],
-            "details": "Implement handlers for each message type, integrate with existing project processing logic to emit updates, create user input request mechanism with response handling, implement status notification broadcasting, add client session management",
-            "status": "done",
-            "testStrategy": "Integration tests for each endpoint with mock project data and user scenarios"
-          },
-          {
-            "id": 4,
-            "title": "Build Frontend WebSocket Client",
-            "description": "Implement frontend WebSocket client with connection management, message handling, and automatic reconnection logic",
-            "dependencies": [
-              2
-            ],
-            "details": "Create WebSocket client class using native WebSocket API, implement connection state management (connecting, connected, disconnected), add automatic reconnection with exponential backoff, implement message queue for offline scenarios, create event emitter for UI components",
-            "status": "done",
-            "testStrategy": "Test connection scenarios including network interruptions and server restarts"
-          },
-          {
-            "id": 5,
-            "title": "Integrate WebSocket with UI Components",
-            "description": "Connect WebSocket client to frontend UI components for displaying real-time updates and handling user prompts",
-            "dependencies": [
-              3,
-              4
-            ],
-            "details": "Integrate WebSocket events with React components or UI framework, implement real-time update displays for project processing, create user input prompt modals/components, add connection status indicators, implement error handling and user feedback for connection issues",
-            "status": "done",
-            "testStrategy": "End-to-end testing of real-time updates flow and user interaction scenarios"
+            "testStrategy": "Run validation checks on production-like data volumes, test constraint enforcement and performance impact"
           },
           {
             "id": 6,
-            "title": "Setup WebSocket Server Infrastructure",
-            "description": "Initialize WebSocket server using ws library in Node.js backend with basic connection handling and message routing",
+            "title": "Create Migration Script for Generated Code Table Updates",
+            "description": "Create SQL migration script to add file_url and file_path columns to the generated_code table with proper data types, constraints, and indexing",
             "dependencies": [],
-            "details": "Install ws library, create WebSocket server instance, implement connection event handlers (open, close, error), set up basic message parsing and routing structure, configure server to run alongside existing HTTP server",
+            "details": "Write migration script to ALTER TABLE generated_code ADD COLUMN file_url VARCHAR(500), ADD COLUMN file_path VARCHAR(255). Include proper NULL constraints, add indexes for performance, and ensure backward compatibility. Create corresponding rollback script to DROP these columns.",
             "status": "done",
-            "testStrategy": "Test WebSocket server startup, connection establishment, and basic message echo functionality"
+            "testStrategy": "Test migration on development database copy, verify column creation, data types, and constraints. Test rollback functionality."
           },
           {
             "id": 7,
-            "title": "Define WebSocket Message Protocol",
-            "description": "Create standardized message types and data structures for different categories of real-time updates and user interactions",
+            "title": "Create Test Examples Table Schema and Migration",
+            "description": "Design and implement the test_examples table with proper foreign key relationships to projects table and all required columns for storing test case data",
             "dependencies": [
               6
             ],
-            "details": "Define message schemas for: project processing updates (progress, status, errors), dynamic user input requests (prompts, validation), status notifications (connection state, system alerts). Implement message validation, serialization/deserialization utilities, and error handling for malformed messages",
+            "details": "CREATE TABLE test_examples with columns: id (PRIMARY KEY), project_id (FOREIGN KEY), test_name VARCHAR(255), test_description TEXT, input_data JSON, expected_output JSON, created_at TIMESTAMP, updated_at TIMESTAMP. Include proper indexes and foreign key constraints with CASCADE options.",
             "status": "done",
-            "testStrategy": "Unit tests for message validation, schema compliance, and serialization/deserialization accuracy"
+            "testStrategy": "Verify table creation, foreign key constraints, and data insertion/retrieval. Test referential integrity with projects table."
           },
           {
             "id": 8,
-            "title": "Implement Backend WebSocket Endpoints",
-            "description": "Create specific WebSocket endpoints and handlers for project processing updates, user input requests, and status notifications",
+            "title": "Update Execution Results Table for Media Storage",
+            "description": "Add video_url and screenshot_urls columns to execution_results table to support storing execution artifacts and media files",
             "dependencies": [
               7
             ],
-            "details": "Implement handlers for each message type, integrate with existing project processing logic to emit real-time updates, create user input request system with timeout handling, implement status notification broadcasting, add client session management and message queuing for offline clients",
+            "details": "ALTER TABLE execution_results ADD COLUMN video_url VARCHAR(500), ADD COLUMN screenshot_urls JSON. Ensure JSON column supports array of URL strings. Add appropriate indexes and validation constraints for URL formats.",
             "status": "done",
-            "testStrategy": "Integration tests for each endpoint, mock project processing events, test message broadcasting and client-specific targeting"
+            "testStrategy": "Test column addition, JSON data insertion and retrieval, URL validation constraints, and query performance with indexes."
           },
           {
             "id": 9,
-            "title": "Build Frontend WebSocket Client",
-            "description": "Implement frontend WebSocket client with connection management, message handling, and automatic reconnection logic",
+            "title": "Implement Migration Execution and Rollback System",
+            "description": "Create migration management system with proper version tracking, execution order, and rollback capabilities for all schema changes",
             "dependencies": [
-              7
+              8
             ],
-            "details": "Create WebSocket client class using native WebSocket API, implement connection state management (connecting, connected, disconnected), add automatic reconnection with exponential backoff, implement message queue for offline scenarios, create event emitter system for component communication",
+            "details": "Implement migration runner that tracks applied migrations in migrations_history table. Create rollback scripts for each migration. Ensure atomic execution with transaction wrapping. Include migration status tracking and error handling.",
             "status": "done",
-            "testStrategy": "Test connection establishment, reconnection scenarios, message queuing during offline periods, and event propagation to UI components"
+            "testStrategy": "Test migration execution order, rollback functionality, transaction atomicity, and error recovery scenarios."
           },
           {
             "id": 10,
-            "title": "Integrate WebSocket with UI Components",
-            "description": "Connect WebSocket client to frontend UI components for displaying real-time updates and handling user interaction prompts",
+            "title": "Data Validation and Schema Integrity Testing",
+            "description": "Implement comprehensive validation tests for all schema changes, data integrity checks, and performance impact assessment",
             "dependencies": [
-              8,
               9
             ],
-            "details": "Create React hooks or context for WebSocket state management, implement UI components for displaying processing updates and progress indicators, build dynamic user input prompt system with form validation, add connection status indicator, implement error handling and user feedback for connection issues",
+            "details": "Create validation scripts to verify all new columns, constraints, and relationships work correctly. Test data migration scenarios, foreign key integrity, JSON data validation, and query performance. Include automated tests for schema compliance.",
             "status": "done",
-            "testStrategy": "End-to-end tests for real-time update display, user input prompt workflows, connection state UI updates, and error scenario handling"
+            "testStrategy": "Run full database validation suite, performance benchmarks, data integrity checks, and end-to-end testing with sample data insertion and retrieval."
           }
         ]
       },
       {
-        "id": 7,
-        "title": "Develop Dynamic URL Exploration Engine",
-        "description": "Create automated navigation system that explores URLs based on parsed test cases and collects necessary user inputs",
-        "details": "Implement URL exploration service using Puppeteer for browser automation. Create navigation logic that: reads test case scenarios, navigates to specified URLs/pages, identifies required form inputs and interactive elements, captures page states and element selectors. Implement dynamic input collection by prompting users via WebSocket for missing test data. Store exploration results including element selectors, page screenshots, and navigation paths for Cypress script generation.",
-        "testStrategy": "Test navigation across different website structures, form detection accuracy, user input collection flow, and handling of dynamic content loading",
-        "priority": "medium",
+        "id": 15,
+        "title": "Test Case Multi-Selection UI Components",
+        "description": "Implement checkbox selection interface for test case list with bulk selection capabilities",
+        "details": "Add checkbox column to test case table component, implement select all/none functionality, create selection state management using React hooks or state management library, add selection toolbar with bulk actions, implement visual feedback for selected items with proper accessibility support.",
+        "testStrategy": "Unit tests for selection state management, integration tests for bulk selection actions, accessibility testing for keyboard navigation, visual regression tests for UI components",
+        "priority": "high",
         "dependencies": [
-          4,
-          6
+          14
         ],
-        "status": "done",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Implement Core Puppeteer Browser Automation Service",
-            "description": "Create the foundational browser automation service using Puppeteer to handle browser lifecycle, page navigation, and basic interaction capabilities",
+            "title": "Add Checkbox Column to Test Case Table",
+            "description": "Implement a checkbox column as the first column in the test case table component to enable individual row selection",
             "dependencies": [],
-            "details": "Set up Puppeteer service class with methods for browser initialization, page creation, navigation to URLs, and cleanup. Implement error handling for navigation failures, timeouts, and browser crashes. Configure browser options for headless/headed modes and viewport settings. Create utility methods for waiting for page loads and element visibility.",
-            "status": "done",
-            "testStrategy": "Unit tests for browser lifecycle management, navigation success/failure scenarios, and timeout handling"
+            "details": "Add a new column definition to the table component with checkboxes for each row. Include a header checkbox for select all functionality. Ensure proper alignment and spacing. Use controlled checkbox components that accept checked state and onChange handlers. Add proper ARIA labels for accessibility.",
+            "status": "pending",
+            "testStrategy": "Unit tests for checkbox rendering, interaction events, and accessibility attributes. Visual regression tests for table layout."
           },
           {
             "id": 2,
-            "title": "Develop Test Case Parser and URL Extraction Logic",
-            "description": "Build parser to read test case scenarios and extract target URLs, navigation sequences, and expected page interactions",
+            "title": "Implement Selection State Management",
+            "description": "Create React hooks or state management logic to track selected test case IDs and provide selection manipulation functions",
             "dependencies": [
               1
             ],
-            "details": "Create parser service that reads test case files/data structures and extracts URLs, navigation paths, and interaction requirements. Implement logic to identify different types of navigation (direct URL access, form submissions, link clicks). Parse expected user actions and form field requirements from test scenarios. Generate navigation plan with ordered steps and required inputs.",
-            "status": "done",
-            "testStrategy": "Unit tests with sample test case files, validation of parsed navigation sequences, and edge case handling for malformed test cases"
+            "details": "Create a custom hook (useTestCaseSelection) or state slice that manages: selected item IDs array, selection manipulation functions (select, deselect, selectAll, clearAll), computed properties (selectedCount, isAllSelected, isIndeterminate). Implement efficient state updates and avoid unnecessary re-renders.",
+            "status": "pending",
+            "testStrategy": "Unit tests for state management logic, selection functions, and computed properties. Test edge cases like empty lists and single item selection."
           },
           {
             "id": 3,
-            "title": "Create Page Element Discovery and Analysis Engine",
-            "description": "Implement automated page analysis to identify interactive elements, form fields, and capture element selectors and page structure",
+            "title": "Implement Select All/None Functionality",
+            "description": "Add header checkbox with three states (unchecked, checked, indeterminate) and implement bulk selection logic",
             "dependencies": [
-              1
+              1,
+              2
             ],
-            "details": "Develop page scanner that identifies all interactive elements (forms, buttons, inputs, links). Generate robust CSS selectors and XPath expressions for each element. Capture element attributes, types, validation requirements, and accessibility properties. Implement page state capture including DOM structure, loaded resources, and visual layout. Create element classification system for different input types and interaction patterns.",
-            "status": "done",
-            "testStrategy": "Integration tests with various page types, selector reliability validation, and element detection accuracy verification"
+            "details": "Implement header checkbox that shows indeterminate state when some items are selected, checked when all are selected, and unchecked when none are selected. Add click handlers for select all/none operations. Ensure proper keyboard navigation and ARIA states for screen readers.",
+            "status": "pending",
+            "testStrategy": "Integration tests for select all scenarios, keyboard navigation tests, and accessibility compliance tests using axe-core."
           },
           {
             "id": 4,
-            "title": "Build Dynamic User Input Collection via WebSocket",
-            "description": "Implement real-time communication system to prompt users for missing test data and form inputs during exploration",
+            "title": "Create Selection Toolbar with Bulk Actions",
+            "description": "Build a toolbar component that appears when items are selected, showing selection count and bulk action buttons",
             "dependencies": [
-              2,
-              3
+              2
             ],
-            "details": "Set up WebSocket server for real-time communication with frontend clients. Create input request system that identifies missing form data and prompts users with context about required fields. Implement input validation and type checking for collected data. Build queue system for handling multiple input requests and user responses. Create fallback mechanisms for timeout scenarios and default value handling.",
-            "status": "done",
-            "testStrategy": "WebSocket connection tests, input validation scenarios, timeout handling, and concurrent user session management"
+            "details": "Create a toolbar component that conditionally renders based on selection state. Include selection counter, clear selection button, and placeholder bulk action buttons (delete, export, etc.). Use smooth animations for show/hide transitions. Position toolbar appropriately (above table or floating). Implement proper focus management when toolbar appears.",
+            "status": "pending",
+            "testStrategy": "Component tests for toolbar visibility logic, animation tests, and focus management tests. Mock bulk actions for testing."
           },
           {
             "id": 5,
-            "title": "Implement Exploration Results Storage and Navigation Path Recording",
-            "description": "Create comprehensive storage system for exploration results including element selectors, screenshots, navigation paths, and collected data for Cypress script generation",
+            "title": "Add Visual Feedback and Accessibility Support",
+            "description": "Implement visual styling for selected rows and comprehensive accessibility features for the selection interface",
             "dependencies": [
               1,
               2,
               3,
               4
             ],
-            "details": "Design data structure for storing exploration results with navigation sequences, element mappings, and user inputs. Implement screenshot capture at key navigation points and form interactions. Create navigation path recording with timestamps, actions performed, and page states. Build result serialization for Cypress script generation compatibility. Implement data persistence with options for database or file-based storage.",
-            "status": "done",
-            "testStrategy": "Data integrity tests, screenshot quality validation, navigation path accuracy verification, and storage/retrieval performance testing"
+            "details": "Add CSS classes for selected row highlighting with appropriate contrast ratios. Implement focus indicators for keyboard navigation. Add ARIA live regions for selection announcements. Include proper role attributes and aria-selected states. Add keyboard shortcuts (Ctrl+A for select all, Escape to clear). Ensure color-blind friendly selection indicators.",
+            "status": "pending",
+            "testStrategy": "Accessibility audit using automated tools and manual testing. Keyboard navigation tests. Screen reader compatibility tests. Visual contrast validation."
           }
         ]
       },
       {
-        "id": 8,
-        "title": "Build Interactive Input Collection System",
-        "description": "Create system for dynamically prompting users for test inputs during URL exploration with secure storage",
-        "details": "Implement input collection service that: identifies missing test data during exploration, generates user-friendly prompts via WebSocket, validates and stores user inputs securely, links inputs to specific test cases and scenarios. Create frontend components for displaying input prompts, form fields for different data types (text, select, checkbox), and input validation. Implement secure storage with encryption for sensitive test data and session management for multi-step input collection.",
-        "testStrategy": "Test input prompt generation, user response handling, data validation, secure storage, and session persistence across different scenarios",
-        "priority": "medium",
-        "dependencies": [
-          7
-        ],
-        "status": "done",
-        "subtasks": [
-          {
-            "id": 1,
-            "title": "Implement Input Collection Service Backend",
-            "description": "Create the core backend service that identifies missing test data during URL exploration and manages the input collection workflow",
-            "dependencies": [],
-            "details": "Build a service class that monitors test execution, detects when test data is missing or incomplete, and triggers input collection requests. Implement logic to categorize different types of required inputs (authentication tokens, form data, API parameters) and generate structured input requirements. Create data models for input requests, validation rules, and input metadata.",
-            "status": "done",
-            "testStrategy": "Unit tests for input detection logic, mock test scenarios with missing data, verify correct categorization of input types"
-          },
-          {
-            "id": 2,
-            "title": "Build WebSocket Communication Layer",
-            "description": "Implement real-time WebSocket communication system for sending input prompts to users and receiving responses",
-            "dependencies": [
-              1
-            ],
-            "details": "Set up WebSocket server endpoints for bidirectional communication between backend and frontend. Create message protocols for input requests, user responses, and status updates. Implement connection management, reconnection logic, and message queuing for reliability. Add authentication and authorization for WebSocket connections.",
-            "status": "done",
-            "testStrategy": "Integration tests for WebSocket connectivity, message delivery verification, connection resilience testing under network interruptions"
-          },
-          {
-            "id": 3,
-            "title": "Create Frontend Input Collection Components",
-            "description": "Develop React components for displaying input prompts and collecting user data through various form field types",
-            "dependencies": [
-              2
-            ],
-            "details": "Build reusable components for different input types: text fields, dropdowns, checkboxes, file uploads, and multi-step forms. Implement real-time validation with visual feedback, dynamic form generation based on backend requirements, and responsive design. Create a modal or sidebar interface for input collection that doesn't interrupt the main exploration workflow.",
-            "status": "done",
-            "testStrategy": "Component testing with React Testing Library, visual regression tests, accessibility testing, cross-browser compatibility verification"
-          },
-          {
-            "id": 4,
-            "title": "Implement Secure Data Storage and Encryption",
-            "description": "Build secure storage system with encryption for sensitive test data and session management capabilities",
-            "dependencies": [
-              1
-            ],
-            "details": "Implement AES encryption for sensitive input data at rest, create secure key management system, and build database schema for storing encrypted inputs with metadata. Add session management for multi-step input collection, implement data retention policies, and create secure APIs for data retrieval. Include audit logging for data access and modifications.",
-            "status": "done",
-            "testStrategy": "Security testing for encryption/decryption, penetration testing for data access, compliance verification for data protection standards"
-          },
-          {
-            "id": 5,
-            "title": "Integrate Input Validation and Test Case Linking",
-            "description": "Connect input validation system with test case execution and establish links between collected inputs and specific test scenarios",
-            "dependencies": [
-              3,
-              4
-            ],
-            "details": "Implement comprehensive input validation rules (format, length, type checking), create mapping system to link inputs to specific test cases and scenarios, and build input preprocessing for test execution. Add input versioning for test repeatability, implement input templates for common scenarios, and create feedback mechanisms for validation errors.",
-            "status": "done",
-            "testStrategy": "End-to-end testing of complete input collection workflow, validation rule testing with edge cases, integration testing with existing test execution system"
-          }
-        ]
-      },
-      {
-        "id": 9,
-        "title": "Implement Cypress Script Generation Engine",
-        "description": "Create automated Cypress test script generator that produces organized test files based on exploration results and user inputs",
-        "details": "Develop Cypress script generation service that: uses exploration data and user inputs to create test scripts, generates proper Cypress syntax for navigation, interactions, and assertions, organizes scripts into structured directories by scenario/project, includes proper test setup, teardown, and data management. Create templates for common test patterns (form filling, navigation, assertions). Implement file system operations to save generated scripts with proper naming conventions and folder structure. Store script metadata in GeneratedCode table.",
-        "testStrategy": "Verify generated Cypress scripts are syntactically correct, executable, and properly organized. Test with various test case complexities and validate script functionality",
+        "id": 16,
+        "title": "File Storage System and Directory Structure",
+        "description": "Implement local file storage system with organized directory structure for generated Cypress test files",
+        "details": "Create uploads directory structure (/uploads/projects/{projectId}/tests/), implement file naming convention with timestamps and unique identifiers, add file validation and sanitization, implement file serving endpoint with proper security headers, create file cleanup mechanism for old files with configurable retention policy.",
+        "testStrategy": "Test file creation and directory structure, validate file naming uniqueness, test file serving with various file types, verify security measures against path traversal attacks, test cleanup mechanism",
         "priority": "high",
         "dependencies": [
-          8
+          14
         ],
-        "status": "done",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Create Cypress Test Template System",
-            "description": "Develop a template engine that provides reusable Cypress test patterns for common testing scenarios like form filling, navigation, and assertions",
+            "title": "Create Directory Structure and File Naming System",
+            "description": "Implement the organized directory structure for file storage with proper naming conventions",
             "dependencies": [],
-            "details": "Create template classes for different test patterns: FormTestTemplate (handles input filling, validation, submission), NavigationTestTemplate (page navigation, URL verification), AssertionTestTemplate (element visibility, text content, attribute checks). Each template should accept parameters and generate appropriate Cypress commands. Implement a TemplateRegistry to manage and retrieve templates by type.",
-            "status": "done",
-            "testStrategy": "Unit tests for each template class to verify correct Cypress syntax generation with various input parameters"
+            "details": "Create the /uploads/projects/{projectId}/tests/ directory structure programmatically. Implement file naming convention using timestamps and unique identifiers (e.g., test_YYYYMMDD_HHMMSS_UUID.cy.js). Create utility functions for path generation and ensure cross-platform compatibility. Handle directory creation with proper permissions and error handling for existing directories.",
+            "status": "pending",
+            "testStrategy": "Unit tests for path generation functions, directory creation with various scenarios including existing directories and permission issues"
           },
           {
             "id": 2,
-            "title": "Build Cypress Syntax Generator",
-            "description": "Implement core engine that converts exploration data and user inputs into valid Cypress test commands and assertions",
+            "title": "Implement File Validation and Sanitization",
+            "description": "Create comprehensive file validation and sanitization mechanisms for uploaded test files",
             "dependencies": [
               1
             ],
-            "details": "Create CypressSyntaxGenerator class that processes exploration results (selectors, actions, expected outcomes) and generates corresponding Cypress commands (cy.visit(), cy.get(), cy.click(), cy.type(), cy.should()). Handle different selector types (CSS, XPath, data attributes) and convert them to Cypress-compatible selectors. Include proper command chaining and waiting strategies.",
-            "status": "done",
-            "testStrategy": "Integration tests with sample exploration data to verify generated Cypress commands execute correctly"
+            "details": "Implement file type validation (only .js/.cy.js files), file size limits, content sanitization to prevent malicious code injection. Validate file names against allowed characters and length limits. Create middleware for file upload validation that checks MIME types, file extensions, and scans content for potentially harmful patterns. Implement filename sanitization to remove special characters and ensure safe storage.",
+            "status": "pending",
+            "testStrategy": "Test with various file types, oversized files, files with malicious content, and edge cases for filename validation"
           },
           {
             "id": 3,
-            "title": "Implement Test Script Organization System",
-            "description": "Create file system management for organizing generated Cypress tests into structured directories with proper naming conventions",
+            "title": "Create File Serving Endpoint with Security Headers",
+            "description": "Implement secure file serving endpoint with proper authentication and security headers",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Develop FileSystemManager that creates organized directory structures (cypress/e2e/[project]/[scenario]). Implement naming conventions for test files based on scenario type and timestamp. Create index files for test suites and configuration files (cypress.config.js) when needed. Handle file conflicts and versioning for regenerated tests.",
-            "status": "done",
-            "testStrategy": "File system tests to verify correct directory creation, file naming, and organization structure"
+            "details": "Create REST endpoint (GET /api/files/projects/{projectId}/tests/{filename}) with authentication middleware. Implement security headers including Content-Security-Policy, X-Content-Type-Options, X-Frame-Options. Add rate limiting and access control to prevent unauthorized file access. Ensure files are served with correct MIME types and implement range requests for large files. Add logging for file access attempts.",
+            "status": "pending",
+            "testStrategy": "Test authentication, authorization, security headers, rate limiting, and file serving for various file types and sizes"
           },
           {
             "id": 4,
-            "title": "Create Test Setup and Teardown Management",
-            "description": "Implement comprehensive test lifecycle management including setup, teardown, and test data handling for generated Cypress tests",
+            "title": "Implement File Upload and Storage Operations",
+            "description": "Create file upload handling with atomic operations and error recovery",
             "dependencies": [
-              2
+              2,
+              3
             ],
-            "details": "Create TestLifecycleManager that generates beforeEach/afterEach hooks for test setup and cleanup. Handle test data management (fixtures, environment variables, database seeding/cleanup). Implement custom commands for common setup tasks. Generate proper test isolation and state management code to ensure tests run independently.",
-            "status": "done",
-            "testStrategy": "End-to-end tests to verify setup/teardown code works correctly and tests remain isolated"
+            "details": "Implement POST endpoint for file uploads with multipart/form-data support. Use atomic file operations (write to temp file, then move) to prevent corruption. Add file metadata storage (creation time, size, checksum) in database or filesystem. Implement duplicate detection and handling. Create file versioning system if multiple versions of same test file are uploaded. Add progress tracking for large file uploads.",
+            "status": "pending",
+            "testStrategy": "Test file upload scenarios including network interruptions, duplicate files, concurrent uploads, and various file sizes"
           },
           {
             "id": 5,
-            "title": "Integrate Script Generation with Database Storage",
-            "description": "Complete the generation engine by integrating all components and implementing database storage for generated script metadata",
+            "title": "Create File Cleanup Mechanism with Retention Policy",
+            "description": "Implement automated file cleanup system with configurable retention policies",
+            "dependencies": [
+              1,
+              4
+            ],
+            "details": "Create scheduled job (cron-like) for file cleanup based on configurable retention policy (default 30 days). Implement cleanup criteria: file age, project status, file usage frequency. Add configuration options for retention period per project or globally. Create soft delete mechanism with recovery period before permanent deletion. Implement cleanup logging and metrics. Add manual cleanup API endpoint for administrators.",
+            "status": "pending",
+            "testStrategy": "Test cleanup scheduling, retention policy enforcement, soft delete recovery, and cleanup under various file age and usage scenarios"
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Batch Code Generation API and Queue System",
+        "description": "Create API endpoint for batch code generation with queue system for handling multiple requests",
+        "details": "Implement POST /api/test-cases/generate-batch endpoint, create job queue system using Redis or in-memory queue, implement progress tracking for batch operations, integrate with existing Mastra AI service, add proper error handling and retry logic, implement rate limiting for AI API calls.",
+        "testStrategy": "API endpoint testing with various batch sizes, queue system stress testing, error handling validation, rate limiting verification, integration testing with AI service",
+        "priority": "high",
+        "dependencies": [
+          15,
+          16
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Job Queue System with Redis",
+            "description": "Set up Redis-based job queue system to handle batch code generation requests asynchronously",
+            "dependencies": [],
+            "details": "Install and configure Redis client, create job queue manager with methods for adding jobs, processing jobs, and managing job status. Implement job data structure with fields for request ID, input parameters, status, progress, and results. Add queue worker process that polls for new jobs and processes them sequentially.",
+            "status": "pending",
+            "testStrategy": "Unit tests for queue operations, integration tests for Redis connectivity, test job lifecycle from creation to completion"
+          },
+          {
+            "id": 2,
+            "title": "Create Batch Generation API Endpoint",
+            "description": "Implement POST /api/test-cases/generate-batch endpoint to accept batch requests and queue them for processing",
+            "dependencies": [
+              1
+            ],
+            "details": "Create API route handler that validates batch request payload, generates unique job ID, queues the job using the queue system, and returns job ID to client. Implement request validation for batch size limits, input format validation, and authentication/authorization checks.",
+            "status": "pending",
+            "testStrategy": "API endpoint tests for valid/invalid requests, test job queuing functionality, verify proper response format with job ID"
+          },
+          {
+            "id": 3,
+            "title": "Implement Progress Tracking System",
+            "description": "Create progress tracking mechanism to monitor batch job status and provide real-time updates",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement job status tracking with states (queued, processing, completed, failed), create progress percentage calculation based on completed items, add GET /api/test-cases/batch-status/:jobId endpoint to retrieve job status and progress, implement WebSocket or Server-Sent Events for real-time progress updates.",
+            "status": "pending",
+            "testStrategy": "Test status transitions, verify progress calculations, test real-time update mechanisms, validate status endpoint responses"
+          },
+          {
+            "id": 4,
+            "title": "Integrate Mastra AI Service with Rate Limiting",
+            "description": "Connect batch processing system with existing Mastra AI service and implement rate limiting for API calls",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Modify job processor to call Mastra AI service for each item in batch, implement rate limiting using token bucket or sliding window algorithm to respect AI API limits, add configurable rate limits per time window, implement request queuing when rate limits are exceeded.",
+            "status": "pending",
+            "testStrategy": "Test AI service integration, verify rate limiting behavior under load, test rate limit configuration changes, validate proper handling of API rate limit responses"
+          },
+          {
+            "id": 5,
+            "title": "Add Error Handling and Retry Logic",
+            "description": "Implement comprehensive error handling and retry mechanisms for failed batch operations",
             "dependencies": [
               1,
               2,
               3,
               4
             ],
-            "details": "Create main CypressScriptGenerator service that orchestrates template system, syntax generator, file organization, and lifecycle management. Implement database operations to store script metadata in GeneratedCode table (script path, generation timestamp, source exploration data, configuration). Add API endpoints for script generation requests and retrieval of generated scripts. Include error handling and logging throughout the generation process.",
-            "status": "done",
-            "testStrategy": "Full integration tests covering the complete generation workflow from exploration data input to file creation and database storage"
+            "details": "Add exponential backoff retry logic for failed AI API calls, implement dead letter queue for permanently failed jobs, add error categorization (temporary vs permanent failures), implement partial success handling where some items succeed and others fail, add job cleanup and result persistence mechanisms.",
+            "status": "pending",
+            "testStrategy": "Test retry logic with simulated failures, verify dead letter queue functionality, test partial failure scenarios, validate error categorization and handling"
           }
         ]
       },
       {
-        "id": 10,
-        "title": "Create RESTful API Endpoints and Error Handling",
-        "description": "Implement comprehensive REST API endpoints for project management, test case operations, and script generation with proper error handling",
-        "details": "Create REST API endpoints: GET/POST /api/projects (project CRUD), POST /api/projects/:id/test-cases (upload and parse Excel), GET /api/projects/:id/scripts (retrieve generated scripts), POST /api/projects/:id/explore (trigger URL exploration), GET /api/projects/:id/status (processing status). Implement proper HTTP status codes, request validation using Joi or similar, comprehensive error handling with structured error responses, request logging, and API documentation. Add middleware for CORS, body parsing, and security headers.",
-        "testStrategy": "Test all API endpoints with various request payloads, validate error responses, verify proper HTTP status codes, and ensure API documentation accuracy",
+        "id": 18,
+        "title": "Generated Code File Management and Download",
+        "description": "Implement file management system for generated Cypress code with download functionality",
+        "details": "Save generated Cypress code as .cy.js files with proper formatting, update database records with file URLs and paths, implement GET /api/generated-code/:id/download endpoint, add file metadata tracking, implement file validation and virus scanning if required.",
+        "testStrategy": "Test file generation with various code formats, validate database updates, test download functionality with different file sizes, verify file integrity and format validation",
         "priority": "medium",
         "dependencies": [
-          9
+          16,
+          17
         ],
-        "status": "done",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Set up Express.js server with middleware and basic routing structure",
-            "description": "Initialize Express.js application with essential middleware for CORS, body parsing, security headers, and request logging. Set up the basic routing structure for all API endpoints.",
+            "title": "Implement File Storage System for Generated Cypress Code",
+            "description": "Create a file storage system that saves generated Cypress test code as properly formatted .cy.js files with organized directory structure",
             "dependencies": [],
-            "details": "Install Express.js, helmet, cors, morgan, and body-parser. Configure middleware stack with helmet for security headers, cors for cross-origin requests, express.json() for JSON parsing, and morgan for request logging. Create route files for projects, test-cases, scripts, and exploration endpoints. Set up basic error handling middleware.",
-            "status": "done",
-            "testStrategy": "Test middleware functionality with basic HTTP requests, verify CORS headers, security headers, and request logging output"
+            "details": "Set up file system operations using Node.js fs module or cloud storage SDK. Create directory structure like /generated-tests/{userId}/{testId}/. Implement file naming convention with timestamps. Add proper .cy.js formatting with ESLint/Prettier integration. Handle file write operations with error handling and atomic writes.",
+            "status": "pending",
+            "testStrategy": "Unit tests for file creation, directory structure validation, and file content formatting verification"
           },
           {
             "id": 2,
-            "title": "Implement project CRUD endpoints with validation",
-            "description": "Create GET and POST endpoints for /api/projects with comprehensive request validation using Joi schema validation and proper HTTP status codes.",
+            "title": "Update Database Schema and Records for File Metadata",
+            "description": "Extend database schema to store file metadata and implement database operations to track generated code files",
             "dependencies": [
               1
             ],
-            "details": "Install Joi for validation. Create Joi schemas for project creation and updates. Implement GET /api/projects to retrieve all projects and POST /api/projects to create new projects. Add validation middleware to check required fields, data types, and business rules. Return appropriate HTTP status codes (200, 201, 400, 500) with structured JSON responses.",
-            "status": "done",
-            "testStrategy": "Unit tests for validation schemas, integration tests for endpoints with valid/invalid payloads, test HTTP status codes and response structure"
+            "details": "Add columns to existing tables: file_path, file_url, file_size, created_at, updated_at. Create file_metadata table if needed with foreign key relationships. Implement database queries to insert/update file records when files are created. Add indexing for efficient file lookups by test ID or user ID.",
+            "status": "pending",
+            "testStrategy": "Database integration tests for CRUD operations, schema validation, and foreign key constraints"
           },
           {
             "id": 3,
-            "title": "Create test case upload and Excel parsing endpoint",
-            "description": "Implement POST /api/projects/:id/test-cases endpoint to handle Excel file uploads, parse the content, and store test case data with proper validation and error handling.",
+            "title": "Create File Download API Endpoint",
+            "description": "Implement GET /api/generated-code/:id/download endpoint to serve generated Cypress files with proper headers and security",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Install multer for file uploads and xlsx or exceljs for Excel parsing. Create endpoint to accept multipart/form-data with Excel files. Implement Excel parsing logic to extract test case data, validate file format and content structure. Add error handling for invalid files, parsing errors, and storage failures. Return structured response with parsed test case count and any validation errors.",
-            "status": "done",
-            "testStrategy": "Test with valid Excel files, invalid file formats, corrupted files, and files with missing required columns. Verify error messages and status codes"
+            "details": "Create Express.js route handler that validates user permissions, retrieves file metadata from database, sets appropriate Content-Type and Content-Disposition headers. Implement file streaming for large files. Add rate limiting and authentication middleware. Handle file not found and permission denied scenarios.",
+            "status": "pending",
+            "testStrategy": "API integration tests for successful downloads, error scenarios, authentication, and file streaming performance"
           },
           {
             "id": 4,
-            "title": "Implement script generation and URL exploration endpoints",
-            "description": "Create GET /api/projects/:id/scripts for retrieving generated scripts and POST /api/projects/:id/explore for triggering URL exploration with proper status tracking.",
+            "title": "Implement File Validation and Security Scanning",
+            "description": "Add file validation to ensure generated code integrity and implement security scanning for malicious content detection",
             "dependencies": [
-              3
+              1
             ],
-            "details": "Implement GET endpoint to retrieve generated test scripts with filtering options. Create POST endpoint for URL exploration that triggers background processing. Add validation for exploration parameters (URLs, depth, etc.). Implement status tracking mechanism for long-running operations. Return appropriate responses for different processing states (queued, in-progress, completed, failed).",
-            "status": "done",
-            "testStrategy": "Test script retrieval with various filters, test exploration trigger with valid/invalid URLs, verify status tracking accuracy"
+            "details": "Implement file size limits and content validation. Add syntax validation for JavaScript/Cypress code using AST parsing. Integrate virus scanning using ClamAV or cloud-based scanning service. Create validation pipeline that runs before file storage. Implement quarantine system for suspicious files.",
+            "status": "pending",
+            "testStrategy": "Security tests with malicious file samples, validation tests for various file formats, and performance tests for scanning operations"
           },
           {
             "id": 5,
-            "title": "Add comprehensive error handling and status monitoring endpoint",
-            "description": "Implement GET /api/projects/:id/status endpoint and enhance global error handling with structured error responses, proper logging, and API documentation.",
+            "title": "Add File Metadata Tracking and Management Features",
+            "description": "Implement comprehensive file metadata tracking including version history, access logs, and cleanup mechanisms",
             "dependencies": [
+              2,
+              3,
               4
             ],
-            "details": "Create status endpoint to return current processing state, progress information, and any error details. Implement global error handler middleware to catch and format all errors consistently. Create structured error response format with error codes, messages, and details. Add comprehensive logging for errors and important operations. Generate API documentation using Swagger/OpenAPI specification with endpoint descriptions, request/response schemas, and error codes.",
-            "status": "done",
-            "testStrategy": "Test status endpoint accuracy, verify error response consistency across all endpoints, test error logging functionality, validate API documentation completeness"
+            "details": "Create file versioning system to track code changes over time. Implement access logging for download tracking and analytics. Add file cleanup job for old/unused files with configurable retention policies. Create admin endpoints for file management. Implement file statistics and usage reporting.",
+            "status": "pending",
+            "testStrategy": "End-to-end tests for complete file lifecycle, performance tests for cleanup operations, and integration tests for metadata consistency"
           }
         ]
       },
       {
-        "id": 11,
-        "title": "Fix TypeScript Compilation Errors in Backend",
-        "description": "Complete resolution of remaining TypeScript compilation errors in the backend codebase. Reduced from 460+ to 451 errors through initial fixes. Focus on completing repository pattern implementation and service interface alignment to achieve zero compilation errors with 'pnpm build'.",
-        "status": "done",
-        "dependencies": [
-          1,
-          2,
-          3,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
-        "priority": "high",
-        "details": "Complete the TypeScript error resolution by addressing the remaining 451 compilation errors, building on previous fixes: COMPLETED FIXES: 1) Fixed unused variables (TS6133) by adding underscore prefixes, 2) Updated CypressGenerationResult interface with missing properties (errors, organizationResult, testSuite), 3) Fixed MikroORM repository method calls (findById→findOne, delete→removeAndFlush), 4) Removed unused imports (fs, path), 5) Fixed WebSocket server initialization, 6) Added proper error type checking. REMAINING WORK: 1) Complete repository pattern implementation in route files by adding missing repository methods and proper dependency injection, 2) Resolve service interface mismatches by ensuring all service classes properly implement their interfaces with correct method signatures, 3) Fix entity property mapping issues in MikroORM entities to match database schema, 4) Add missing type definitions for API request/response objects, 5) Implement proper error handling with typed catch blocks in remaining files, 6) Ensure all async functions have correct Promise return types, 7) Add type guards for dynamic content validation, 8) Update import statements to match refactored module exports.",
-        "testStrategy": "Execute 'pnpm build' command and verify zero compilation errors (down from current 451). Run TypeScript compiler with --noEmit flag to validate all type checking. Test all API endpoints to ensure repository pattern changes don't break functionality. Verify WebSocket connections still work after interface updates. Run existing unit tests to confirm no regressions from service interface changes. Validate database operations work correctly with updated entity mappings. Ensure Docker build process completes successfully with zero TypeScript errors.",
-        "subtasks": [
-          {
-            "id": "11-1",
-            "title": "Complete repository pattern implementation in route files",
-            "description": "Add missing repository methods and proper dependency injection to resolve route file compilation errors",
-            "status": "done"
-          },
-          {
-            "id": "11-2",
-            "title": "Resolve service interface mismatches",
-            "description": "Ensure all service classes properly implement their interfaces with correct method signatures and return types",
-            "status": "done"
-          },
-          {
-            "id": "11-3",
-            "title": "Fix entity property mapping in MikroORM entities",
-            "description": "Update entity property definitions to match database schema and resolve mapping compilation errors",
-            "status": "done"
-          },
-          {
-            "id": "11-4",
-            "title": "Add missing API request/response type definitions",
-            "description": "Define proper TypeScript interfaces for API endpoints that are currently missing type definitions",
-            "status": "done"
-          }
-        ]
-      },
-      {
-        "id": 12,
-        "title": "Implement MikroORM Migration System",
-        "description": "Replace the current custom SQL migration system with MikroORM's built-in migration system for better TypeScript integration and type safety",
-        "details": "Transition from the existing custom SQL-based migration approach to MikroORM's native migration system. This includes: 1) Setting up MikroORM migration configuration in the mikro-orm.config.ts file, 2) Converting existing SQL migrations to MikroORM migration format, 3) Creating migration commands in package.json for common operations (create, up, down, list), 4) Implementing automatic migration generation based on entity changes, 5) Ensuring type safety between entities and database schema, 6) Setting up migration versioning and rollback capabilities, 7) Integrating migrations with the application startup process, 8) Documenting the new migration workflow for the development team.",
-        "testStrategy": "Verify MikroORM migrations can be generated from entity changes, test migration execution and rollback functionality, ensure database schema matches entity definitions after migrations, validate that existing data is preserved during migration transition, test migration commands work correctly in development and production environments",
+        "id": 19,
+        "title": "Cypress Programmatic Integration and Test Runner Service",
+        "description": "Integrate Cypress programmatic API for individual test execution with proper isolation",
+        "details": "Install and configure Cypress programmatic API, create test runner service with proper process isolation, implement concurrent execution handling with resource management, add support for custom Cypress configuration per project, implement execution timeout and cleanup mechanisms.",
+        "testStrategy": "Test Cypress integration with sample test files, validate concurrent execution limits, test timeout and cleanup mechanisms, verify process isolation and resource cleanup",
         "priority": "high",
         "dependencies": [
-          2
+          18
         ],
-        "status": "done",
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Configure MikroORM Migration Settings",
-            "description": "Set up MikroORM migration configuration in mikro-orm.config.ts with proper paths, naming conventions, and migration options",
+            "title": "Install and Configure Cypress Programmatic API",
+            "description": "Set up Cypress programmatic API dependencies and create base configuration structure for programmatic test execution",
             "dependencies": [],
-            "details": "Update mikro-orm.config.ts to include migration configuration: set migrations path to './src/migrations', configure migration file pattern, enable TypeScript migrations, set up migration table name, configure snapshot generation, and ensure proper database connection settings for migration execution.",
-            "status": "done",
-            "testStrategy": "Verify configuration loads correctly, test migration path resolution, ensure TypeScript compilation works for migration files"
+            "details": "Install cypress package and required dependencies. Create base Cypress configuration object with default settings for headless execution, video recording, screenshot capture, and browser selection. Set up TypeScript types if using TypeScript. Create configuration validation to ensure required fields are present.",
+            "status": "pending",
+            "testStrategy": "Unit tests for configuration validation and integration tests to verify Cypress can be imported and basic configuration is applied correctly"
           },
           {
             "id": 2,
-            "title": "Convert Existing SQL Migrations to MikroORM Format",
-            "description": "Transform current SQL migration files into MikroORM migration classes with proper up() and down() methods",
+            "title": "Create Test Runner Service with Process Isolation",
+            "description": "Implement a test runner service that can execute individual Cypress tests in isolated processes to prevent memory leaks and test interference",
             "dependencies": [
               1
             ],
-            "details": "Analyze existing SQL migrations in the migrations directory, create equivalent MikroORM migration classes using the Migration base class, implement up() methods with schema builder API or raw SQL execution, implement down() methods for rollback capability, ensure proper transaction handling, and maintain migration execution order.",
-            "status": "done",
-            "testStrategy": "Compare database schema before and after conversion, verify data integrity is maintained, test rollback functionality for each migration"
+            "details": "Create a TestRunnerService class that spawns child processes for each test execution. Implement process communication using IPC or message passing. Handle process lifecycle management including startup, execution, and cleanup. Implement error handling for process failures and timeouts. Create process pool management to reuse processes efficiently.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify process isolation, memory leak tests, and tests for proper cleanup of child processes"
           },
           {
             "id": 3,
-            "title": "Implement Migration CLI Commands",
-            "description": "Add npm scripts for common migration operations including create, run, rollback, and status commands",
+            "title": "Implement Concurrent Execution with Resource Management",
+            "description": "Add support for running multiple Cypress tests concurrently while managing system resources and preventing conflicts",
             "dependencies": [
-              1
+              2
             ],
-            "details": "Add migration commands to package.json: 'migration:create' for generating new migrations, 'migration:up' for running pending migrations, 'migration:down' for rollback, 'migration:list' for showing migration status, 'migration:fresh' for recreating database from scratch. Create a migration CLI wrapper script if needed for better developer experience.",
-            "status": "done",
-            "testStrategy": "Test each command in isolation, verify command output and error handling, ensure commands work with different database states"
+            "details": "Implement a queue system for managing concurrent test execution. Add resource monitoring to track CPU, memory, and browser instance usage. Create a concurrency limiter based on system resources and configuration. Implement port management for parallel browser instances. Add mutex/locking mechanisms to prevent file system conflicts during parallel execution.",
+            "status": "pending",
+            "testStrategy": "Load tests with multiple concurrent executions, resource usage monitoring tests, and tests for proper queue management"
           },
           {
             "id": 4,
-            "title": "Set Up Automatic Migration Generation",
-            "description": "Configure MikroORM to automatically generate migrations based on entity changes using schema diffing",
+            "title": "Add Custom Cypress Configuration Per Project Support",
+            "description": "Implement functionality to support project-specific Cypress configurations and merge them with base settings",
+            "dependencies": [
+              1
+            ],
+            "details": "Create configuration merging logic that combines base Cypress config with project-specific overrides. Support for custom plugins, custom commands, environment variables, and browser configurations per project. Implement configuration validation for project-specific settings. Add support for dynamic configuration based on test context or project requirements.",
+            "status": "pending",
+            "testStrategy": "Unit tests for configuration merging logic, integration tests with different project configurations, and validation tests for configuration conflicts"
+          },
+          {
+            "id": 5,
+            "title": "Implement Execution Timeout and Cleanup Mechanisms",
+            "description": "Add robust timeout handling and cleanup mechanisms to prevent hanging processes and ensure proper resource cleanup",
             "dependencies": [
               2,
               3
             ],
-            "details": "Implement schema snapshot generation to track entity state, configure automatic migration generation from entity changes, set up entity schema validation, create development workflow for reviewing generated migrations, implement safeguards against destructive changes, and add migration preview functionality.",
-            "status": "done",
-            "testStrategy": "Test migration generation with various entity changes (add/remove fields, change types, add relations), verify generated migrations are correct and safe"
-          },
-          {
-            "id": 5,
-            "title": "Integrate Migrations with Application Startup",
-            "description": "Implement automatic migration execution during application initialization with proper error handling and rollback support",
-            "dependencies": [
-              3,
-              4
-            ],
-            "details": "Add migration check to application startup sequence, implement automatic migration execution in development mode, add migration validation for production deployments, create health check endpoint for migration status, implement proper error handling and logging for migration failures, and add configuration options for migration behavior (auto-run, require manual execution).",
-            "status": "done",
-            "testStrategy": "Test application startup with pending migrations, verify error handling for failed migrations, test rollback on startup failures, validate production safety checks"
-          },
-          {
-            "id": 6,
-            "title": "Create Migration Documentation and Best Practices",
-            "description": "Document the new MikroORM migration system, workflow guidelines, and best practices for the development team",
-            "dependencies": [
-              5
-            ],
-            "details": "Create comprehensive documentation covering: migration workflow from development to production, how to create and modify migrations, handling breaking changes and data migrations, rollback procedures and recovery strategies, team collaboration guidelines for migrations, troubleshooting common migration issues, and examples of complex migration scenarios.",
-            "status": "done",
-            "testStrategy": "Review documentation for completeness and clarity, test documented procedures work as described, gather team feedback on documentation usefulness"
+            "details": "Implement configurable timeouts for test execution with graceful shutdown procedures. Create cleanup handlers for browser processes, temporary files, and network resources. Add force-kill mechanisms for unresponsive processes. Implement cleanup on application shutdown and error conditions. Create monitoring for orphaned processes and automatic cleanup routines.",
+            "status": "pending",
+            "testStrategy": "Timeout simulation tests, cleanup verification tests, and stress tests to ensure proper resource management under various failure scenarios"
           }
         ]
       },
       {
-        "id": 13,
-        "title": "Run Generated Cypress Tests",
-        "description": "Set up a test directory for Cypress, download generated Cypress files from frontend application, install Cypress dependencies, execute tests to validate the complete testcase-to-automation workflow, and document test execution results",
-        "details": "",
-        "testStrategy": "",
-        "status": "done",
-        "dependencies": [],
-        "priority": "high",
+        "id": 20,
+        "title": "Real-time Test Execution Status and WebSocket Implementation",
+        "description": "Implement WebSocket connection for real-time test execution status updates and logging",
+        "details": "Set up WebSocket server using Socket.io or native WebSocket, implement WS /api/test-execution/live/:executionId endpoint, create execution status tracking system, implement real-time log streaming, add connection management and reconnection logic, create client-side WebSocket handling.",
+        "testStrategy": "Test WebSocket connection stability, validate real-time status updates, test connection handling with network interruptions, verify log streaming accuracy and performance",
+        "priority": "medium",
+        "dependencies": [
+          19
+        ],
+        "status": "pending",
         "subtasks": [
           {
             "id": 1,
-            "title": "Set up Cypress Testing Environment",
-            "description": "Create a dedicated cypress-tests directory, initialize it with package.json, and install Cypress and required dependencies",
+            "title": "Set up WebSocket Server Infrastructure",
+            "description": "Initialize WebSocket server using Socket.io and configure basic connection handling with authentication and room management for test execution sessions",
             "dependencies": [],
-            "details": "Create a new directory 'cypress-tests' in the project root, run npm init -y, install cypress, create basic cypress.config.js file with configuration for screenshots, videos, and test execution settings",
-            "testStrategy": "Verify Cypress is properly installed and can launch",
-            "status": "done"
+            "details": "Install Socket.io dependency, create WebSocket server instance, implement connection authentication using JWT tokens, set up room-based organization where each test execution gets its own room, add basic connection/disconnection event handlers, configure CORS settings for WebSocket connections",
+            "status": "pending",
+            "testStrategy": "Unit tests for connection establishment, authentication validation, and room joining/leaving functionality"
           },
           {
             "id": 2,
-            "title": "Download Generated Cypress Files",
-            "description": "Implement functionality to download generated Cypress test files from the frontend application's output",
+            "title": "Implement Test Execution Status Tracking System",
+            "description": "Create a centralized system to track and manage test execution states with real-time status updates and persistence",
             "dependencies": [
               1
             ],
-            "details": "Create a script or API endpoint to fetch generated Cypress files from the frontend application, save them to the cypress/e2e directory with proper naming conventions",
-            "testStrategy": "Verify files are downloaded correctly and contain valid Cypress test code",
-            "status": "done"
+            "details": "Design execution status data structure (pending, running, completed, failed, cancelled), implement in-memory status store with Redis backing, create status update methods that trigger WebSocket broadcasts, add execution metadata tracking (start time, progress, current test case), implement status persistence for recovery after server restarts",
+            "status": "pending",
+            "testStrategy": "Integration tests for status transitions, persistence verification, and concurrent execution handling"
           },
           {
             "id": 3,
-            "title": "Configure Cypress Test Environment",
-            "description": "Configure Cypress settings, baseUrl, viewport, and other test environment parameters",
+            "title": "Create WebSocket API Endpoint for Live Test Execution",
+            "description": "Implement the /api/test-execution/live/:executionId WebSocket endpoint with proper routing and execution-specific event handling",
             "dependencies": [
+              1,
               2
             ],
-            "details": "Update cypress.config.js with appropriate baseUrl, configure browser settings, set up test data fixtures if needed, configure screenshot and video recording options",
-            "testStrategy": "Run cypress open to verify configuration is working correctly",
-            "status": "done"
+            "details": "Create WebSocket namespace for test execution endpoints, implement executionId-based room joining, add event handlers for 'join-execution', 'leave-execution', and 'get-status' events, implement execution validation to ensure clients can only join valid executions, add rate limiting and connection limits per execution",
+            "status": "pending",
+            "testStrategy": "End-to-end tests for endpoint connectivity, room isolation, and execution-specific event handling"
           },
           {
             "id": 4,
-            "title": "Execute Generated Cypress Tests",
-            "description": "Run the downloaded Cypress tests and capture execution results",
+            "title": "Implement Real-time Log Streaming",
+            "description": "Build log streaming functionality that captures test execution logs and broadcasts them in real-time to connected WebSocket clients",
             "dependencies": [
+              2,
               3
             ],
-            "details": "Execute tests using cypress run command, capture console output, screenshots, and videos. Handle test failures gracefully and collect detailed error information",
-            "testStrategy": "Verify tests execute successfully and results are properly captured",
-            "status": "done"
+            "details": "Create log capture mechanism that intercepts test runner output, implement log buffering and batching for efficient transmission, add log filtering by severity levels, create structured log format with timestamps and metadata, implement log history retrieval for late-joining clients, add log retention policies and cleanup",
+            "status": "pending",
+            "testStrategy": "Performance tests for log throughput, memory usage validation, and log delivery reliability tests"
           },
           {
             "id": 5,
-            "title": "Document Test Execution Results",
-            "description": "Create comprehensive documentation of test execution results including pass/fail rates, screenshots, and recommendations",
+            "title": "Implement Client-side WebSocket Handling and Connection Management",
+            "description": "Create robust client-side WebSocket connection management with automatic reconnection, error handling, and state synchronization",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement WebSocket client class with connection lifecycle management, add exponential backoff reconnection strategy, create event listeners for status updates and log streams, implement client-side state synchronization on reconnect, add connection health monitoring with heartbeat/ping-pong, create error handling for network failures and server disconnections, implement graceful degradation when WebSocket is unavailable",
+            "status": "pending",
+            "testStrategy": "Client-side unit tests for connection management, reconnection scenarios, and integration tests for full real-time communication flow"
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "title": "Test Execution Results Storage and Artifact Management",
+        "description": "Implement storage system for test execution results, videos, and screenshots",
+        "details": "Configure Cypress to capture videos and screenshots, implement artifact storage in organized directory structure, update execution_results table with artifact URLs, create POST /api/test-execution/run/:testId and GET /api/test-execution/status/:executionId endpoints, implement artifact cleanup policies.",
+        "testStrategy": "Test video and screenshot capture, validate artifact storage and retrieval, test execution result persistence, verify cleanup policies and storage limits",
+        "priority": "medium",
+        "dependencies": [
+          19,
+          20
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Cypress Video and Screenshot Capture",
+            "description": "Set up Cypress configuration to automatically capture videos and screenshots during test execution with proper naming conventions and quality settings",
+            "dependencies": [],
+            "details": "Update cypress.config.js to enable video recording and screenshot capture on failure. Configure video compression, screenshot quality, and file naming patterns. Set up environment-specific configurations for different test environments. Ensure artifacts are saved to a structured directory format like artifacts/{executionId}/{timestamp}/",
+            "status": "pending",
+            "testStrategy": "Run sample Cypress tests to verify videos and screenshots are captured correctly with proper file naming and directory structure"
+          },
+          {
+            "id": 2,
+            "title": "Implement Artifact Storage Directory Structure",
+            "description": "Create organized directory structure for storing test artifacts with proper file organization, naming conventions, and metadata tracking",
+            "dependencies": [
+              1
+            ],
+            "details": "Design directory structure: artifacts/{executionId}/{type}/{filename}. Implement file system utilities for creating directories, moving artifacts from Cypress default locations to organized structure. Add metadata files (JSON) alongside artifacts containing execution details, timestamps, and file information. Implement file validation and error handling for storage operations.",
+            "status": "pending",
+            "testStrategy": "Test directory creation, file movement, and metadata generation with various test execution scenarios"
+          },
+          {
+            "id": 3,
+            "title": "Update Database Schema for Artifact URLs",
+            "description": "Modify execution_results table to store artifact file paths and URLs, and implement database operations for artifact metadata",
+            "dependencies": [],
+            "details": "Add columns to execution_results table: video_url, screenshots_json (array of screenshot paths), artifacts_directory. Create database migration scripts. Implement database helper functions for storing and retrieving artifact URLs. Add indexes for efficient querying of execution results with artifacts.",
+            "status": "pending",
+            "testStrategy": "Test database migrations, CRUD operations for artifact URLs, and data integrity constraints"
+          },
+          {
+            "id": 4,
+            "title": "Create Test Execution API Endpoints",
+            "description": "Implement POST /api/test-execution/run/:testId and GET /api/test-execution/status/:executionId endpoints for triggering tests and retrieving execution status with artifacts",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create POST endpoint to trigger test execution, validate testId, queue execution job, return executionId. Implement GET endpoint to return execution status, progress, results, and artifact URLs. Add proper error handling, request validation, and response formatting. Integrate with artifact storage system to include file URLs in responses. Add authentication and authorization checks.",
+            "status": "pending",
+            "testStrategy": "Test API endpoints with various scenarios: valid/invalid test IDs, execution status polling, artifact URL accessibility, error handling"
+          },
+          {
+            "id": 5,
+            "title": "Implement Artifact Cleanup Policies",
+            "description": "Create automated cleanup system for managing artifact storage space with configurable retention policies and cleanup scheduling",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Implement cleanup policies based on age (e.g., delete artifacts older than 30 days), storage size limits, and execution status. Create scheduled cleanup jobs using cron or similar. Add configuration options for retention periods and cleanup thresholds. Implement safe deletion with database cleanup to remove artifact references. Add logging and monitoring for cleanup operations. Provide manual cleanup API endpoints for administrators.",
+            "status": "pending",
+            "testStrategy": "Test cleanup policies with various retention scenarios, verify database consistency after cleanup, test manual cleanup endpoints, and monitor storage usage"
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Test Examples Management Database and API",
+        "description": "Create database schema and API endpoints for managing test examples to enhance AI prompt quality",
+        "details": "Implement CRUD API endpoints for test examples (GET, POST, PUT, DELETE /api/projects/:projectId/examples), add validation for example format and content, implement example activation/deactivation functionality, create example search and filtering capabilities, add proper error handling and validation.",
+        "testStrategy": "Test all CRUD operations, validate example format constraints, test search and filtering functionality, verify project-level isolation of examples",
+        "priority": "medium",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Create Test Examples Database Schema",
+            "description": "Create the database schema for storing test examples with proper relationships to projects, including fields for example content, metadata, and status tracking.",
+            "dependencies": [],
+            "details": "Create a test_examples table with columns: id (primary key), project_id (foreign key), title, input_text, expected_output, description, is_active (boolean), created_at, updated_at. Add proper indexes on project_id and is_active fields. Include constraints for data integrity and establish foreign key relationship with projects table.",
+            "status": "pending",
+            "testStrategy": "Write database migration tests to verify schema creation, constraints, and relationships. Test data insertion and retrieval with various data types."
+          },
+          {
+            "id": 2,
+            "title": "Implement Basic CRUD API Endpoints",
+            "description": "Create the core REST API endpoints for test examples management including GET, POST, PUT, and DELETE operations under /api/projects/:projectId/examples route.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement GET /api/projects/:projectId/examples (list all), GET /api/projects/:projectId/examples/:id (get single), POST /api/projects/:projectId/examples (create), PUT /api/projects/:projectId/examples/:id (update), DELETE /api/projects/:projectId/examples/:id (delete). Include proper HTTP status codes and JSON responses. Ensure project ownership validation for all operations.",
+            "status": "pending",
+            "testStrategy": "Create unit tests for each endpoint covering success cases, error cases, and edge cases. Test with valid and invalid project IDs and example data."
+          },
+          {
+            "id": 3,
+            "title": "Add Input Validation and Error Handling",
+            "description": "Implement comprehensive validation for test example data format, content requirements, and add robust error handling with meaningful error messages.",
+            "dependencies": [
+              2
+            ],
+            "details": "Add validation middleware to check required fields (title, input_text, expected_output), validate data types and lengths, sanitize input data. Implement custom error classes for different validation failures. Add try-catch blocks with proper error logging and user-friendly error responses. Include validation for project existence and user permissions.",
+            "status": "pending",
+            "testStrategy": "Test validation with invalid data formats, missing required fields, oversized inputs, and malicious content. Verify error messages are clear and actionable."
+          },
+          {
+            "id": 4,
+            "title": "Implement Example Activation/Deactivation Functionality",
+            "description": "Add functionality to activate and deactivate test examples, including API endpoints and business logic to manage example status.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create PATCH /api/projects/:projectId/examples/:id/activate and PATCH /api/projects/:projectId/examples/:id/deactivate endpoints. Update database queries to filter by is_active status by default. Add bulk activation/deactivation endpoints. Implement soft delete functionality where deactivated examples are hidden but not permanently deleted.",
+            "status": "pending",
+            "testStrategy": "Test activation/deactivation state changes, verify filtering works correctly, test bulk operations, and ensure deactivated examples don't appear in default queries."
+          },
+          {
+            "id": 5,
+            "title": "Create Search and Filtering Capabilities",
+            "description": "Implement advanced search and filtering functionality for test examples including text search, status filtering, and sorting options.",
             "dependencies": [
               4
             ],
-            "details": "Generate HTML report with test results, include screenshots and videos, document any issues found, provide recommendations for test improvements, create summary of workflow validation",
-            "testStrategy": "Review documentation for completeness and clarity",
-            "status": "done"
+            "details": "Add query parameters to GET /api/projects/:projectId/examples endpoint: search (text search across title, input_text, expected_output), status (active/inactive/all), sort (created_at, updated_at, title), order (asc/desc), limit, offset for pagination. Implement database queries with proper indexing for performance. Add full-text search capabilities if supported by the database.",
+            "status": "pending",
+            "testStrategy": "Test search functionality with various keywords, verify filtering works correctly, test pagination and sorting, and measure query performance with large datasets."
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "title": "Examples Management UI and Prompt Template System",
+        "description": "Create user interface for managing test examples and implement prompt template system for AI enhancement",
+        "details": "Design and implement examples list/grid view component, create add/edit example form with validation, implement prompt preview panel showing how examples will be included, update Mastra AI service to include examples in prompts using template system, add toggle functionality for example inclusion, implement example reordering and categorization.",
+        "testStrategy": "UI component testing for examples management, validate form submission and validation, test prompt template generation, verify AI service integration with examples, test example toggle functionality",
+        "priority": "medium",
+        "dependencies": [
+          22
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Examples List/Grid View Component",
+            "description": "Design and implement a responsive list/grid view component to display test examples with basic CRUD operations",
+            "dependencies": [],
+            "details": "Create a React component that displays examples in both list and grid formats. Include columns for example name, description, category, status (active/inactive), and action buttons (edit, delete, toggle). Implement sorting, filtering, and pagination. Add responsive design that switches between grid and list views based on screen size. Include empty state handling and loading states.",
+            "status": "pending",
+            "testStrategy": "Unit tests for component rendering, interaction handlers, and responsive behavior. Integration tests for data fetching and display."
+          },
+          {
+            "id": 2,
+            "title": "Implement Add/Edit Example Form with Validation",
+            "description": "Create a comprehensive form component for adding and editing test examples with robust validation",
+            "dependencies": [
+              1
+            ],
+            "details": "Build a form component with fields for example name, description, input data, expected output, category selection, and tags. Implement client-side validation using a validation library (e.g., Yup or Zod). Add real-time validation feedback, form state management, and error handling. Include rich text editor for descriptions and JSON editor for input/output data. Add form auto-save functionality and confirmation dialogs for unsaved changes.",
+            "status": "pending",
+            "testStrategy": "Unit tests for form validation rules, field interactions, and submission handling. E2E tests for complete form workflows."
+          },
+          {
+            "id": 3,
+            "title": "Create Prompt Preview Panel with Template Integration",
+            "description": "Develop a preview panel that shows how examples will be formatted and included in AI prompts using template system",
+            "dependencies": [
+              2
+            ],
+            "details": "Build a preview panel component that renders a live preview of how selected examples will appear in the final AI prompt. Implement a template engine (e.g., Handlebars or custom) to format examples consistently. Show before/after views of prompts with and without examples. Include syntax highlighting for better readability. Add copy-to-clipboard functionality and template customization options. Implement real-time updates when examples or templates change.",
+            "status": "pending",
+            "testStrategy": "Unit tests for template rendering and preview generation. Visual regression tests for preview panel layouts."
+          },
+          {
+            "id": 4,
+            "title": "Update Mastra AI Service with Template System",
+            "description": "Enhance the Mastra AI service to integrate examples into prompts using the template system",
+            "dependencies": [
+              3
+            ],
+            "details": "Modify the existing Mastra AI service to accept example data and template configurations. Implement prompt template processing that dynamically includes selected examples based on context and user preferences. Add example selection logic based on relevance, category, or manual selection. Implement prompt optimization to handle token limits and example prioritization. Add configuration options for different template formats and example inclusion strategies.",
+            "status": "pending",
+            "testStrategy": "Unit tests for template processing and prompt generation. Integration tests with AI service endpoints. Performance tests for large example sets."
+          },
+          {
+            "id": 5,
+            "title": "Implement Example Management Features",
+            "description": "Add advanced functionality for example organization including toggle controls, reordering, and categorization",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement drag-and-drop reordering functionality for examples using a library like react-beautiful-dnd. Add toggle switches for enabling/disabling examples in prompts. Create category management system with CRUD operations for categories. Implement bulk operations (select all, bulk delete, bulk categorize). Add search and advanced filtering capabilities. Include example usage analytics and duplicate detection. Implement import/export functionality for example sets.",
+            "status": "pending",
+            "testStrategy": "Unit tests for drag-and-drop interactions, toggle functionality, and category operations. E2E tests for complete example management workflows. Accessibility tests for keyboard navigation and screen readers."
           }
         ]
       }
     ],
     "metadata": {
       "created": "2025-06-26T13:18:50.654Z",
-      "updated": "2025-06-29T01:29:01.779Z",
+      "updated": "2025-07-12T02:30:51.124Z",
       "description": "Tasks for master context"
     }
   }

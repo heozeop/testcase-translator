@@ -2,6 +2,7 @@ import { Entity, PrimaryKey, Property, OneToMany, Collection } from '@mikro-orm/
 import { v4 as uuid } from 'uuid';
 import { TestCase } from './TestCase.entity';
 import { GeneratedCode } from './GeneratedCode.entity';
+import { TestExample } from './TestExample.entity';
 
 @Entity({ tableName: 'projects' })
 export class Project {
@@ -31,6 +32,9 @@ export class Project {
 
   @OneToMany(() => GeneratedCode, generatedCode => generatedCode.project)
   generatedCodes = new Collection<GeneratedCode>(this);
+
+  @OneToMany(() => TestExample, testExample => testExample.project)
+  testExamples = new Collection<TestExample>(this);
 
   constructor(name: string, targetUrl: string, description?: string) {
     this.name = name;
