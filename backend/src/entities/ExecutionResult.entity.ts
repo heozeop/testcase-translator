@@ -5,7 +5,7 @@ import { GeneratedCode } from './GeneratedCode.entity';
 
 @Entity({ tableName: 'execution_results' })
 export class ExecutionResult {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => TestCase, { fieldName: 'test_case_id' })

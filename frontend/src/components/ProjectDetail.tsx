@@ -36,7 +36,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
       setLoading(true);
       
       // Get test cases to check count
-      const testCasesResponse = await apiService.getTestCases(project.id, 1, 1);
+      const testCasesResponse = await apiService.getTestCases({ projectId: project.id, page: 1, limit: 1 });
       const testCasesCount = testCasesResponse.pagination.total;
       
       setStats({

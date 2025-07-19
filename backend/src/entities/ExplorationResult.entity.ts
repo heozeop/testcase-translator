@@ -4,7 +4,7 @@ import { ExplorationSession } from './ExplorationSession.entity';
 
 @Entity({ tableName: 'exploration_results' })
 export class ExplorationResult {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => ExplorationSession, { fieldName: 'session_id' })

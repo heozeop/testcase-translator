@@ -1,16 +1,14 @@
 import { Options } from '@mikro-orm/core';
-import { PostgreSqlDriver } from '@mikro-orm/postgresql';
-import { TsMorphMetadataProvider } from '@mikro-orm/reflection';
+import { MySqlDriver } from '@mikro-orm/mysql';
 import { Migrator } from '@mikro-orm/migrations';
 
 const migrationConfig: Options = {
-  driver: PostgreSqlDriver,
-  metadataProvider: TsMorphMetadataProvider,
+  driver: MySqlDriver,
   
   // Database connection
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  user: process.env.DB_USER || 'postgres',
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER || 'user',
   password: process.env.DB_PASSWORD || 'password',
   dbName: process.env.DB_NAME || 'testcase_translator',
   
@@ -51,9 +49,10 @@ const migrationConfig: Options = {
   },
   
   // Schema options
+  charset: 'utf8mb4',
   driverOptions: {
     connection: {
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      timezone: '+00:00',
     },
   },
 };

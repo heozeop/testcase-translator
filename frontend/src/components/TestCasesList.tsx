@@ -56,7 +56,13 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
   const fetchTestCases = useCallback(async (page: number = 1) => {
     try {
       setLoading(true);
-      const response = await apiService.getTestCases(projectId, page, 10);
+      const response = await apiService.getTestCases({
+        projectId,
+        page,
+        limit: 10,
+        orderBy: 'created_at',
+        order: 'DESC'
+      });
       
       console.log('📋 Raw API response:', response);
       console.log('📋 Raw test cases data:', response.data);

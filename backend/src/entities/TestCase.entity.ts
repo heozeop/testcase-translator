@@ -5,7 +5,7 @@ import { GeneratedCode } from './GeneratedCode.entity';
 
 @Entity({ tableName: 'test_cases' })
 export class TestCase {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => Project, { fieldName: 'project_id' })
@@ -17,13 +17,13 @@ export class TestCase {
   @Property({ type: 'text', nullable: true })
   description?: string;
 
-  @Property({ type: 'jsonb', nullable: true })
+  @Property({ type: 'json', nullable: true })
   steps?: any;
 
-  @Property({ type: 'jsonb', nullable: true, fieldName: 'expected_results' })
+  @Property({ type: 'json', nullable: true, fieldName: 'expected_results' })
   expectedResults?: any;
 
-  @Property({ type: 'jsonb', nullable: true, fieldName: 'test_data' })
+  @Property({ type: 'json', nullable: true, fieldName: 'test_data' })
   testData?: any;
 
   @Property({ type: 'varchar', length: 50, default: 'medium' })
@@ -41,10 +41,10 @@ export class TestCase {
   @Property({ type: 'integer', nullable: true, fieldName: 'excel_row_number' })
   excelRowNumber?: number;
 
-  @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
+  @Property({ type: 'datetime', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'timestamptz', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({ type: 'datetime', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
   updatedAt: Date = new Date();
 
   @OneToMany(() => GeneratedCode, generatedCode => generatedCode.testCase)

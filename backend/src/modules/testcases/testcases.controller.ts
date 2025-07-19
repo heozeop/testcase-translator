@@ -83,10 +83,17 @@ export class TestCasesController {
     return this.testCasesService.findByProject(projectId, query);
   }
 
-  @Get('statistics/:projectId?')
-  @ApiOperation({ summary: 'Get test case statistics' })
+  @Get('statistics')
+  @ApiOperation({ summary: 'Get test case statistics for all projects' })
   @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
-  async getStatistics(@Param('projectId') projectId?: string) {
+  async getStatistics() {
+    return this.testCasesService.getStatistics();
+  }
+
+  @Get('statistics/:projectId')
+  @ApiOperation({ summary: 'Get test case statistics for a specific project' })
+  @ApiResponse({ status: 200, description: 'Statistics retrieved successfully' })
+  async getProjectStatistics(@Param('projectId') projectId: string) {
     return this.testCasesService.getStatistics(projectId);
   }
 

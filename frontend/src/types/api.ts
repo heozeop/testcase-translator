@@ -48,10 +48,13 @@ export interface Project {
 
 export interface TestCase {
   id: string;
+  name: string;
   scenarioName: string;
   description: string;
   steps: string[];
   expectedResult: string;
+  expectedResults?: string[];
+  category?: string;
   priority: 'high' | 'medium' | 'low';
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   createdAt: string;

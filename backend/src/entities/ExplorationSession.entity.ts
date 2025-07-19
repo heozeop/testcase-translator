@@ -5,7 +5,7 @@ import { ExplorationResult } from './ExplorationResult.entity';
 
 @Entity({ tableName: 'exploration_sessions' })
 export class ExplorationSession {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => Project, { fieldName: 'project_id' })

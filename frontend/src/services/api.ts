@@ -125,27 +125,136 @@ class ApiService {
     return this.handleResponse<UrlValidationResponse>(response);
   }
 
-  // Test case endpoints
-  async getTestCases(projectId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<TestCase>> {
-    const response = await this.api.get(`/api/projects/${projectId}/test-cases?page=${page}&limit=${limit}`);
-    const apiResponse = response.data as any; // Use any to access pagination
+  // Test case endpoints - Full CRUD operations
+  
+  // Get all test cases with pagination and filtering
+  async getTestCases(params?: {
+    projectId?: string;
+    page?: number;
+    limit?: number;
+    search?: string;
+    priority?: string;
+    category?: string;
+    orderBy?: string;
+    order?: 'ASC' | 'DESC';
+  }): Promise<PaginatedResponse<TestCase>> {
+    const queryParams = new URLSearchParams();
     
-    if (!apiResponse.success) {
-      throw new Error(apiResponse.error?.message || 'API request failed');
-    }
+    if (params?.projectId) queryParams.append('projectId', params.projectId);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.priority) queryParams.append('priority', params.priority);
+    if (params?.category) queryParams.append('category', params.category);
+    if (params?.orderBy) queryParams.append('orderBy', params.orderBy);
+    if (params?.order) queryParams.append('order', params.order);
     
-    // Return the paginated response structure expected by frontend
-    return {
-      data: apiResponse.data || [],
-      pagination: apiResponse.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false
-      }
+    const response = await this.api.get(`/api/testcases?${queryParams.toString()}`);
+    return this.handleResponse<PaginatedResponse<TestCase>>(response);
+  }
+
+  // Get test cases for a specific project
+  async getProjectTestCases(projectId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<TestCase>> {
+    const response = await this.api.get(`/api/testcases/project/${projectId}?page=${page}&limit=${limit}`);
+    return this.handleResponse<PaginatedResponse<TestCase>>(response);
+  }
+
+  // Get a single test case by ID
+  async getTestCase(id: string): Promise<TestCase> {
+    const response = await this.api.get(`/api/testcases/${id}`);
+    return this.handleResponse<TestCase>(response);
+  }
+
+  // Create a new test case
+  async createTestCase(testCase: {
+    projectId: string;
+    name: string;
+    description?: string;
+    steps?: Array<{
+      action: string;
+      target?: string;
+      value?: string;
+      description?: string;
+    }>;
+    expectedResults?: Array<{
+      type: string;
+      target?: string;
+      expected: string;
+      description?: string;
+    }>;
+    testData?: Record<string, any>;
+    priority?: 'low' | 'medium' | 'high';
+    category?: string;
+  }): Promise<TestCase> {
+    const response = await this.api.post('/api/testcases', testCase);
+    return this.handleResponse<TestCase>(response);
+  }
+
+  // Update a test case
+  async updateTestCase(id: string, testCase: {
+    name?: string;
+    description?: string;
+    steps?: Array<{
+      action: string;
+      target?: string;
+      value?: string;
+      description?: string;
+    }>;
+    expectedResults?: Array<{
+      type: string;
+      target?: string;
+      expected: string;
+      description?: string;
+    }>;
+    testData?: Record<string, any>;
+    priority?: 'low' | 'medium' | 'high';
+    category?: string;
+  }): Promise<TestCase> {
+    const response = await this.api.put(`/api/testcases/${id}`, testCase);
+    return this.handleResponse<TestCase>(response);
+  }
+
+  // Delete a test case
+  async deleteTestCase(id: string): Promise<void> {
+    await this.api.delete(`/api/testcases/${id}`);
+  }
+
+  // Duplicate a test case
+  async duplicateTestCase(id: string, newName?: string): Promise<TestCase> {
+    const body = newName ? { name: newName } : {};
+    const response = await this.api.post(`/api/testcases/${id}/duplicate`, body);
+    return this.handleResponse<TestCase>(response);
+  }
+
+  // Bulk create test cases
+  async bulkCreateTestCases(testCases: Array<{
+    projectId: string;
+    name: string;
+    description?: string;
+    steps?: any[];
+    expectedResults?: any[];
+    testData?: Record<string, any>;
+    priority?: 'low' | 'medium' | 'high';
+    category?: string;
+  }>): Promise<TestCase[]> {
+    const response = await this.api.post('/api/testcases/bulk', { testCases });
+    return this.handleResponse<TestCase[]>(response);
+  }
+
+  // Get test case statistics
+  async getTestCaseStatistics(projectId?: string): Promise<{
+    projectId?: string;
+    testCases: {
+      total: number;
+      byPriority: { high: number; medium: number; low: number };
+      byCategory: Record<string, number>;
+      byStatus: { active: number; archived: number };
     };
+    lastUpdated?: Date;
+  }> {
+    const endpoint = projectId ? `/api/testcases/statistics/${projectId}` : '/api/testcases/statistics';
+    const response = await this.api.get(endpoint);
+    return this.handleResponse<any>(response);
   }
 
   async uploadExcelFile(projectId: string, file: File, onProgress?: (progress: number) => void): Promise<FileUploadResult> {

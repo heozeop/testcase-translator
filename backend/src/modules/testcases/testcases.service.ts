@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { EntityRepository, EntityManager } from '@mikro-orm/core';
+import { EntityRepository } from '@mikro-orm/core';
 import { TestCase } from '../../entities/TestCase.entity';
 import { Project } from '../../entities/Project.entity';
 import { CreateTestCaseDto, UpdateTestCaseDto, TestCaseQueryDto } from './dto/testcase.dto';
@@ -14,7 +14,6 @@ export class TestCasesService {
     private readonly testCaseRepository: EntityRepository<TestCase>,
     @InjectRepository(Project)
     private readonly projectRepository: EntityRepository<Project>,
-    private readonly em: EntityManager,
   ) {}
 
   async findAll(query: TestCaseQueryDto) {
@@ -101,7 +100,7 @@ export class TestCasesService {
       testCase.priority = createTestCaseDto.priority || 'medium';
       testCase.category = createTestCaseDto.category;
       
-      await this.em.persistAndFlush(testCase);
+      await this.testCaseRepository.getEntityManager().persistAndFlush(testCase);
       
       return {
         data: testCase,
@@ -139,7 +138,7 @@ export class TestCasesService {
         testCase.category = updateTestCaseDto.category;
       }
 
-      await this.em.flush();
+      await this.testCaseRepository.getEntityManager().flush();
       
       return {
         data: testCase,
@@ -158,7 +157,7 @@ export class TestCasesService {
         return false;
       }
       
-      await this.em.removeAndFlush(testCase);
+      await this.testCaseRepository.getEntityManager().removeAndFlush(testCase);
       this.logger.log(`Test case ${id} deleted successfully`);
       return true;
     } catch (error) {

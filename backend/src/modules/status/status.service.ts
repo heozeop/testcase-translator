@@ -1,5 +1,5 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
-import { Pool } from 'pg';
+import { Injectable, Logger } from '@nestjs/common';
+import { EntityManager } from '@mikro-orm/mysql';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -9,8 +9,7 @@ export class StatusService {
   private readonly logger = new Logger(StatusService.name);
 
   constructor(
-    @Inject('DATABASE_POOL')
-    private readonly pool: Pool,
+    private readonly em: EntityManager,
   ) {}
 
   async getHealth() {
@@ -24,8 +23,8 @@ export class StatusService {
 
     try {
       // Database health check
-      const dbResult = await this.pool.query('SELECT 1 as health');
-      healthChecks.database = dbResult.rows[0]?.health === 1;
+      await this.em.getConnection().execute('SELECT 1 as health');
+      healthChecks.database = true;
     } catch (error) {
       this.logger.warn('Database health check failed:', error);
       healthChecks.database = false;
@@ -112,35 +111,27 @@ export class StatusService {
         dbSize,
         tableStats,
       ] = await Promise.allSettled([
-        this.pool.query('SELECT count(*) as connections FROM pg_stat_activity'),
-        this.pool.query('SELECT pg_database_size(current_database()) as size'),
-        this.pool.query(`
+        this.em.getConnection().execute('SELECT COUNT(*) as connections FROM information_schema.processlist'),
+        this.em.getConnection().execute('SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as size FROM information_schema.tables WHERE table_schema = DATABASE()'),
+        this.em.getConnection().execute(`
           SELECT 
-            schemaname,
-            tablename,
-            n_tup_ins as inserts,
-            n_tup_upd as updates,
-            n_tup_del as deletes,
-            n_live_tup as live_rows,
-            n_dead_tup as dead_rows
-          FROM pg_stat_user_tables
-          ORDER BY n_live_tup DESC
+            table_schema as schemaname,
+            table_name as tablename,
+            table_rows as live_rows
+          FROM information_schema.tables
+          WHERE table_schema = DATABASE()
+          ORDER BY table_rows DESC
           LIMIT 10
         `),
       ]);
 
       return {
         connections: connectionCount.status === 'fulfilled' ? 
-          connectionCount.value.rows[0]?.connections : null,
+          (connectionCount.value[0] as any)[0]?.connections : null,
         size: dbSize.status === 'fulfilled' ? 
-          dbSize.value.rows[0]?.size : null,
+          (dbSize.value[0] as any)[0]?.size : null,
         tableStats: tableStats.status === 'fulfilled' ? 
-          tableStats.value.rows : [],
-        poolInfo: {
-          totalCount: this.pool.totalCount,
-          idleCount: this.pool.idleCount,
-          waitingCount: this.pool.waitingCount,
-        },
+          (tableStats.value[0] as any) : [],
       };
     } catch (error) {
       this.logger.warn('Failed to get database metrics:', error);
@@ -180,8 +171,6 @@ export class StatusService {
 
   async getActiveSessions() {
     try {
-      // This would integrate with WebSocket connection tracking
-      // For now, return mock data
       const sessions = {
         websocket: {
           total: 0,
@@ -189,9 +178,9 @@ export class StatusService {
           rooms: [],
         },
         database: {
-          activeConnections: this.pool.totalCount,
-          idleConnections: this.pool.idleCount,
-          waitingConnections: this.pool.waitingCount,
+          activeConnections: 0,
+          idleConnections: 0,
+          waitingConnections: 0,
         },
         processes: {
           exploration: 0,
@@ -212,8 +201,6 @@ export class StatusService {
 
   async getErrors(limit: number = 50) {
     try {
-      // This would integrate with error logging system
-      // For now, return mock data
       const errors: any[] = [];
 
       return {

@@ -6,7 +6,7 @@ import { GeneratedCodeFile } from './GeneratedCodeFile.entity';
 
 @Entity({ tableName: 'generated_code' })
 export class GeneratedCode {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => Project, { fieldName: 'project_id' })

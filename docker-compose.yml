@@ -32,7 +32,7 @@ services:
     environment:
       - NODE_ENV=development
       - BACKEND_PORT=3000
-      - DATABASE_URL=postgresql://postgres:password@db:5432/testcase_translator
+      - DATABASE_URL=mysql://user:password@db:3306/testcase_translator
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
       - PUPPETEER_TIMEOUT=300000
@@ -50,21 +50,23 @@ services:
     shm_size: 2gb
 
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=testcase_translator
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=testcase_translator
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mysql-data:/var/lib/mysql
     networks:
       - app-network
+    command: --default-authentication-plugin=mysql_native_password
 
 networks:
   app-network:
     driver: bridge
 
 volumes:
-  postgres-data:
+  mysql-data:

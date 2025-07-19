@@ -6,7 +6,7 @@ import { TestExample } from './TestExample.entity';
 
 @Entity({ tableName: 'projects' })
 export class Project {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @Property({ type: 'varchar', length: 255 })
@@ -21,10 +21,10 @@ export class Project {
   @Property({ type: 'varchar', length: 50, default: 'active' })
   status: string = 'active';
 
-  @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
+  @Property({ type: 'datetime', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'timestamptz', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({ type: 'datetime', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
   updatedAt: Date = new Date();
 
   @OneToMany(() => TestCase, testCase => testCase.project)

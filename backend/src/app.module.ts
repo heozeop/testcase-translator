@@ -5,7 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 
 // Modules
 import { ProjectsModule } from './modules/projects/projects.module';
-// import { TestCasesModule } from './modules/testcases/testcases.module';
+import { TestCasesModule } from './modules/testcases/testcases.module';
 // import { CypressModule } from './modules/cypress/cypress.module';
 import { StatusModule } from './modules/status/status.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
@@ -31,7 +31,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     StatusModule,
     WebsocketModule,
     ProjectsModule,
-    // TestCasesModule,  // TODO: Fix MikroORM dependencies
+    TestCasesModule,
     // CypressModule,    // TODO: Fix MikroORM dependencies
   ],
   providers: [

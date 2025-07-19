@@ -4,7 +4,7 @@ import { Project } from './Project.entity';
 
 @Entity({ tableName: 'test_examples' })
 export class TestExample {
-  @PrimaryKey({ type: 'uuid' })
+  @PrimaryKey({ type: 'varchar', length: 36 })
   id: string = uuid();
 
   @ManyToOne(() => Project, { fieldName: 'project_id' })
