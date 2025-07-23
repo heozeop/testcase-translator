@@ -1,17 +1,30 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
-# Install system dependencies for Puppeteer and video recording
-RUN apk add --no-cache \
+# Install system dependencies for Puppeteer, Cypress and video recording
+RUN apt-get update && apt-get install -y \
     chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
+    chromium-sandbox \
     ffmpeg \
-    && rm -rf /var/cache/apk/*
+    xvfb \
+    dbus-x11 \
+    libgtk2.0-0 \
+    libgtk-3-0 \
+    libgbm-dev \
+    libnotify-dev \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libxtst6 \
+    xauth \
+    xfonts-base \
+    xfonts-100dpi \
+    xfonts-75dpi \
+    xfonts-scalable \
+    fonts-liberation \
+    fonts-noto-core \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
@@ -36,23 +49,40 @@ COPY src ./src
 RUN pnpm build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
 
-# Install system dependencies for Puppeteer and video recording
-RUN apk add --no-cache \
+# Install system dependencies for Puppeteer, Cypress and video recording
+RUN apt-get update && apt-get install -y \
     chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
+    chromium-sandbox \
     ffmpeg \
-    && rm -rf /var/cache/apk/*
+    xvfb \
+    dbus-x11 \
+    libgtk2.0-0 \
+    libgtk-3-0 \
+    libgbm-dev \
+    libnotify-dev \
+    libnss3 \
+    libxss1 \
+    libasound2 \
+    libxtst6 \
+    xauth \
+    xfonts-base \
+    xfonts-100dpi \
+    xfonts-75dpi \
+    xfonts-scalable \
+    fonts-liberation \
+    fonts-noto-core \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set Puppeteer to use system Chromium
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
+# Cypress environment variables
+ENV CYPRESS_CACHE_FOLDER=/root/.cache/Cypress
+ENV DISPLAY=:99
 
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.10.0 --activate
@@ -71,6 +101,9 @@ COPY .npmrc ./
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
 
+# Install Cypress for test execution
+RUN pnpm add cypress
+
 # Copy built application from builder stage
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
@@ -84,5 +117,5 @@ USER nodejs
 # Expose port
 EXPOSE 8000
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Start the application with Xvfb and dbus for headless display
+CMD ["sh", "-c", "dbus-daemon --system --fork && Xvfb :99 -ac -screen 0 1920x1080x16 & sleep 2 && export DISPLAY=:99 && node dist/main.js"]

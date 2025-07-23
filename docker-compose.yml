@@ -37,6 +37,10 @@ services:
       - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
       - PUPPETEER_TIMEOUT=300000
       - REQUEST_TIMEOUT=300000
+      # Force real Cypress execution in Docker environment
+      - CYPRESS_FORCE_REAL=true
+      - DISPLAY=:99
+      - DOCKER=true
     depends_on:
       - db
     networks:

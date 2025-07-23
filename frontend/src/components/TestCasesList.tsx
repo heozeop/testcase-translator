@@ -51,6 +51,8 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
     hasPrev: false
   });
   const [downloading, setDownloading] = useState(false);
+  const [deletingTestCase, setDeletingTestCase] = useState<string | null>(null);
+  const [expandedTestCases, setExpandedTestCases] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const fetchTestCases = useCallback(async (page: number = 1) => {
@@ -124,6 +126,52 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
     fetchTestCases(newPage);
   };
 
+  const handleDeleteTestCase = async (testCaseId: string, testCaseName: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${testCaseName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setDeletingTestCase(testCaseId);
+      await apiService.deleteTestCase(testCaseId);
+      
+      // Remove test case from local state
+      setTestCases(prev => prev.filter(tc => tc.id !== testCaseId));
+      
+      // Update pagination total
+      setPagination(prev => ({
+        ...prev,
+        total: prev.total - 1
+      }));
+
+      toast({
+        title: "Test Case Deleted",
+        description: `"${testCaseName}" has been deleted successfully.`
+      });
+    } catch (error: any) {
+      console.error('Failed to delete test case:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete test case. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeletingTestCase(null);
+    }
+  };
+
+  const toggleTestCaseExpansion = (testCaseId: string) => {
+    setExpandedTestCases(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(testCaseId)) {
+        newSet.delete(testCaseId);
+      } else {
+        newSet.add(testCaseId);
+      }
+      return newSet;
+    });
+  };
+
   if (loading) {
     return (
       <Card>
@@ -176,64 +224,100 @@ export const TestCasesList: React.FC<TestCasesListProps> = ({ projectId, onBack,
         </Card>
       ) : (
         <div className="space-y-4">
-          {testCases.map((testCase) => (
-            <Card key={testCase.id}>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-start">
-                  <span className="text-lg">{testCase.scenarioName}</span>
-                  <div className="flex space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      testCase.priority === 'high' 
-                        ? 'bg-red-100 text-red-800' 
-                        : testCase.priority === 'medium'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}>
-                      {testCase.priority}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      testCase.status === 'pending'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {testCase.status}
-                    </span>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {testCase.description && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm text-muted-foreground mb-1">Description</h4>
-                    <p>{testCase.description}</p>
-                  </div>
-                )}
+          {testCases.map((testCase) => {
+            const isExpanded = expandedTestCases.has(testCase.id);
+            return (
+              <Card key={testCase.id}>
+                <CardHeader 
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => toggleTestCaseExpansion(testCase.id)}
+                >
+                  <CardTitle className="flex justify-between items-start">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{testCase.scenarioName}</span>
+                      <svg 
+                        className={`w-4 h-4 transition-transform ${isExpanded ? 'transform rotate-90' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                    <div className="flex space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        testCase.priority === 'high' 
+                          ? 'bg-red-100 text-red-800' 
+                          : testCase.priority === 'medium'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {testCase.priority}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        testCase.status === 'pending'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {testCase.status}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTestCase(testCase.id, testCase.scenarioName);
+                        }}
+                        disabled={deletingTestCase === testCase.id}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 h-6"
+                      >
+                        {deletingTestCase === testCase.id ? '...' : '×'}
+                      </Button>
+                    </div>
+                  </CardTitle>
+                  {!isExpanded && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {testCase.description || 'Click to expand details...'}
+                    </p>
+                  )}
+                </CardHeader>
                 
-                {testCase.steps && testCase.steps.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Steps</h4>
-                    <ol className="list-decimal list-inside space-y-1">
-                      {testCase.steps.map((step, index) => (
-                        <li key={index} className="text-sm">{step}</li>
-                      ))}
-                    </ol>
-                  </div>
+                {isExpanded && (
+                  <CardContent>
+                    {testCase.description && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-muted-foreground mb-1">Description</h4>
+                        <p>{testCase.description}</p>
+                      </div>
+                    )}
+                    
+                    {testCase.steps && testCase.steps.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-muted-foreground mb-2">Steps</h4>
+                        <ol className="list-decimal list-inside space-y-1">
+                          {testCase.steps.map((step, index) => (
+                            <li key={index} className="text-sm">{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                    
+                    {testCase.expectedResult && (
+                      <div className="mb-4">
+                        <h4 className="font-medium text-sm text-muted-foreground mb-1">Expected Result</h4>
+                        <p className="text-sm">{testCase.expectedResult}</p>
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-muted-foreground border-t pt-3">
+                      <p>Source: {testCase.originalFilename}</p>
+                      <p>Created: {new Date(testCase.createdAt).toLocaleString()}</p>
+                    </div>
+                  </CardContent>
                 )}
-                
-                {testCase.expectedResult && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm text-muted-foreground mb-1">Expected Result</h4>
-                    <p className="text-sm">{testCase.expectedResult}</p>
-                  </div>
-                )}
-                
-                <div className="text-xs text-muted-foreground">
-                  <p>Source: {testCase.originalFilename}</p>
-                  <p>Created: {new Date(testCase.createdAt).toLocaleString()}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 

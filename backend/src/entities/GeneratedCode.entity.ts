@@ -60,7 +60,7 @@ export class GeneratedCode {
   @Property({ type: 'timestamptz', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
   updatedAt: Date = new Date();
 
-  @OneToMany(() => GeneratedCodeFile, file => file.generatedCode)
+  @OneToMany(() => GeneratedCodeFile, file => file.generatedCode, { orphanRemoval: true })
   files = new Collection<GeneratedCodeFile>(this);
 
   constructor(project: Project, outputPath: string) {

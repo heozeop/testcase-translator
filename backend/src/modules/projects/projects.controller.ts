@@ -205,6 +205,50 @@ export class ProjectsController {
     res.send('No CSV data available');
   }
 
+  @Get(':id/generated-code')
+  @ApiOperation({ summary: 'List all generated Cypress code for a project' })
+  @ApiResponse({ status: 200, description: 'Generated code list retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'No generated code found' })
+  async listGeneratedCode(@Param('id') projectId: string, @Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.projectsService.listGeneratedCode(projectId, page || 1, limit || 10);
+  }
+
+  @Get(':id/generated-code/latest')
+  @ApiOperation({ summary: 'Get latest generated Cypress code for a project' })
+  @ApiResponse({ status: 200, description: 'Latest generated code retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'No generated code found' })
+  async getLatestGeneratedCode(@Param('id') projectId: string) {
+    return this.projectsService.getExistingGeneratedCode(projectId);
+  }
+
+  @Get(':id/generated-code/:generationId')
+  @ApiOperation({ summary: 'Get specific generated Cypress code by generation ID' })
+  @ApiResponse({ status: 200, description: 'Generated code retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Generated code not found' })
+  async getGeneratedCodeById(@Param('id') projectId: string, @Param('generationId') generationId: string) {
+    return this.projectsService.getGeneratedCodeById(projectId, generationId);
+  }
+
+  @Delete(':id/generated-code/:generationId')
+  @ApiOperation({ summary: 'Delete specific generated Cypress code' })
+  @ApiResponse({ status: 200, description: 'Generated code deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Generated code not found' })
+  async deleteGeneratedCode(@Param('id') projectId: string, @Param('generationId') generationId: string) {
+    return this.projectsService.deleteGeneratedCode(projectId, generationId);
+  }
+
+  @Get(':id/generated-files/:fileName')
+  @ApiOperation({ summary: 'Download a specific generated code file' })
+  @ApiResponse({ status: 200, description: 'File downloaded successfully' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  async downloadGeneratedFile(
+    @Param('id') projectId: string,
+    @Param('fileName') fileName: string,
+    @Res() res: any,
+  ) {
+    return this.projectsService.downloadGeneratedFile(projectId, fileName, res);
+  }
+
   @Post(':id/generate-cypress')
   @ApiOperation({ summary: 'Generate Cypress test code from uploaded test cases with intelligent crawling' })
   @ApiResponse({ status: 200, description: 'Cypress code generated successfully' })
@@ -265,12 +309,125 @@ export class ProjectsController {
   }
 
   @Post(':id/run-cypress')
-  @ApiOperation({ summary: 'Run generated Cypress tests' })
+  @ApiOperation({ summary: 'Run latest generated Cypress tests with real-time progress' })
   @ApiResponse({ status: 200, description: 'Cypress tests execution started' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   @ApiResponse({ status: 400, description: 'No generated code found' })
-  async runCypressTests(@Param('id') projectId: string) {
-    return this.projectsService.runCypressTests(projectId);
+  async runCypressTests(@Param('id') projectId: string, @Res() res: any) {
+    try {
+      // Set headers for streaming response
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+      let finalResult: any = null;
+
+      // Stream progress updates
+      const progressCallback = (progress: any) => {
+        const chunk = JSON.stringify({ type: 'progress', data: progress }) + '\n';
+        console.log('Sending progress chunk:', chunk.trim());
+        res.write(chunk);
+        res.flush?.(); // Force flush the chunk
+      };
+
+      try {
+        // Run tests with progress streaming
+        finalResult = await this.projectsService.runCypressTests(projectId, progressCallback);
+        
+        // Send final result
+        const finalChunk = JSON.stringify({ type: 'complete', data: finalResult }) + '\n';
+        console.log('Sending final chunk:', finalChunk.trim());
+        res.write(finalChunk);
+        res.flush?.();
+        res.end();
+
+      } catch (error: any) {
+        console.error('Test execution error:', error);
+        const errorChunk = JSON.stringify({ 
+          type: 'error', 
+          data: { 
+            message: error.message,
+            timestamp: new Date().toISOString()
+          } 
+        }) + '\n';
+        console.log('Sending error chunk:', errorChunk.trim());
+        res.write(errorChunk);
+        res.flush?.();
+        res.end();
+      }
+
+    } catch (error: any) {
+      console.error('Streaming setup error:', error);
+      res.status(500).json({ 
+        error: 'Failed to start test execution',
+        message: error.message 
+      });
+    }
+  }
+
+  @Post(':id/generated-code/:generationId/run-cypress')
+  @ApiOperation({ summary: 'Run specific generated Cypress tests with real-time progress' })
+  @ApiResponse({ status: 200, description: 'Cypress tests execution started' })
+  @ApiResponse({ status: 404, description: 'Project or generation not found' })
+  @ApiResponse({ status: 400, description: 'No generated code found' })
+  async runSpecificCypressTests(@Param('id') projectId: string, @Param('generationId') generationId: string, @Res() res: any) {
+    try {
+      // Set headers for streaming response
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+
+      let finalResult: any = null;
+
+      // Stream progress updates
+      const progressCallback = (progress: any) => {
+        const chunk = JSON.stringify({ type: 'progress', data: progress }) + '\n';
+        console.log('Sending progress chunk:', chunk.trim());
+        res.write(chunk);
+        res.flush?.(); // Force flush the chunk
+      };
+
+      try {
+        // Run tests for specific generation with progress streaming
+        finalResult = await this.projectsService.runCypressTestsForGeneration(projectId, generationId, progressCallback);
+        
+        // Send final result
+        const finalChunk = JSON.stringify({ type: 'complete', data: finalResult }) + '\n';
+        console.log('Sending final chunk:', finalChunk.trim());
+        res.write(finalChunk);
+        res.flush?.();
+        res.end();
+
+      } catch (error: any) {
+        console.error('Test execution error:', error);
+        const errorChunk = JSON.stringify({ 
+          type: 'error', 
+          data: { 
+            message: error.message,
+            timestamp: new Date().toISOString()
+          } 
+        }) + '\n';
+        console.log('Sending error chunk:', errorChunk.trim());
+        res.write(errorChunk);
+        res.flush?.();
+        res.end();
+      }
+
+    } catch (error: any) {
+      console.error('Streaming setup error:', error);
+      res.status(500).json({ 
+        error: 'Failed to start test execution',
+        message: error.message 
+      });
+    }
   }
 
   @Get(':id/cypress-status/:executionId')

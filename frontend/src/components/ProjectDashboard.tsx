@@ -27,7 +27,19 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       setError(null);
       
       const response = await apiService.getProjects(1, 50); // Get first 50 projects
-      setProjects(response.data || []);
+      
+      // Defensive programming: ensure we always have an array
+      let projectsData = response.data;
+      if (!Array.isArray(projectsData)) {
+        // If response.data is not an array, check if it has a nested data property
+        if (projectsData && typeof projectsData === 'object' && Array.isArray(projectsData.data)) {
+          projectsData = projectsData.data;
+        } else {
+          projectsData = [];
+        }
+      }
+      
+      setProjects(projectsData);
     } catch (error: any) {
       console.error('Failed to load projects:', error);
       setError('Failed to load projects. Please try again.');

@@ -19,17 +19,17 @@ export class GeneratedCodeFile {
   @Property({ type: 'varchar', length: 500, fieldName: 'file_path' })
   filePath: string;
 
-  @Property({ type: 'text' })
-  content: string;
+  @Property({ type: 'int', nullable: true, fieldName: 'file_size' })
+  fileSize?: number;
 
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  constructor(generatedCode: GeneratedCode, fileType: string, fileName: string, filePath: string, content: string) {
+  constructor(generatedCode: GeneratedCode, fileType: string, fileName: string, filePath: string, fileSize?: number) {
     this.generatedCode = generatedCode;
     this.fileType = fileType;
     this.fileName = fileName;
     this.filePath = filePath;
-    this.content = content;
+    this.fileSize = fileSize;
   }
 }

@@ -30,7 +30,7 @@ export class Project {
   @OneToMany(() => TestCase, testCase => testCase.project)
   testCases = new Collection<TestCase>(this);
 
-  @OneToMany(() => GeneratedCode, generatedCode => generatedCode.project)
+  @OneToMany(() => GeneratedCode, generatedCode => generatedCode.project, { orphanRemoval: true })
   generatedCodes = new Collection<GeneratedCode>(this);
 
   @OneToMany(() => TestExample, testExample => testExample.project)

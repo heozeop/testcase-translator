@@ -107,6 +107,11 @@ PERPLEXITY_API_KEY=
 
 # Database Configuration
 DATABASE_URL=postgresql://user:password@localhost:5432/testcase_translator
+
+# Cypress Execution Configuration (Docker only)
+CYPRESS_FORCE_REAL=true  # Forces real Cypress execution in Docker containers
+DISPLAY=:99              # Virtual display for headless browser
+DOCKER=true              # Identifies Docker environment
 ```
 
 ## System Dependencies
@@ -115,6 +120,8 @@ DATABASE_URL=postgresql://user:password@localhost:5432/testcase_translator
 The Docker setup includes all necessary dependencies:
 - FFmpeg for video creation
 - Chromium browser for automated testing
+- Xvfb virtual display for headless browser operation
+- Real Cypress test execution (configured via CYPRESS_FORCE_REAL=true)
 - All Node.js and system dependencies
 
 ### Manual Installation
@@ -138,6 +145,13 @@ chromium-browser --version  # or google-chrome --version
 
 Note: Video recording will be automatically disabled if FFmpeg is not available, but screenshots will still work.
 
+### Docker Cypress Execution
+The Docker environment supports real Cypress test execution:
+- Set `CYPRESS_FORCE_REAL=true` to run actual Cypress tests instead of simulation
+- Xvfb provides virtual display for headless browser automation
+- FFmpeg creates video recordings of test execution
+- All test artifacts (videos/screenshots) are generated in real-time
+
 ## Development Workflow
 
 1. Use Task Master to manage development tasks
@@ -155,3 +169,4 @@ Note: Video recording will be automatically disabled if FFmpeg is not available,
 - Ensure proper error handling for all AI API calls
 - WebSocket connections require careful state management
 - Use task-master command to generate task and expand all the task before doing something. Use task master actively.
+- Use pnpm

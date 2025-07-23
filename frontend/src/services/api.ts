@@ -74,16 +74,25 @@ class ApiService {
       throw new Error(apiResponse.error?.message || 'API request failed');
     }
     
+    // Handle the backend response structure which has nested data
+    const backendData = apiResponse.data;
+    const projects = (backendData.data || []).map((project: any) => ({
+      ...project,
+      target_url: project.targetUrl, // Map targetUrl to target_url for frontend compatibility
+      created_at: project.createdAt,  // Map createdAt to created_at 
+      updated_at: project.updatedAt   // Map updatedAt to updated_at
+    }));
+    
     // Return the paginated response structure expected by frontend
     return {
-      data: apiResponse.data || [],
-      pagination: apiResponse.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+      data: projects,
+      pagination: {
+        page: backendData.page || 1,
+        limit: backendData.limit || 10,
+        total: backendData.total || 0,
+        totalPages: backendData.totalPages || 0,
+        hasNext: backendData.hasNext || false,
+        hasPrev: backendData.hasPrev || false
       }
     };
   }
@@ -150,13 +159,47 @@ class ApiService {
     if (params?.order) queryParams.append('order', params.order);
     
     const response = await this.api.get(`/api/testcases?${queryParams.toString()}`);
-    return this.handleResponse<PaginatedResponse<TestCase>>(response);
+    const apiResponse = response.data as any;
+    
+    if (!apiResponse.success) {
+      throw new Error(apiResponse.error?.message || 'API request failed');
+    }
+    
+    // Return the paginated response structure expected by frontend
+    return {
+      data: apiResponse.data || [],
+      pagination: apiResponse.pagination || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      }
+    };
   }
 
   // Get test cases for a specific project
   async getProjectTestCases(projectId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<TestCase>> {
     const response = await this.api.get(`/api/testcases/project/${projectId}?page=${page}&limit=${limit}`);
-    return this.handleResponse<PaginatedResponse<TestCase>>(response);
+    const apiResponse = response.data as any;
+    
+    if (!apiResponse.success) {
+      throw new Error(apiResponse.error?.message || 'API request failed');
+    }
+    
+    // Return the paginated response structure expected by frontend
+    return {
+      data: apiResponse.data || [],
+      pagination: apiResponse.pagination || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+      }
+    };
   }
 
   // Get a single test case by ID
@@ -319,6 +362,116 @@ class ApiService {
     return response.data;
   }
 
+  // List all generated code for a project
+  async listGeneratedCode(projectId: string, page: number = 1, limit: number = 10): Promise<any> {
+    try {
+      const response = await this.api.get(`/api/projects/${projectId}/generated-code?page=${page}&limit=${limit}`);
+      const apiResponse = response.data as any;
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error?.message || 'API request failed');
+      }
+      
+      // Return the structure with data and pagination
+      return {
+        data: apiResponse.data || [],
+        pagination: apiResponse.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false
+        }
+      };
+    } catch (error: any) {
+      // If no generated code exists, return empty list
+      if (error.response?.status === 404) {
+        return {
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false
+          }
+        };
+      }
+      throw error;
+    }
+  }
+
+  // Get latest generated Cypress code for a project
+  async getLatestGeneratedCode(projectId: string): Promise<any> {
+    try {
+      const response = await this.api.get(`/api/projects/${projectId}/generated-code/latest`);
+      const apiResponse = response.data as any;
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error?.message || 'API request failed');
+      }
+      
+      // Handle double-nested response structure
+      if (apiResponse.data && apiResponse.data.success && apiResponse.data.data) {
+        return apiResponse.data.data;
+      }
+      return apiResponse.data;
+    } catch (error: any) {
+      // If no generated code exists, return null instead of throwing
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  // Get specific generated code by generation ID
+  async getGeneratedCodeById(projectId: string, generationId: string): Promise<any> {
+    try {
+      const response = await this.api.get(`/api/projects/${projectId}/generated-code/${generationId}`);
+      const apiResponse = response.data as any;
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error?.message || 'API request failed');
+      }
+      
+      // Handle double-nested response structure
+      if (apiResponse.data && apiResponse.data.success && apiResponse.data.data) {
+        return apiResponse.data.data;
+      }
+      return apiResponse.data;
+    } catch (error: any) {
+      // If not found, return null
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  // Delete specific generated code
+  async deleteGeneratedCode(projectId: string, generationId: string): Promise<any> {
+    try {
+      const response = await this.api.delete(`/api/projects/${projectId}/generated-code/${generationId}`);
+      const apiResponse = response.data as any;
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error?.message || 'API request failed');
+      }
+      
+      return apiResponse.data || apiResponse;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  // Legacy method - now points to latest
+  async getExistingGeneratedCode(projectId: string): Promise<any> {
+    return this.getLatestGeneratedCode(projectId);
+  }
+
   // Generate Cypress code from test cases with streaming
   async generateCypressCode(projectId: string, onProgress?: (progress: any) => void): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -443,10 +596,152 @@ class ApiService {
     });
   }
 
-  // Run generated Cypress tests
-  async runCypressTests(projectId: string): Promise<any> {
-    const response = await this.api.post(`/api/projects/${projectId}/run-cypress`);
-    return this.handleResponse<any>(response);
+  // Run generated Cypress tests with progress streaming (latest generation)
+  async runCypressTests(projectId: string, progressCallback?: (progress: any) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const url = `${baseURL}/api/projects/${projectId}/run-cypress`;
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      
+      let processedLength = 0;
+      let finalResult: any = null;
+      
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === XMLHttpRequest.LOADING || xhr.readyState === XMLHttpRequest.DONE) {
+          const newData = xhr.responseText.slice(processedLength);
+          processedLength = xhr.responseText.length;
+          
+          if (newData.trim()) {
+            // Parse each line as JSON
+            const lines = newData.trim().split('\n').filter(line => line.trim());
+            
+            for (const line of lines) {
+              try {
+                const parsed = JSON.parse(line);
+                console.log('📡 Raw parsed streaming data:', parsed);
+                
+                if (parsed.type === 'progress' && progressCallback) {
+                  console.log('📊 Forwarding progress to callback:', parsed.data);
+                  progressCallback(parsed.data);
+                } else if (parsed.type === 'complete') {
+                  console.log('✅ Test execution completed:', parsed.data);
+                  finalResult = parsed.data;
+                } else if (parsed.type === 'error') {
+                  console.error('❌ Test execution error:', parsed.data);
+                  reject(new Error(parsed.data.message || 'Test execution failed'));
+                  return;
+                }
+              } catch (e) {
+                console.warn('Failed to parse streaming response line:', line.substring(0, 100), e);
+              }
+            }
+          }
+        }
+        
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(finalResult || { success: true, message: 'Test execution completed' });
+          } else {
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              reject(new Error(errorResponse.message || `HTTP ${xhr.status}: ${xhr.statusText}`));
+            } catch {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          }
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error during test execution'));
+      };
+      
+      xhr.ontimeout = () => {
+        reject(new Error('Request timeout during test execution'));
+      };
+      
+      // Set a longer timeout for test execution
+      xhr.timeout = 600000; // 10 minutes
+      
+      xhr.send(JSON.stringify({}));
+    });
+  }
+
+  // Run specific generated Cypress tests with progress streaming
+  async runCypressTestsForGeneration(projectId: string, generationId: string, progressCallback?: (progress: any) => void): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const baseURL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+      const url = `${baseURL}/api/projects/${projectId}/generated-code/${generationId}/run-cypress`;
+      
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      
+      let processedLength = 0;
+      let finalResult: any = null;
+      
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState === XMLHttpRequest.LOADING || xhr.readyState === XMLHttpRequest.DONE) {
+          const newData = xhr.responseText.slice(processedLength);
+          processedLength = xhr.responseText.length;
+          
+          if (newData.trim()) {
+            // Parse each line as JSON
+            const lines = newData.trim().split('\n').filter(line => line.trim());
+            
+            for (const line of lines) {
+              try {
+                const parsed = JSON.parse(line);
+                console.log('📡 Raw parsed streaming data:', parsed);
+                
+                if (parsed.type === 'progress' && progressCallback) {
+                  console.log('📊 Forwarding progress to callback:', parsed.data);
+                  progressCallback(parsed.data);
+                } else if (parsed.type === 'complete') {
+                  console.log('✅ Test execution completed:', parsed.data);
+                  finalResult = parsed.data;
+                } else if (parsed.type === 'error') {
+                  console.error('❌ Test execution error:', parsed.data);
+                  reject(new Error(parsed.data.message || 'Test execution failed'));
+                  return;
+                }
+              } catch (e) {
+                console.warn('Failed to parse streaming response line:', line.substring(0, 100), e);
+              }
+            }
+          }
+        }
+        
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(finalResult || { success: true, message: 'Test execution completed' });
+          } else {
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              reject(new Error(errorResponse.message || `HTTP ${xhr.status}: ${xhr.statusText}`));
+            } catch {
+              reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+          }
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error during test execution'));
+      };
+      
+      xhr.ontimeout = () => {
+        reject(new Error('Request timeout during test execution'));
+      };
+      
+      // Set a longer timeout for test execution
+      xhr.timeout = 600000; // 10 minutes
+      
+      xhr.send(JSON.stringify({}));
+    });
   }
 
   // Get Cypress test execution status

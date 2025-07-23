@@ -1,19 +1,17 @@
 {
-  "namespaces": [
-    "public"
-  ],
-  "name": "public",
+  "namespaces": [],
   "tables": [
     {
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "name": {
           "name": "name",
@@ -42,6 +40,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "status": {
@@ -57,30 +56,29 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamptz",
+          "type": "datetime",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
+          "length": null,
           "mappedType": "datetime"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamptz",
+          "type": "datetime",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
+          "length": null,
           "mappedType": "datetime"
         }
       },
       "name": "projects",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "projects_pkey",
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -98,21 +96,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "project_id": {
           "name": "project_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "start_url": {
           "name": "start_url",
@@ -147,20 +147,22 @@
         },
         "configuration": {
           "name": "configuration",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "started_at": {
@@ -170,8 +172,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "ended_at": {
           "name": "ended_at",
@@ -180,8 +182,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "last_activity": {
           "name": "last_activity",
@@ -190,15 +192,24 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "exploration_sessions",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "exploration_sessions_pkey",
+          "columnNames": [
+            "project_id"
+          ],
+          "composite": false,
+          "keyName": "exploration_sessions_project_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -215,11 +226,11 @@
           "columnNames": [
             "project_id"
           ],
-          "localTableName": "public.exploration_sessions",
+          "localTableName": "exploration_sessions",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.projects",
+          "referencedTableName": "projects",
           "updateRule": "cascade"
         }
       },
@@ -229,21 +240,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "session_id": {
           "name": "session_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "url": {
           "name": "url",
@@ -267,47 +280,52 @@
         },
         "page_states": {
           "name": "page_states",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "navigation_actions": {
           "name": "navigation_actions",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "collected_inputs": {
           "name": "collected_inputs",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "form_info": {
           "name": "form_info",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "element_info": {
           "name": "element_info",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "screenshot_path": {
@@ -327,15 +345,17 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "created_at": {
@@ -345,15 +365,24 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "exploration_results",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "exploration_results_pkey",
+          "columnNames": [
+            "session_id"
+          ],
+          "composite": false,
+          "keyName": "exploration_results_session_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -370,11 +399,11 @@
           "columnNames": [
             "session_id"
           ],
-          "localTableName": "public.exploration_results",
+          "localTableName": "exploration_results",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.exploration_sessions",
+          "referencedTableName": "exploration_sessions",
           "updateRule": "cascade"
         }
       },
@@ -384,21 +413,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "project_id": {
           "name": "project_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "name": {
           "name": "name",
@@ -417,33 +448,37 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "steps": {
           "name": "steps",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "expected_results": {
           "name": "expected_results",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "test_data": {
           "name": "test_data",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "priority": {
@@ -495,34 +530,44 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "integer"
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamptz",
+          "type": "datetime",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
+          "length": null,
           "mappedType": "datetime"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamptz",
+          "type": "datetime",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
+          "length": null,
           "mappedType": "datetime"
         }
       },
       "name": "test_cases",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "test_cases_pkey",
+          "columnNames": [
+            "project_id"
+          ],
+          "composite": false,
+          "keyName": "test_cases_project_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -539,11 +584,11 @@
           "columnNames": [
             "project_id"
           ],
-          "localTableName": "public.test_cases",
+          "localTableName": "test_cases",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.projects",
+          "referencedTableName": "projects",
           "updateRule": "cascade"
         }
       },
@@ -553,30 +598,33 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "project_id": {
           "name": "project_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "test_case_id": {
           "name": "test_case_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "session_id": {
           "name": "session_id",
@@ -625,6 +673,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "base_url": {
@@ -644,6 +693,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "package_json": {
@@ -653,15 +703,17 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "status": {
@@ -682,6 +734,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "file_url": {
@@ -711,8 +764,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "updated_at": {
           "name": "updated_at",
@@ -721,15 +774,34 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "generated_code",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "generated_code_pkey",
+          "columnNames": [
+            "project_id"
+          ],
+          "composite": false,
+          "keyName": "generated_code_project_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "test_case_id"
+          ],
+          "composite": false,
+          "keyName": "generated_code_test_case_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -746,11 +818,11 @@
           "columnNames": [
             "project_id"
           ],
-          "localTableName": "public.generated_code",
+          "localTableName": "generated_code",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.projects",
+          "referencedTableName": "projects",
           "updateRule": "cascade"
         },
         "generated_code_test_case_id_foreign": {
@@ -758,11 +830,11 @@
           "columnNames": [
             "test_case_id"
           ],
-          "localTableName": "public.generated_code",
+          "localTableName": "generated_code",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.test_cases",
+          "referencedTableName": "test_cases",
           "deleteRule": "set null",
           "updateRule": "cascade"
         }
@@ -773,21 +845,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "generation_id": {
           "name": "generation_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "file_type": {
           "name": "file_type",
@@ -826,6 +900,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "length": null,
           "mappedType": "text"
         },
         "created_at": {
@@ -835,15 +910,24 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "generated_code_files",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "generated_code_files_pkey",
+          "columnNames": [
+            "generation_id"
+          ],
+          "composite": false,
+          "keyName": "generated_code_files_generation_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -860,11 +944,11 @@
           "columnNames": [
             "generation_id"
           ],
-          "localTableName": "public.generated_code_files",
+          "localTableName": "generated_code_files",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.generated_code",
+          "referencedTableName": "generated_code",
           "updateRule": "cascade"
         }
       },
@@ -874,30 +958,33 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "test_case_id": {
           "name": "test_case_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "generated_code_id": {
           "name": "generated_code_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "status": {
           "name": "status",
@@ -912,11 +999,12 @@
         },
         "results": {
           "name": "results",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "logs": {
@@ -926,6 +1014,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "errors": {
@@ -935,6 +1024,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "started_at": {
@@ -944,8 +1034,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "completed_at": {
           "name": "completed_at",
@@ -954,8 +1044,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "duration": {
           "name": "duration",
@@ -964,15 +1054,17 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "integer"
         },
         "metadata": {
           "name": "metadata",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "json"
         },
         "video_url": {
@@ -987,11 +1079,12 @@
         },
         "screenshot_urls": {
           "name": "screenshot_urls",
-          "type": "jsonb",
+          "type": "json",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "default": "",
           "mappedType": "json"
         },
@@ -1002,15 +1095,34 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "execution_results",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "execution_results_pkey",
+          "columnNames": [
+            "test_case_id"
+          ],
+          "composite": false,
+          "keyName": "execution_results_test_case_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "columnNames": [
+            "generated_code_id"
+          ],
+          "composite": false,
+          "keyName": "execution_results_generated_code_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -1027,11 +1139,11 @@
           "columnNames": [
             "test_case_id"
           ],
-          "localTableName": "public.execution_results",
+          "localTableName": "execution_results",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.test_cases",
+          "referencedTableName": "test_cases",
           "updateRule": "cascade"
         },
         "execution_results_generated_code_id_foreign": {
@@ -1039,11 +1151,11 @@
           "columnNames": [
             "generated_code_id"
           ],
-          "localTableName": "public.execution_results",
+          "localTableName": "execution_results",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.generated_code",
+          "referencedTableName": "generated_code",
           "deleteRule": "set null",
           "updateRule": "cascade"
         }
@@ -1054,21 +1166,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "project_id": {
           "name": "project_id",
-          "type": "uuid",
+          "type": "varchar(36)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "mappedType": "uuid"
+          "length": 36,
+          "mappedType": "string"
         },
         "test_scenario": {
           "name": "test_scenario",
@@ -1077,6 +1191,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "length": null,
           "mappedType": "text"
         },
         "expected_result": {
@@ -1086,6 +1201,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "length": null,
           "mappedType": "text"
         },
         "cypress_code": {
@@ -1095,15 +1211,17 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
+          "length": null,
           "mappedType": "text"
         },
         "is_active": {
           "name": "is_active",
-          "type": "boolean",
+          "type": "tinyint(1)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
+          "length": 1,
           "default": "true",
           "mappedType": "boolean"
         },
@@ -1114,8 +1232,8 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         },
         "updated_at": {
           "name": "updated_at",
@@ -1124,15 +1242,24 @@
           "autoincrement": false,
           "primary": false,
           "nullable": false,
-          "length": 6,
-          "mappedType": "datetime"
+          "length": null,
+          "mappedType": "unknown"
         }
       },
       "name": "test_examples",
-      "schema": "public",
       "indexes": [
         {
-          "keyName": "test_examples_pkey",
+          "columnNames": [
+            "project_id"
+          ],
+          "composite": false,
+          "keyName": "test_examples_project_id_index",
+          "constraint": false,
+          "primary": false,
+          "unique": false
+        },
+        {
+          "keyName": "PRIMARY",
           "columnNames": [
             "id"
           ],
@@ -1149,11 +1276,11 @@
           "columnNames": [
             "project_id"
           ],
-          "localTableName": "public.test_examples",
+          "localTableName": "test_examples",
           "referencedColumnNames": [
             "id"
           ],
-          "referencedTableName": "public.projects",
+          "referencedTableName": "projects",
           "updateRule": "cascade"
         }
       },

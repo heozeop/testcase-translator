@@ -13,33 +13,43 @@ services:
       - ./pnpm-lock.yaml:/app/pnpm-lock.yaml
       - ./tsconfig.json:/app/tsconfig.json
       - ./nodemon.json:/app/nodemon.json
+      - ./.env:/app/.env
     environment:
       - NODE_ENV=development
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
+      - BACKEND_PORT=8000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=user
+      - DB_PASSWORD=password
       - DB_NAME=testcase_translator
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Force real Cypress execution in Docker environment
+      - CYPRESS_FORCE_REAL=true
+      - DISPLAY=:99
+      - DOCKER=true
     depends_on:
-      - postgres
+      - mysql
     networks:
       - app-network
+    # Add shared memory size for Chromium
+    shm_size: 2gb
 
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.0
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=testcase_translator
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=testcase_translator
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     networks:
       - app-network
 
 volumes:
-  postgres_data:
+  mysql_data:
 
 networks:
   app-network:
