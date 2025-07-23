@@ -13,17 +13,31 @@ Testcase Translator helps QA teams and product managers automate their testing w
 ## Architecture
 
 The project uses a three-tier architecture:
-- **Frontend**: React application (port 3000)
-- **Backend**: Node.js/TypeScript API server (port 8000)
-- **Database**: PostgreSQL (port 5432)
+- **Frontend**: React application (port 3000) - User interface with real-time test execution monitoring
+- **Backend**: Node.js/TypeScript API server (port 8000) - AI-powered test generation and Cypress execution engine
+- **Database**: MySQL 8.0 (port 3306) - Project data, test cases, and execution results storage
+
+### Database Schema
+- `projects`: Project management and metadata
+- `test_cases`: Parsed test case storage from Excel/CSV files
+- `generated_code`: AI-generated Cypress test scripts
+- `execution_results`: Test execution tracking and results
+
+### Docker Environment
+- **Cypress Execution**: Real browser automation with Chromium in Docker
+- **Video Recording**: FFmpeg-based test execution video capture
+- **Virtual Display**: Xvfb for headless browser operation
+- **ARM64 Compatible**: Optimized for Apple Silicon and Intel architectures
 
 ## Getting Started
 
 ### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- An Anthropic API key for Claude
-- A Mastra.ai API key
+- Docker and Docker Compose (v2.0+)
+- Node.js 20+ (for local development)
+- An Anthropic API key for Claude Sonnet 4
+- Git for version control
+- At least 4GB RAM for Cypress execution
+- Chrome/Chromium browser (for local development)
 
 ### Setup
 
@@ -33,61 +47,137 @@ git clone https://github.com/yourusername/testcase-translator.git
 cd testcase-translator
 ```
 
-2. Create a `.env` file based on `.env.example`:
+2. Create a `.env` file with your configuration:
 ```bash
-cp .env.example .env
-# Edit .env with your API keys
+# Required API Keys
+ANTHROPIC_API_KEY=your_claude_api_key_here
+
+# AI Configuration
+AI_MODEL=claude-sonnet-4-20250514
+AI_MAX_TOKENS=300000
+AI_TEMPERATURE=0.1
+
+# Database Configuration
+DATABASE_URL=mysql://user:password@mysql:3306/testcase_translator
+DB_HOST=mysql
+DB_PORT=3306
+DB_NAME=testcase_translator
+DB_USER=user
+DB_PASSWORD=password
+
+# Application Ports
+BACKEND_PORT=8000
+FRONTEND_PORT=3000
+
+# Cypress Execution Configuration
+CYPRESS_FORCE_REAL=true  # Forces real Cypress execution in Docker
+DISPLAY=:99              # Virtual display for headless browser
+DOCKER=true              # Identifies Docker environment
 ```
 
-3. Start the application with Docker Compose:
+3. Choose your setup method:
+
+#### Quick Setup (Recommended)
 ```bash
-docker-compose up
+# Uses docker-compose.override.yml for development
+./scripts/setup-docker.sh
+# Access: Frontend http://localhost:3000, Backend http://localhost:8000
+```
+
+#### Alternative Setups
+```bash
+# Simple setup with alternative configuration
+./scripts/setup-docker-simple.sh
+# Access: Frontend http://localhost:5173, Backend http://localhost:8000
+
+# Production setup
+./scripts/setup-docker-prod.sh
+# Access: http://localhost:3000
+
+# Manual Docker Compose
+docker-compose up --build  # default with override
+docker-compose -f docker-compose.yml -f docker-compose.simple.yml up --build
+docker-compose -f docker-compose.prod.yml up --build
 ```
 
 4. Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- Database: localhost:5432
+- **Frontend**: http://localhost:3000 (React UI)
+- **Backend API**: http://localhost:8000 (REST API + WebSocket)
+- **Database**: localhost:3306 (MySQL 8.0)
+- **API Documentation**: http://localhost:8000/api
 
 ## Development
 
-### Task Management
-This project uses Task Master for development workflow:
+### Development Commands
 ```bash
-# View current tasks
-task-master list
+# Individual services (manual setup)
+npm run dev:frontend    # React app on localhost:5173
+npm run dev:backend     # API server on localhost:8000  
+npm run dev:db         # PostgreSQL on localhost:5432
 
-# Work on a specific task
-task-master expand <task-id>
+# Database operations
+npm run db:migrate     # Run migrations
+npm run db:seed        # Seed test data
 
-# Update task status
-task-master set-status <task-id> <status>
+# Using pnpm (recommended)
+pnpm install
+pnpm run dev
 ```
 
-### Running Services Individually
+### System Dependencies
+
+#### Docker (Recommended)
+The Docker setup includes all necessary dependencies:
+- FFmpeg for video creation
+- Chromium browser for automated testing
+- Xvfb virtual display for headless browser operation
+- Real Cypress test execution (configured via CYPRESS_FORCE_REAL=true)
+- All Node.js and system dependencies
+
+#### Manual Installation
+For video recording functionality during test execution:
 ```bash
-# Frontend development
-cd frontend
-npm install
-npm run dev
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install ffmpeg chromium-browser
 
-# Backend development
-cd backend
-npm install
-npm run dev
+# Alpine Linux
+apk add --no-cache ffmpeg chromium
 
-# Database
-docker-compose up db
+# macOS
+brew install ffmpeg
+# Chrome/Chromium should be installed separately
+
+# Verify installation
+ffmpeg -version
+chromium-browser --version  # or google-chrome --version
 ```
 
-## Features
+## Key Features
 
-1. **URL Validation & HTML Retrieval**: Validates URLs and fetches page content
-2. **AI-Powered Excel Parsing**: Uses Claude to understand test scenarios
-3. **Dynamic Browser Exploration**: Automated page navigation using Puppeteer
-4. **Real-time Updates**: WebSocket-based progress tracking
-5. **Cypress Script Generation**: Automated test script creation
-6. **Project Management**: Full CRUD operations for test projects
+### 🤖 AI-Powered Test Generation
+1. **Excel/CSV Upload**: Upload test cases in Excel or CSV format
+2. **AI Test Parsing**: Claude Sonnet 4 analyzes and understands test scenarios
+3. **Intelligent Code Generation**: Automatically generates Cypress test scripts
+4. **Test Case Management**: Full CRUD operations for test projects
+
+### 🎬 Real Cypress Test Execution
+5. **Actual Browser Automation**: Real Chromium browser execution, not simulation
+6. **Video Recording**: Full HD video capture of test execution (10+ MB files)
+7. **Screenshot Capture**: Automatic screenshot on test failures
+8. **Progress Streaming**: Real-time execution updates via WebSocket
+
+### 🔧 Advanced Test Features
+9. **Multi-Environment Support**: Docker, local development, and production modes
+10. **HTTP Range Requests**: Efficient video streaming with seek support
+11. **Test Artifacts API**: RESTful endpoints for accessing videos and screenshots
+12. **Error Diagnosis**: Detailed failure analysis with stack traces
+
+### 🎯 User Experience
+13. **Responsive UI**: React-based interface with real-time updates
+14. **Project Dashboard**: Organize and manage multiple test projects
+15. **Test History**: Track execution history with results and media
+16. **One-Click Execution**: Run generated tests with a single button click
 
 ## 테스트 실행 플로우 (Test Execution Flow)
 
@@ -180,19 +270,112 @@ sequenceDiagram
 | **브라우저** | 시뮬레이션 | 실제 Chromium 자동화 |
 | **에러 처리** | 가상 에러 | 실제 웹사이트 오류 감지 |
 
-### 🛠️ 기술 스택
-- **Docker**: Debian 기반 ARM64 호환 환경
-- **Cypress**: 실제 브라우저 자동화 프레임워크
-- **Chromium**: 헤드리스 브라우저 엔진
-- **Xvfb**: 가상 디스플레이 서버
-- **ffmpeg**: 비디오 녹화 및 처리
-- **AI (Claude 3.5 Sonnet)**: 지능형 테스트 코드 생성
+### 🛠️ Technology Stack
 
-### 🎥 실행 결과
-- **실제 브라우저 비디오**: 테스트 수행 과정을 완전히 녹화
-- **실시간 진행 상황**: 프론트엔드에서 10분간 폴링
-- **상세한 오류 보고**: 실제 웹사이트 문제 진단
-- **스크린샷**: 실패 시점의 실제 화면 캡처
+#### Backend
+- **Node.js 20+**: TypeScript-based API server
+- **NestJS**: Modular backend framework
+- **MySQL 8.0**: Relational database with MikroORM
+- **Docker**: Containerized environment with ARM64/AMD64 support
+
+#### Frontend
+- **React 18**: Modern UI with TypeScript
+- **Tailwind CSS**: Utility-first styling
+- **WebSocket**: Real-time test execution updates
+- **HTML5 Video**: Native video playback with controls
+
+#### Test Execution
+- **Cypress 14.5.2**: Real browser automation framework
+- **Chromium 138**: Headless browser engine
+- **Xvfb**: Virtual display server for Docker
+- **FFmpeg**: Video recording and processing
+- **Claude Sonnet 4**: AI-powered test code generation
+
+### 🎥 Test Execution Results
+- **Real Browser Videos**: Complete test execution recording (HD quality)
+- **Live Progress Updates**: Real-time streaming via WebSocket
+- **Detailed Error Reports**: Actual website issue diagnosis
+- **Failure Screenshots**: Captured at exact failure moments
+- **Test Artifacts API**: RESTful access to all media files
+
+## Recent Updates (v2.0)
+
+### ✅ Fixed Cypress Test Execution
+- **Real Browser Testing**: Fixed command arguments and environment variables
+- **Video Recording**: Enabled actual HD video capture (11+ MB files)
+- **Screenshot Capture**: Automatic failure screenshot generation
+- **User Test Preservation**: Stopped overriding user-generated tests with templates
+- **Extended Timeout**: Increased from 2 to 5 minutes for complex tests
+- **Media Detection**: Improved filesystem scanning for test artifacts
+
+### ✅ Enhanced Docker Environment
+- **ARM64 Compatibility**: Optimized for Apple Silicon
+- **Environment Variables**: Fixed TERM and DISPLAY configuration
+- **Browser Configuration**: Proper Chromium browser detection
+- **TypeScript Config**: Added baseUrl and paths resolution
+- **Video Streaming**: HTTP range requests for efficient playback
+
+## API Endpoints
+
+### Test Execution
+```bash
+# Execute latest generated tests
+POST /api/projects/{projectId}/run-cypress
+
+# Execute specific generation tests  
+POST /api/projects/{projectId}/generated-code/{generationId}/run-cypress
+
+# Get execution status
+GET /api/projects/{projectId}/cypress-status/{executionId}
+```
+
+### Media Access
+```bash
+# Download test video
+GET /api/projects/{projectId}/executions/{executionId}/videos/{filename}
+
+# Download screenshot
+GET /api/projects/{projectId}/executions/{executionId}/screenshots/{filename}
+```
+
+### Project Management
+```bash
+# List projects
+GET /api/projects
+
+# Create project
+POST /api/projects
+
+# Get generated code
+GET /api/projects/{projectId}/generated-code/{generationId}
+```
+
+## Usage Example
+
+1. **Upload Test Cases**: Upload Excel/CSV file with test scenarios
+2. **Generate Code**: Click "Generate Cypress Code" to create tests
+3. **Execute Tests**: Click "Run Tests" to start real browser automation
+4. **View Results**: Watch live video and check test results
+5. **Download Artifacts**: Access videos and screenshots via API
+
+## Troubleshooting
+
+### Common Issues
+- **Video not playing**: Check FFmpeg installation and browser codec support
+- **Tests timing out**: Increase timeout in Cypress configuration (currently 5 minutes)
+- **Memory issues**: Ensure Docker has at least 4GB RAM allocated
+- **Port conflicts**: Check if ports 3000, 8000, 3306 are available
+
+### Docker Issues
+```bash
+# Reset containers
+docker-compose down -v
+docker-compose up --build
+
+# Check logs
+docker-compose logs backend
+docker-compose logs mysql
+```
 
 ## Contributing
 
