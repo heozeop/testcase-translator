@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Monaco Editor Custom Styles */
+.save-indicator-text {
+  color: #10b981 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  opacity: 1 !important;
+  animation: fadeOut 2s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

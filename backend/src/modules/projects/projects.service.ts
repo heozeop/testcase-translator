@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/mysql';
@@ -812,6 +812,91 @@ export class ProjectsService {
       };
     } catch (error) {
       throw new Error((error as Error).message || 'Failed to delete generated code');
+    }
+  }
+
+  async updateGeneratedCodeFiles(
+    projectId: string, 
+    generationId: string, 
+    updatedFiles: Array<{
+      fileName: string;
+      content: string;
+      type: 'test' | 'config' | 'support';
+    }>
+  ) {
+    try {
+      console.log('🔄 Updating generated code files:', { projectId, generationId, fileCount: updatedFiles.length });
+      
+      // First, verify the generated code exists
+      const generatedCode = await this.em.findOne(GeneratedCode, {
+        id: generationId,
+        project: { id: projectId }
+      }, { populate: ['files'] });
+      
+      if (!generatedCode) {
+        throw new NotFoundException('Generated code not found');
+      }
+      
+      console.log('📄 Found generated code with existing files:', generatedCode.files.length);
+      
+      const updatedFileRecords = [];
+      
+      // Update each file
+      for (const fileUpdate of updatedFiles) {
+        console.log(`🔄 Processing file update: ${fileUpdate.fileName}`);
+        
+        // Find the existing file record
+        const existingFiles = generatedCode.files.getItems();
+        const existingFile = existingFiles.find(f => f.fileName === fileUpdate.fileName);
+        
+        if (!existingFile) {
+          console.warn(`⚠️ File not found in generation: ${fileUpdate.fileName}`);
+          continue;
+        }
+        
+        // Update file content in storage
+        console.log('💾 Updating file in storage...');
+        await this.fileStorageService.updateGeneratedCodeFile(
+          projectId,
+          fileUpdate.fileName,
+          fileUpdate.content,
+          generationId
+        );
+        
+        // Update database record metadata only (no content stored in DB)
+        existingFile.fileSize = fileUpdate.content.length;
+        // Note: filePath should remain the same as it's the storage location
+        
+        console.log(`✅ Updated file: ${fileUpdate.fileName}`);
+        updatedFileRecords.push({
+          fileName: fileUpdate.fileName,
+          type: fileUpdate.type,
+          filePath: existingFile.filePath,
+          fileSize: existingFile.fileSize
+        });
+      }
+      
+      // Save all changes
+      await this.em.persistAndFlush(generatedCode);
+      
+      console.log('✅ All files updated successfully');
+      
+      return {
+        success: true,
+        data: {
+          message: `Updated ${updatedFileRecords.length} files successfully`,
+          generationId,
+          updatedFiles: updatedFileRecords,
+          updatedAt: new Date().toISOString()
+        }
+      };
+      
+    } catch (error) {
+      console.error('❌ Error updating generated code files:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Failed to update generated code files: ${(error as Error).message}`);
     }
   }
 

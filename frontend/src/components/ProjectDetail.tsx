@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { TestCasesList } from './TestCasesList';
 import { CypressCodeDisplay } from './CypressCodeDisplay';
+import { CypressCodeEditor } from './CypressCodeEditor';
 import { SimpleFileUpload } from './SimpleFileUpload';
 
 interface ProjectDetailProps {
@@ -28,7 +29,26 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
     lastActivity: ''
   });
   const [loading, setLoading] = useState(true);
+  const [editorMode, setEditorMode] = useState<{ 
+    isActive: boolean; 
+    projectId?: string; 
+    generationId?: string; 
+  }>({ isActive: false });
   const { toast } = useToast();
+
+  // Handler for opening code editor
+  const handleEditCode = useCallback((projectId: string, generationId: string) => {
+    setEditorMode({
+      isActive: true,
+      projectId,
+      generationId
+    });
+  }, []);
+
+  // Handler for closing code editor
+  const handleCloseEditor = useCallback(() => {
+    setEditorMode({ isActive: false });
+  }, []);
 
   // Define the callback before using it in useEffect
   const loadProjectStats = useCallback(async () => {
@@ -101,6 +121,17 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // If editor mode is active, show the code editor
+  if (editorMode.isActive && editorMode.projectId && editorMode.generationId) {
+    return (
+      <CypressCodeEditor
+        projectId={editorMode.projectId}
+        generationId={editorMode.generationId}
+        onBack={handleCloseEditor}
+      />
     );
   }
 
@@ -308,6 +339,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onBack })
                 <CypressCodeDisplay
                   projectId={project.id}
                   onBack={() => setActiveTab('test-cases')}
+                  onEditCode={handleEditCode}
                 />
               ) : (
                 <div className="text-center py-8">

@@ -4,6 +4,9 @@ import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Edit3, Save, Eye } from 'lucide-react';
+import CodeEditor from './CodeEditor';
+import { MonacoErrorBoundary } from './MonacoErrorBoundary';
 
 interface GeneratedFile {
   fileName: string;
@@ -81,9 +84,10 @@ interface TestExecutionResult {
 interface CypressCodeDisplayProps {
   projectId: string;
   onBack?: () => void;
+  onEditCode?: (projectId: string, generationId: string) => void;
 }
 
-export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectId, onBack }) => {
+export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectId, onBack, onEditCode }) => {
   // List states
   const [generationsList, setGenerationsList] = useState<GenerationSummary[]>([]);
   const [listLoading, setListLoading] = useState(true);
@@ -101,6 +105,12 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
   const [selectedGeneration, setSelectedGeneration] = useState<GenerationDetail | null>(null);
   const [generationLoading, setGenerationLoading] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  
+  // Inline editing states
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editableFiles, setEditableFiles] = useState<Map<string, string>>(new Map());
+  const [modifiedFiles, setModifiedFiles] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
   
   // Generation states
   const [generationProgress, setGenerationProgress] = useState<any>(null);
@@ -398,10 +408,120 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
     }
   }, [projectId, selectedGeneration, pagination.page, toast, loadGenerationsList]);
 
+  // Inline editing functions
+  const toggleEditMode = useCallback(() => {
+    if (isEditMode && modifiedFiles.size > 0) {
+      // Warn about unsaved changes
+      if (window.confirm('You have unsaved changes. Do you want to discard them?')) {
+        setIsEditMode(false);
+        setEditableFiles(new Map());
+        setModifiedFiles(new Set());
+      }
+    } else {
+      setIsEditMode(!isEditMode);
+      if (!isEditMode && selectedGeneration?.files) {
+        // Initialize editable files map
+        const filesMap = new Map();
+        selectedGeneration.files.forEach(file => {
+          filesMap.set(file.fileName, file.content);
+        });
+        setEditableFiles(filesMap);
+      }
+    }
+  }, [isEditMode, modifiedFiles.size, selectedGeneration?.files]);
+
+  const handleCodeChange = useCallback((fileName: string, newContent: string) => {
+    setEditableFiles(prev => new Map(prev.set(fileName, newContent)));
+    
+    // Track modified files
+    const originalContent = selectedGeneration?.files.find(f => f.fileName === fileName)?.content || '';
+    setModifiedFiles(prev => {
+      const newSet = new Set(prev);
+      if (newContent !== originalContent) {
+        newSet.add(fileName);
+      } else {
+        newSet.delete(fileName);
+      }
+      return newSet;
+    });
+  }, [selectedGeneration?.files]);
+
+  const saveChanges = useCallback(async () => {
+    if (!selectedGeneration || modifiedFiles.size === 0) {
+      toast({
+        title: "No Changes",
+        description: "No modifications to save",
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      // Prepare files for saving
+      const filesToUpdate = Array.from(modifiedFiles).map(fileName => ({
+        fileName,
+        content: editableFiles.get(fileName) || '',
+        type: selectedGeneration.files.find(f => f.fileName === fileName)?.type || 'test'
+      }));
+
+      console.log('💾 Saving modified files:', filesToUpdate.map(f => f.fileName));
+
+      // Use the API to save changes
+      await apiService.updateGeneratedCodeFiles(
+        projectId,
+        selectedGeneration.generationId,
+        filesToUpdate
+      );
+
+      // Update the selected generation state with new content
+      const updatedFiles = selectedGeneration.files.map(file => ({
+        ...file,
+        content: editableFiles.get(file.fileName) || file.content
+      }));
+
+      setSelectedGeneration(prev => prev ? {
+        ...prev,
+        files: updatedFiles
+      } : null);
+
+      // Clear modified files tracking
+      setModifiedFiles(new Set());
+
+      toast({
+        title: "Success",
+        description: `Saved ${filesToUpdate.length} file${filesToUpdate.length !== 1 ? 's' : ''} successfully`
+      });
+
+    } catch (error: any) {
+      console.error('❌ Error saving files:', error);
+      toast({
+        title: "Save Failed",
+        description: error.response?.data?.message || error.message || "Failed to save changes",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [projectId, selectedGeneration, modifiedFiles, editableFiles, toast]);
+
   // Load list on mount
   useEffect(() => {
     loadGenerationsList();
   }, [loadGenerationsList]);
+
+  // Handle global save event from Monaco Editor
+  useEffect(() => {
+    const handleSave = (event: any) => {
+      if (isEditMode && modifiedFiles.size > 0) {
+        event.preventDefault();
+        saveChanges();
+      }
+    };
+
+    window.addEventListener('monaco-save', handleSave);
+    return () => window.removeEventListener('monaco-save', handleSave);
+  }, [isEditMode, modifiedFiles.size, saveChanges]);
 
   if (listLoading) {
     return (
@@ -428,11 +548,46 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
               ? `${pagination.total} generation${pagination.total !== 1 ? 's' : ''} found`
               : 'Generate Cypress test code from your uploaded test cases'
             }
+            {isEditMode && modifiedFiles.size > 0 && (
+              <span className="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded">
+                {modifiedFiles.size} unsaved file{modifiedFiles.size !== 1 ? 's' : ''}
+              </span>
+            )}
           </p>
         </div>
         <div className="space-x-2">
           {selectedGeneration && (
             <>
+              <Button 
+                onClick={toggleEditMode}
+                variant="outline"
+                className={isEditMode ? "text-orange-600 border-orange-600 bg-orange-50" : "text-blue-600 border-blue-600 hover:bg-blue-50"}
+              >
+                {isEditMode ? <Eye className="w-4 h-4 mr-1" /> : <Edit3 className="w-4 h-4 mr-1" />}
+                {isEditMode ? 'View Mode' : 'Edit Mode'}
+              </Button>
+              
+              {isEditMode && (
+                <Button 
+                  onClick={saveChanges}
+                  disabled={isSaving || modifiedFiles.size === 0}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Save className="w-4 h-4 mr-1" />
+                  {isSaving ? 'Saving...' : `Save${modifiedFiles.size > 0 ? ` (${modifiedFiles.size})` : ''}`}
+                </Button>
+              )}
+
+              {onEditCode && (
+                <Button 
+                  onClick={() => onEditCode(projectId, selectedGeneration.generationId)}
+                  variant="outline"
+                  className="text-green-600 border-green-600 hover:bg-green-50"
+                >
+                  🚀 Full Editor
+                </Button>
+              )}
+              
               <Button 
                 onClick={runTests} 
                 disabled={executionLoading}
@@ -705,8 +860,16 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                               </p>
                             </div>
                             <div className="space-x-2">
+                              {isEditMode && modifiedFiles.has(file.fileName) && (
+                                <span className="px-2 py-1 text-xs bg-orange-100 text-orange-700 rounded">
+                                  Modified
+                                </span>
+                              )}
                               <Button 
-                                onClick={() => copyToClipboard(file.content, file.fileName)}
+                                onClick={() => copyToClipboard(
+                                  isEditMode ? (editableFiles.get(file.fileName) || file.content) : file.content, 
+                                  file.fileName
+                                )}
                                 variant="outline" 
                                 size="sm"
                               >
@@ -723,18 +886,53 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                           </div>
                           
                           <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-gray-100 px-4 py-2 border-b text-sm text-gray-600">
+                            <div className="bg-gray-100 px-4 py-2 border-b text-sm text-gray-600 flex justify-between items-center">
                               <span className="font-mono">{file.fileName}</span>
+                              {isEditMode && (
+                                <span className="text-xs text-blue-600">
+                                  Press Ctrl+S to save
+                                </span>
+                              )}
                             </div>
                             
                             <div className="relative">
-                              <pre className="bg-gray-900 text-gray-100 p-4 overflow-x-auto text-sm max-h-96 overflow-y-auto font-mono leading-relaxed">
-                                <code>
-                                  {file.content.split('\n').map((line, index) => (
-                                    `${String(index + 1).padStart(3, ' ')} | ${line}`
-                                  )).join('\n')}
-                                </code>
-                              </pre>
+                              {isEditMode ? (
+                                <MonacoErrorBoundary
+                                  fallback={
+                                    <div className="bg-gray-900 text-gray-100 p-4 overflow-y-auto">
+                                      <div className="mb-2 text-yellow-300 text-sm">
+                                        ⚠️ Editor failed to load. Showing read-only view.
+                                      </div>
+                                      <pre className="text-sm font-mono leading-relaxed">
+                                        <code>
+                                          {(editableFiles.get(file.fileName) || file.content).split('\n').map((line, index) => (
+                                            `${String(index + 1).padStart(3, ' ')} | ${line}`
+                                          )).join('\n')}
+                                        </code>
+                                      </pre>
+                                    </div>
+                                  }
+                                >
+                                  <CodeEditor
+                                    value={editableFiles.get(file.fileName) || file.content}
+                                    language="javascript"
+                                    theme="vs-dark"
+                                    height="400px"
+                                    onCodeChange={(newContent) => handleCodeChange(file.fileName, newContent)}
+                                    showMinimap={true}
+                                    readOnly={false}
+                                    className="border-0"
+                                  />
+                                </MonacoErrorBoundary>
+                              ) : (
+                                <pre className="bg-gray-900 text-gray-100 p-4 overflow-x-auto text-sm max-h-96 overflow-y-auto font-mono leading-relaxed">
+                                  <code>
+                                    {file.content.split('\n').map((line, index) => (
+                                      `${String(index + 1).padStart(3, ' ')} | ${line}`
+                                    )).join('\n')}
+                                  </code>
+                                </pre>
+                              )}
                             </div>
                             
                             {file.type === 'test' && (

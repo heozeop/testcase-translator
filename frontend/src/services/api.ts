@@ -433,14 +433,18 @@ class ApiService {
       const response = await this.api.get(`/api/projects/${projectId}/generated-code/${generationId}`);
       const apiResponse = response.data as any;
       
+      console.log('🔍 API Service - Raw response:', apiResponse);
+      
       if (!apiResponse.success) {
         throw new Error(apiResponse.error?.message || 'API request failed');
       }
       
       // Handle double-nested response structure
       if (apiResponse.data && apiResponse.data.success && apiResponse.data.data) {
+        console.log('🔍 API Service - Using double-nested data:', apiResponse.data.data);
         return apiResponse.data.data;
       }
+      console.log('🔍 API Service - Using single-nested data:', apiResponse.data);
       return apiResponse.data;
     } catch (error: any) {
       // If not found, return null
@@ -455,6 +459,33 @@ class ApiService {
   async deleteGeneratedCode(projectId: string, generationId: string): Promise<any> {
     try {
       const response = await this.api.delete(`/api/projects/${projectId}/generated-code/${generationId}`);
+      const apiResponse = response.data as any;
+      
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.error?.message || 'API request failed');
+      }
+      
+      return apiResponse.data || apiResponse;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  // Update generated code files
+  async updateGeneratedCodeFiles(
+    projectId: string, 
+    generationId: string, 
+    files: Array<{
+      fileName: string;
+      content: string;
+      type: 'test' | 'config' | 'support';
+    }>
+  ): Promise<any> {
+    try {
+      const response = await this.api.put(
+        `/api/projects/${projectId}/generated-code/${generationId}/files`,
+        { files }
+      );
       const apiResponse = response.data as any;
       
       if (!apiResponse.success) {

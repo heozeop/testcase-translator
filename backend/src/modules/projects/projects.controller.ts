@@ -237,6 +237,24 @@ export class ProjectsController {
     return this.projectsService.deleteGeneratedCode(projectId, generationId);
   }
 
+  @Put(':id/generated-code/:generationId/files')
+  @ApiOperation({ summary: 'Update generated code files content' })
+  @ApiResponse({ status: 200, description: 'Files updated successfully' })
+  @ApiResponse({ status: 404, description: 'Generated code not found' })
+  async updateGeneratedCodeFiles(
+    @Param('id') projectId: string, 
+    @Param('generationId') generationId: string,
+    @Body() updateData: {
+      files: Array<{
+        fileName: string;
+        content: string;
+        type: 'test' | 'config' | 'support';
+      }>;
+    }
+  ) {
+    return this.projectsService.updateGeneratedCodeFiles(projectId, generationId, updateData.files);
+  }
+
   @Get(':id/generated-files/:fileName')
   @ApiOperation({ summary: 'Download a specific generated code file' })
   @ApiResponse({ status: 200, description: 'File downloaded successfully' })

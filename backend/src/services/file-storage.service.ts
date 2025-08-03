@@ -104,6 +104,28 @@ export class FileStorageService {
     return await fs.readFile(fullPath, 'utf-8');
   }
 
+  async updateGeneratedCodeFile(
+    projectId: string,
+    fileName: string,
+    content: string,
+    generationId?: string
+  ): Promise<string> {
+    try {
+      console.log('🔄 FileStorageService.updateGeneratedCodeFile called:', {
+        projectId,
+        fileName,
+        contentLength: content.length,
+        generationId
+      });
+
+      // Use the same logic as saveGeneratedCodeFile since we're overwriting
+      return await this.saveGeneratedCodeFile(projectId, fileName, content, generationId);
+    } catch (error) {
+      console.error('❌ Error in updateGeneratedCodeFile:', error);
+      throw error;
+    }
+  }
+
   async deleteGeneratedCodeFile(relativePath: string): Promise<void> {
     const fullPath = path.join(this.storageDir, relativePath);
     await fs.unlink(fullPath);

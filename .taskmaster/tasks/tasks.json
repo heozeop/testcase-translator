@@ -743,11 +743,267 @@
             "testStrategy": "Unit tests for drag-and-drop interactions, toggle functionality, and category operations. E2E tests for complete example management workflows. Accessibility tests for keyboard navigation and screen readers."
           }
         ]
+      },
+      {
+        "id": 24,
+        "title": "Interactive Code Editor with Save and Execute Functionality",
+        "description": "Implement a comprehensive code editor interface that allows users to edit generated Cypress test files, save modifications to storage, and execute the updated code with real-time feedback.",
+        "details": "Integrate a modern code editor solution using either Monaco Editor (VS Code's editor) with esbuild for TypeScript/JavaScript support, or Sandpack for a complete development environment. The implementation should include: 1) Code Editor Setup: Install and configure Monaco Editor or Sandpack with Cypress-specific syntax highlighting, autocomplete for Cypress commands, and proper TypeScript definitions. Configure themes (light/dark mode support) and editor settings (font size, line numbers, minimap). 2) File Loading and State Management: Create React components to load existing generated code from the file storage system, implement proper state management for editor content using React hooks or Redux, handle file loading errors and empty states gracefully. 3) Save Functionality: Implement auto-save functionality with debounced saves every 2-3 seconds, create manual save button with keyboard shortcut (Ctrl+S), update the file storage system to handle file modifications, maintain version history or backup of previous versions, show save status indicators (saved/unsaved/saving). 4) Code Execution Integration: Create \"Run Test\" button that triggers the Cypress test runner service, integrate with the existing WebSocket system for real-time execution feedback, display execution results, logs, and any errors in a dedicated panel, implement execution cancellation functionality. 5) UI/UX Enhancements: Add split-pane layout with resizable panels for editor and results, implement breadcrumb navigation showing current file path, add file tabs for multiple file editing if needed, include code formatting and linting capabilities. 6) Error Handling and Validation: Validate JavaScript/TypeScript syntax before saving, show syntax errors inline with proper highlighting, handle file permission and storage errors gracefully, implement proper loading states and error boundaries.",
+        "testStrategy": "Test code editor initialization with various file sizes and content types, validate syntax highlighting and autocomplete functionality for Cypress commands. Test save functionality with auto-save timing, manual saves, and error scenarios (storage full, permission denied). Verify file loading from storage system with different file states (empty, large files, corrupted files). Test code execution integration by running sample Cypress tests and validating real-time feedback through WebSocket connections. Test UI responsiveness with split-pane resizing, theme switching, and keyboard shortcuts. Validate error handling for syntax errors, execution failures, and network connectivity issues. Perform accessibility testing for keyboard navigation and screen reader compatibility. Test concurrent editing scenarios and file locking mechanisms if implemented.",
+        "status": "pending",
+        "dependencies": [
+          18,
+          19,
+          20
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Code Editor Setup and Configuration",
+            "description": "Install and configure Monaco Editor with Cypress-specific syntax highlighting, autocomplete, and TypeScript support",
+            "dependencies": [],
+            "details": "Install Monaco Editor package and configure it with Cypress-specific syntax highlighting, autocomplete for Cypress commands, and proper TypeScript definitions. Set up themes (light/dark mode support) and editor settings including font size, line numbers, and minimap. Configure esbuild for TypeScript/JavaScript support and ensure proper integration with the React application.",
+            "status": "done",
+            "testStrategy": "Test editor initialization with various file sizes and content types, validate syntax highlighting for Cypress commands, verify autocomplete functionality, test theme switching, and ensure TypeScript definitions are properly loaded"
+          },
+          {
+            "id": 2,
+            "title": "File Loading and State Management Implementation",
+            "description": "Create React components for loading existing code files and implement proper state management for editor content",
+            "dependencies": [
+              "24.1"
+            ],
+            "details": "Develop React components to load existing generated code from the file storage system, implement state management for editor content using React hooks, handle file loading errors and empty states gracefully. Create proper data flow between the file storage system and the editor component with loading indicators and error boundaries.",
+            "status": "done",
+            "testStrategy": "Test file loading from storage system, validate state management with different file types, test error handling for missing files, verify loading states and empty file scenarios"
+          },
+          {
+            "id": 3,
+            "title": "Auto-Save and Manual Save Functionality",
+            "description": "Implement comprehensive save functionality with auto-save, manual save, and version management",
+            "dependencies": [
+              "24.2"
+            ],
+            "details": "Implement auto-save functionality with debounced saves every 2-3 seconds, create manual save button with keyboard shortcut (Ctrl+S), update the file storage system to handle file modifications. Maintain version history or backup of previous versions and show save status indicators (saved/unsaved/saving). Include proper error handling for save failures and storage issues.",
+            "status": "done",
+            "testStrategy": "Test auto-save timing and debouncing, validate manual save functionality and keyboard shortcuts, verify version history management, test save status indicators, and validate error handling for storage failures"
+          },
+          {
+            "id": 4,
+            "title": "Code Execution Integration and Real-time Feedback",
+            "description": "Integrate code execution with Cypress test runner and implement real-time feedback system",
+            "dependencies": [
+              "24.3"
+            ],
+            "details": "Create 'Run Test' button that triggers the Cypress test runner service, integrate with the existing WebSocket system for real-time execution feedback. Display execution results, logs, and errors in a dedicated panel, implement execution cancellation functionality. Ensure proper communication between the editor and the test execution system.",
+            "status": "done",
+            "testStrategy": "Test code execution triggering, validate WebSocket integration for real-time feedback, verify execution results display, test execution cancellation, and ensure proper error handling during test runs"
+          },
+          {
+            "id": 5,
+            "title": "UI/UX Enhancements and Error Handling",
+            "description": "Implement advanced UI features, syntax validation, and comprehensive error handling",
+            "dependencies": [
+              "24.4"
+            ],
+            "details": "Add split-pane layout with resizable panels for editor and results, implement breadcrumb navigation showing current file path, add file tabs for multiple file editing. Include code formatting and linting capabilities, validate JavaScript/TypeScript syntax before saving, show syntax errors inline with proper highlighting. Handle file permission and storage errors gracefully with proper loading states and error boundaries.",
+            "status": "pending",
+            "testStrategy": "Test split-pane layout and resizing functionality, validate breadcrumb navigation, test file tabs and multi-file editing, verify syntax validation and error highlighting, test code formatting and linting, and ensure proper error boundary behavior"
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "title": "Fix CypressCodeDisplay Edit Mode Content Loading",
+        "description": "Debug and fix the code editor functionality in the test project panel where edit mode is not displaying code content when accessed from the CypressCodeDisplay component.",
+        "details": "Investigate and resolve the issue where the CypressCodeDisplay component's edit mode is not showing code content. Key areas to examine: 1) Component State Management: Check if the code content is properly loaded into the component state when switching to edit mode, verify state transitions between view and edit modes, and ensure proper data flow from parent components. 2) Code Loading Logic: Examine the file loading mechanism in the CypressCodeDisplay component, verify API calls for fetching test file content, check for async loading issues and race conditions, and validate error handling for failed content retrieval. 3) Editor Integration: Inspect the code editor initialization within the component, ensure proper mounting and unmounting of the editor instance, verify that content is correctly passed to the editor component, and check for timing issues with editor ready state. 4) Props and Context: Validate that necessary props (file path, content, project ID) are correctly passed down, check for context providers that might affect content loading, and ensure proper component lifecycle management. 5) Error Handling: Add comprehensive error logging for debugging, implement fallback mechanisms for content loading failures, and provide user feedback for loading states and errors.",
+        "testStrategy": "Create unit tests for CypressCodeDisplay component focusing on edit mode functionality, mock file content loading and verify proper state updates. Test component mounting with various props combinations and validate edit mode activation. Create integration tests that simulate the full user flow from viewing code to entering edit mode, verify content appears correctly in the editor. Test error scenarios including network failures, missing files, and invalid content formats. Add browser automation tests to verify the UI behavior when switching between view and edit modes. Test with different file sizes and content types to ensure consistent behavior. Validate that the fix doesn't break existing view mode functionality and maintains proper component performance.",
+        "status": "done",
+        "dependencies": [
+          24
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze CypressCodeDisplay Component State Management",
+            "description": "Investigate the current state management implementation in the CypressCodeDisplay component to identify issues with code content loading in edit mode.",
+            "dependencies": [],
+            "details": "Examine the component's state structure, focusing on how code content is stored and updated when switching between view and edit modes. Check useState/useReducer hooks, verify state initialization, and trace data flow from parent components. Add console logging to track state changes during mode transitions. Identify any missing state updates or incorrect initial values that prevent content from displaying in edit mode.",
+            "status": "done",
+            "testStrategy": "Create unit tests to verify state transitions between view and edit modes, mock different initial states and validate proper state updates when switching modes."
+          },
+          {
+            "id": 2,
+            "title": "Debug Code Content Loading Mechanism",
+            "description": "Examine and fix the file loading logic that fetches test file content for the CypressCodeDisplay component.",
+            "dependencies": [
+              "25.1"
+            ],
+            "details": "Investigate the API calls or file system operations used to load test file content. Check for proper async/await handling, race conditions, and error scenarios. Verify that file paths are correctly constructed and passed to loading functions. Add comprehensive error logging to identify where the loading process fails. Ensure that content loading is triggered appropriately when entering edit mode and that the loaded content is properly stored in component state.",
+            "status": "done",
+            "testStrategy": "Mock API calls and file loading operations, test various scenarios including successful loads, network errors, and missing files. Verify that loading states are properly managed and errors are handled gracefully."
+          },
+          {
+            "id": 3,
+            "title": "Fix Code Editor Integration and Initialization",
+            "description": "Resolve issues with the code editor component initialization and content passing within the CypressCodeDisplay component.",
+            "dependencies": [
+              "25.1",
+              "25.2"
+            ],
+            "details": "Inspect the code editor component (Monaco Editor or similar) integration within CypressCodeDisplay. Verify that the editor is properly mounted when switching to edit mode, check timing issues with editor initialization, and ensure content is correctly passed to the editor instance. Fix any issues with editor ready state detection and content synchronization. Implement proper cleanup on component unmount to prevent memory leaks.",
+            "status": "done",
+            "testStrategy": "Test editor mounting and unmounting cycles, verify content is displayed correctly after editor initialization, and test rapid mode switching to identify timing issues."
+          },
+          {
+            "id": 4,
+            "title": "Validate Props and Context Data Flow",
+            "description": "Ensure that all necessary props and context data are correctly passed to and utilized by the CypressCodeDisplay component.",
+            "dependencies": [
+              "25.1"
+            ],
+            "details": "Audit the component's props interface, verifying that file path, content, project ID, and other required data are properly passed from parent components. Check for any missing prop validations or default values. Examine context providers that might affect content loading and ensure proper component lifecycle management. Add prop-types or TypeScript interfaces to catch missing or incorrect props during development.",
+            "status": "done",
+            "testStrategy": "Test component rendering with various prop combinations, including missing or invalid props. Verify that context data is accessible and properly utilized throughout the component lifecycle."
+          },
+          {
+            "id": 5,
+            "title": "Implement Comprehensive Error Handling and User Feedback",
+            "description": "Add robust error handling, logging, and user feedback mechanisms to improve debugging and user experience.",
+            "dependencies": [
+              "25.2",
+              "25.3",
+              "25.4"
+            ],
+            "details": "Implement comprehensive error logging throughout the content loading and edit mode activation process. Add user-friendly error messages and loading states to provide feedback during content retrieval. Create fallback mechanisms for content loading failures, such as retry logic or default content display. Implement proper error boundaries to prevent component crashes and provide graceful degradation when edit mode fails to initialize properly.",
+            "status": "done",
+            "testStrategy": "Test error scenarios including network failures, invalid file paths, and editor initialization failures. Verify that appropriate error messages are displayed to users and that the component remains functional despite errors."
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "title": "Fix Monaco Editor Blank Display in CypressCodeEditor Component",
+        "description": "Diagnose and resolve the issue where Monaco Editor loads successfully in the CypressCodeEditor component but displays blank content despite data being properly loaded.",
+        "details": "Investigate and fix the Monaco Editor blank display issue in the CypressCodeEditor component through systematic debugging: 1) Editor Initialization: Verify Monaco Editor is properly initialized with correct container element, check if editor.setValue() is called after editor creation, validate editor dimensions and container visibility, ensure proper timing of content loading relative to editor mounting. 2) Content Loading Flow: Examine the data flow from props to editor content, verify the code content format and encoding, check for asynchronous loading issues and race conditions, validate that content updates trigger proper editor refresh. 3) DOM and Styling Issues: Inspect container element dimensions and CSS properties, verify Monaco Editor container has proper height/width, check for CSS conflicts or z-index issues, ensure editor is not hidden by parent containers. 4) Monaco Configuration: Review editor configuration options and theme settings, verify language mode is properly set for syntax highlighting, check if editor options are preventing content display, validate Monaco Editor version compatibility. 5) Component Lifecycle: Examine React component mounting and update cycles, ensure editor content is set after component is fully mounted, verify useEffect dependencies and cleanup, check for memory leaks or multiple editor instances.",
+        "testStrategy": "Create comprehensive test suite covering editor initialization and content display: Unit tests for CypressCodeEditor component with mocked Monaco Editor to verify proper initialization sequence and content setting. Integration tests that mount the component with various content types and verify editor displays content correctly. Visual regression tests to capture editor screenshots and detect blank display issues. Browser compatibility tests across different environments. Create debugging utilities to log editor state, content, and DOM properties. Test edge cases including empty content, large files, special characters, and rapid content updates. Verify fix works with both initial content loading and dynamic content updates during component lifecycle.",
+        "status": "pending",
+        "dependencies": [
+          24,
+          25
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Diagnose Monaco Editor Initialization and Container Setup",
+            "description": "Investigate the Monaco Editor initialization process in CypressCodeEditor component to identify issues with container setup, dimensions, and timing that may cause blank display.",
+            "dependencies": [],
+            "details": "Examine the CypressCodeEditor component's Monaco Editor initialization sequence. Check if the editor container element has proper dimensions (height/width), verify the editor is initialized after the container is mounted to DOM, validate that the container element reference is correctly passed to Monaco. Add console logging to track initialization timing and container properties. Inspect CSS styles affecting the editor container and ensure no conflicts with parent containers or z-index issues. Verify the editor instance is properly created and accessible.",
+            "status": "done",
+            "testStrategy": "Create unit tests that mock Monaco Editor and verify initialization parameters. Test container element dimensions and visibility states. Add integration tests that mount the component and verify editor instance creation."
+          },
+          {
+            "id": 2,
+            "title": "Analyze Content Loading and Data Flow",
+            "description": "Examine the data flow from props to Monaco Editor content to identify issues with content setting, timing, or data format that prevent content display.",
+            "dependencies": [
+              "26.1"
+            ],
+            "details": "Trace the data flow from component props through to editor.setValue() calls. Verify that content is properly formatted and encoded before being passed to Monaco Editor. Check for race conditions between editor initialization and content loading. Examine useEffect dependencies to ensure content updates trigger proper editor refresh. Add logging to track when content is received, processed, and set in the editor. Validate that editor.getValue() returns the expected content after setValue() is called.",
+            "status": "pending",
+            "testStrategy": "Test component with various content types and sizes. Verify content setting timing with different prop update scenarios. Create tests for edge cases like empty content, special characters, and large files."
+          },
+          {
+            "id": 3,
+            "title": "Fix Monaco Editor Configuration and Options",
+            "description": "Review and correct Monaco Editor configuration options, theme settings, and language mode that may be preventing content from being visible in the editor.",
+            "dependencies": [
+              "26.1",
+              "26.2"
+            ],
+            "details": "Examine Monaco Editor configuration options passed during initialization. Verify theme settings are compatible and not causing text to be invisible (e.g., white text on white background). Check language mode configuration for proper syntax highlighting. Review editor options like readOnly, wordWrap, minimap, and scrollBeyondLastLine that might affect content display. Ensure Monaco Editor version compatibility with the current setup. Test with minimal configuration to isolate problematic options.",
+            "status": "pending",
+            "testStrategy": "Test editor with different themes and configuration options. Verify syntax highlighting works correctly. Create tests for various language modes and editor option combinations."
+          },
+          {
+            "id": 4,
+            "title": "Implement Component Lifecycle and Memory Management Fixes",
+            "description": "Resolve React component lifecycle issues, ensure proper editor cleanup, and fix any memory leaks or multiple editor instance problems that may cause display issues.",
+            "dependencies": [
+              "26.1",
+              "26.2",
+              "26.3"
+            ],
+            "details": "Review React component mounting and update cycles to ensure editor content is set after component is fully mounted. Fix useEffect dependencies and cleanup functions to prevent memory leaks. Ensure only one editor instance exists per component and properly dispose of editor instances on unmount. Implement proper error handling for editor operations. Add safeguards against setting content on disposed editor instances. Verify component re-renders don't create multiple editor instances or lose content.",
+            "status": "pending",
+            "testStrategy": "Test component mounting, unmounting, and re-mounting scenarios. Verify proper cleanup of editor instances. Test for memory leaks with repeated component mounting. Create tests for error scenarios and edge cases in component lifecycle."
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "title": "Enable Inline Code Editing and Save Functionality in Cypress Code Page",
+        "description": "Implement full inline code editing capabilities on the generated Cypress code page, allowing users to modify code directly and save changes back to the file system with proper persistence.",
+        "details": "Build upon the existing Monaco Editor integration to enable complete inline editing functionality: 1) Editor State Management: Fix the current edit mode implementation to properly enable text editing by ensuring Monaco Editor is configured with readOnly: false, implement proper editor focus and cursor positioning when entering edit mode, and add keyboard shortcuts for common operations (Ctrl+S for save, Ctrl+Z for undo). 2) Save Functionality: Create save mechanism that persists changes to the file system using the existing file storage system, implement auto-save functionality with configurable intervals (default 30 seconds), add manual save button with visual feedback (saving indicator, success/error states), and handle concurrent editing scenarios with proper conflict resolution. 3) File Synchronization: Update the file content in the storage system when changes are saved, ensure proper file versioning and backup creation before modifications, implement file locking mechanism to prevent concurrent modifications, and sync changes with the database records. 4) User Experience Enhancements: Add visual indicators for unsaved changes (dirty state), implement confirmation dialogs for unsaved changes when navigating away, provide syntax validation and error highlighting for Cypress code, and add code formatting capabilities. 5) Integration with Test Execution: Ensure saved changes are immediately available for test execution, update the test runner to use the latest saved version, and provide clear feedback when running tests with modified code.",
+        "testStrategy": "Create comprehensive test suite covering the complete editing workflow: Unit tests for the editor component to verify edit mode activation, text modification capabilities, save functionality, and auto-save behavior. Test file persistence by creating, editing, and saving test files, then verifying the changes are properly stored in the file system. Integration tests that simulate the full user workflow: open generated code, enter edit mode, make modifications, save changes, and verify the updated content persists across page refreshes. Test concurrent editing scenarios and conflict resolution mechanisms. Validate the integration with test execution by editing code, saving changes, and running tests to ensure the modified code is executed. Test error handling for save failures, storage issues, and network interruptions. Performance tests for large files and frequent auto-save operations.",
+        "status": "pending",
+        "dependencies": [
+          26,
+          16
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Monaco Editor for Inline Editing with Keyboard Shortcuts",
+            "description": "Set up Monaco Editor to enable full text editing capabilities by configuring readOnly: false, implementing proper editor focus and cursor positioning when entering edit mode, and adding essential keyboard shortcuts for common operations.",
+            "dependencies": [],
+            "details": "Update the Monaco Editor configuration to set readOnly: false when edit mode is activated. Implement editor.focus() method call when entering edit mode and add cursor positioning logic. Register keyboard shortcuts using editor.addCommand() for Ctrl+S (save), Ctrl+Z (undo), and other common operations. Add visual indicators to show when edit mode is active and ensure proper event handling for mode switching.",
+            "status": "done",
+            "testStrategy": "Unit tests for editor configuration changes, keyboard shortcut functionality, and edit mode activation. Test focus behavior and cursor positioning when switching between read-only and edit modes."
+          },
+          {
+            "id": 2,
+            "title": "Implement File Save Mechanism with Auto-Save and Manual Save",
+            "description": "Create a comprehensive save system that persists code changes to the file system, including both manual save functionality with visual feedback and configurable auto-save capabilities.",
+            "dependencies": [
+              "27.1"
+            ],
+            "details": "Build a save service that interfaces with the existing file storage system to persist editor content. Implement manual save functionality triggered by Ctrl+S or save button with loading states, success/error notifications. Add auto-save mechanism with configurable intervals (default 30 seconds) using setInterval. Create visual feedback system showing saving indicator, success states, and error handling. Implement debouncing for auto-save to prevent excessive save operations during active typing.",
+            "status": "pending",
+            "testStrategy": "Test manual save operations with various file states, validate auto-save timing and behavior, test error handling for save failures, and verify visual feedback states."
+          },
+          {
+            "id": 3,
+            "title": "Implement File Synchronization and Conflict Resolution",
+            "description": "Build file synchronization system that updates storage and database records when changes are saved, including versioning, backup creation, and conflict resolution for concurrent editing scenarios.",
+            "dependencies": [
+              "27.2"
+            ],
+            "details": "Create file versioning system that creates backups before modifications using timestamp-based naming. Implement file locking mechanism to prevent concurrent modifications by checking file lock status before allowing edits. Build conflict resolution system that detects concurrent changes and provides merge options or user choice dialogs. Update database records to reflect file changes and maintain sync between file system and database. Add file integrity checks to ensure data consistency.",
+            "status": "pending",
+            "testStrategy": "Test concurrent editing scenarios, validate backup creation and restoration, test file locking mechanisms, and verify database synchronization accuracy."
+          },
+          {
+            "id": 4,
+            "title": "Add User Experience Enhancements and Test Execution Integration",
+            "description": "Implement comprehensive UX improvements including dirty state indicators, navigation confirmations, syntax validation, code formatting, and integration with test execution system to use latest saved changes.",
+            "dependencies": [
+              "27.3"
+            ],
+            "details": "Add dirty state tracking that monitors editor changes and displays visual indicators (asterisk in title, unsaved changes badge). Implement beforeunload event handler and navigation confirmation dialogs when unsaved changes exist. Add Cypress-specific syntax validation using Monaco's built-in TypeScript/JavaScript validation and custom Cypress command validation. Implement code formatting using Prettier integration with format-on-save option. Update test execution system to reload latest file content before running tests and provide clear feedback when running tests with modified code.",
+            "status": "pending",
+            "testStrategy": "Test dirty state detection and visual indicators, validate navigation confirmation dialogs, test syntax validation with various code scenarios, verify code formatting functionality, and test integration with test execution system."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-26T13:18:50.654Z",
-      "updated": "2025-07-12T02:30:51.124Z",
+      "updated": "2025-08-03T05:17:39.481Z",
       "description": "Tasks for master context"
     }
   }
