@@ -10,6 +10,7 @@ import { TestCasesModule } from './modules/testcases/testcases.module';
 import { StatusModule } from './modules/status/status.module';
 import { WebsocketModule } from './modules/websocket/websocket.module';
 import { DatabaseModule } from './modules/database/database.module';
+import { RepositoryModule } from './repositories/repository.module';
 
 // Global filters and interceptors
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -26,6 +27,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     
     // Core modules
     DatabaseModule,
+    RepositoryModule,
     
     // Feature modules
     StatusModule,

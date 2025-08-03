@@ -4,22 +4,22 @@ import { Migrator } from '@mikro-orm/migrations';
 
 const migrationConfig: Options = {
   driver: MySqlDriver,
-  
+
   // Database connection
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '3306', 10),
   user: process.env.DB_USER || 'user',
   password: process.env.DB_PASSWORD || 'password',
   dbName: process.env.DB_NAME || 'testcase_translator',
-  
+
   // Entities configuration
-  entities: ['./dist/entities/**/*.entity.js'],
-  entitiesTs: ['./src/entities/**/*.entity.ts'],
-  
+  entities: ['./dist/models/**/*.entity.js'],
+  entitiesTs: ['./src/models/**/*.entity.ts'],
+
   // Development settings
   debug: process.env.NODE_ENV !== 'production',
   allowGlobalContext: true,
-  
+
   // Migrations
   extensions: [Migrator],
   migrations: {
@@ -34,7 +34,7 @@ const migrationConfig: Options = {
     snapshot: true,
     emit: 'ts',
   },
-  
+
   // Smaller connection pool for migrations
   pool: {
     min: 1,
@@ -47,7 +47,7 @@ const migrationConfig: Options = {
     createRetryIntervalMillis: 100,
     propagateCreateError: false,
   },
-  
+
   // Schema options
   charset: 'utf8mb4',
   driverOptions: {

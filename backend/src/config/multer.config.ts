@@ -23,16 +23,14 @@ export const multerConfig = {
   fileFilter: (_req: any, file: any, cb: any) => {
     const allowedExtensions = ['.xlsx', '.xls', '.csv'];
     const ext = extname(file.originalname).toLowerCase();
-    
+
     if (!allowedExtensions.includes(ext)) {
       return cb(
-        new Error(
-          `Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.`
-        ),
-        false
+        new Error(`Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.`),
+        false,
       );
     }
-    
+
     cb(null, true);
   },
   limits: {

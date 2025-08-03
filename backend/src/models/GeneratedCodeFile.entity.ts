@@ -25,7 +25,13 @@ export class GeneratedCodeFile {
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  constructor(generatedCode: GeneratedCode, fileType: string, fileName: string, filePath: string, fileSize?: number) {
+  constructor(
+    generatedCode: GeneratedCode,
+    fileType: string,
+    fileName: string,
+    filePath: string,
+    fileSize?: number,
+  ) {
     this.generatedCode = generatedCode;
     this.fileType = fileType;
     this.fileName = fileName;

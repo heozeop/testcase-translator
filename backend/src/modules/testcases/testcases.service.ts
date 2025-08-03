@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/core';
-import { TestCase } from '../../entities/TestCase.entity';
-import { Project } from '../../entities/Project.entity';
+import { TestCase } from '../../models/TestCase.entity';
+import { Project } from '../../models/Project.entity';
 import { CreateTestCaseDto, UpdateTestCaseDto, TestCaseQueryDto } from './dto/testcase.dto';
 
 @Injectable()

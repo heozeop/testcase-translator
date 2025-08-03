@@ -266,7 +266,7 @@ export enum MessageType {
   SCRIPT_GENERATION_BATCH = 'SCRIPT_GENERATION_BATCH',
 
   // Heartbeat (backwards compatibility)
-  HEARTBEAT = 'HEARTBEAT'
+  HEARTBEAT = 'HEARTBEAT',
 }
 
 // =============================================================================
@@ -302,7 +302,7 @@ export type ScriptGenerationMessage = WebSocketMessage<ScriptGenerationPayload>;
 export type ScriptGenerationBatchMessage = WebSocketMessage<ScriptGenerationBatchPayload>;
 
 // Union type for all possible messages
-export type AnyWebSocketMessage = 
+export type AnyWebSocketMessage =
   | WelcomeMessage
   | PingMessage
   | PongMessage
@@ -349,9 +349,21 @@ export class MessageValidator {
     [MessageType.NOTIFICATION_ACTION]: ['notificationId', 'actionId'],
     [MessageType.ERROR]: ['code', 'message'],
     [MessageType.FILE_UPLOAD_PROGRESS]: ['projectId', 'fileId', 'fileName', 'progress', 'stage'],
-    [MessageType.TEST_CASE_EXTRACTION]: ['projectId', 'fileId', 'extractedCount', 'validCount', 'invalidCount'],
+    [MessageType.TEST_CASE_EXTRACTION]: [
+      'projectId',
+      'fileId',
+      'extractedCount',
+      'validCount',
+      'invalidCount',
+    ],
     [MessageType.SCRIPT_GENERATION]: ['projectId', 'testCaseId', 'status'],
-    [MessageType.SCRIPT_GENERATION_BATCH]: ['projectId', 'totalScripts', 'completedScripts', 'failedScripts', 'overallProgress'],
+    [MessageType.SCRIPT_GENERATION_BATCH]: [
+      'projectId',
+      'totalScripts',
+      'completedScripts',
+      'failedScripts',
+      'overallProgress',
+    ],
   };
 
   static validateMessage(message: any): { isValid: boolean; errors: string[] } {
@@ -407,7 +419,16 @@ export class MessageValidator {
       errors.push('Field must have a valid label');
     }
 
-    const validTypes = ['text', 'number', 'email', 'password', 'select', 'checkbox', 'textarea', 'file'];
+    const validTypes = [
+      'text',
+      'number',
+      'email',
+      'password',
+      'select',
+      'checkbox',
+      'textarea',
+      'file',
+    ];
     if (!field.type || !validTypes.includes(field.type)) {
       errors.push('Field must have a valid type');
     }
@@ -428,13 +449,13 @@ export class MessageFactory {
   static createMessage<T extends MessagePayload>(
     type: MessageType,
     payload: T,
-    messageId?: string
+    messageId?: string,
   ): WebSocketMessage<T> {
     return {
       type,
       payload,
       timestamp: Date.now(),
-      messageId: messageId || this.generateMessageId()
+      messageId: messageId || this.generateMessageId(),
     };
   }
 
@@ -442,7 +463,7 @@ export class MessageFactory {
     return this.createMessage(MessageType.WELCOME, {
       clientId,
       projectId,
-      serverTime: new Date().toISOString()
+      serverTime: new Date().toISOString(),
     });
   }
 
@@ -450,7 +471,7 @@ export class MessageFactory {
     return this.createMessage(MessageType.ERROR, {
       code,
       message,
-      details
+      details,
     });
   }
 
@@ -459,14 +480,14 @@ export class MessageFactory {
     title: string,
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
-    projectId?: string
+    projectId?: string,
   ): NotificationMessage {
     return this.createMessage(MessageType.NOTIFICATION, {
       id,
       projectId,
       title,
       message,
-      type
+      type,
     });
   }
 
@@ -475,14 +496,14 @@ export class MessageFactory {
     status: 'pending' | 'in-progress' | 'completed' | 'failed',
     progress: number,
     currentStep?: string,
-    message?: string
+    message?: string,
   ): StatusUpdateMessage {
     return this.createMessage(MessageType.STATUS_UPDATE, {
       projectId,
       status,
       progress,
       currentStep,
-      message
+      message,
     });
   }
 

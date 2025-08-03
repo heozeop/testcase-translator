@@ -10,14 +10,17 @@ import {
 
 export class WebSocketEndpoints {
   private wsManager: WebSocketServerManager;
-  private activeInputRequests: Map<string, {
-    requestId: string;
-    projectId: string;
-    clientId: string;
-    timeout: NodeJS.Timeout;
-    resolve: (inputs: any) => void;
-    reject: (error: Error) => void;
-  }> = new Map();
+  private activeInputRequests: Map<
+    string,
+    {
+      requestId: string;
+      projectId: string;
+      clientId: string;
+      timeout: NodeJS.Timeout;
+      resolve: (inputs: any) => void;
+      reject: (error: Error) => void;
+    }
+  > = new Map();
 
   constructor(wsManager: WebSocketServerManager) {
     this.wsManager = wsManager;
@@ -36,7 +39,7 @@ export class WebSocketEndpoints {
       status: 'in-progress',
       progress: 0,
       steps: [],
-      ...update
+      ...update,
     } as ProjectUpdatePayload);
 
     return this.wsManager.sendToProject(projectId, message);
@@ -52,7 +55,7 @@ export class WebSocketEndpoints {
     status: 'pending' | 'in-progress' | 'completed' | 'failed',
     progress?: number,
     message?: string,
-    details?: any
+    details?: any,
   ): number {
     const stepMessage = MessageFactory.createMessage(MessageType.PROCESSING_STEP, {
       stepId,
@@ -61,7 +64,7 @@ export class WebSocketEndpoints {
       progress,
       message,
       timestamp: new Date().toISOString(),
-      details
+      details,
     } as ProcessingStepPayload);
 
     return this.wsManager.sendToProject(projectId, stepMessage);
@@ -76,14 +79,14 @@ export class WebSocketEndpoints {
     progress: number,
     currentStep?: string,
     message?: string,
-    _estimatedTimeRemaining?: number
+    _estimatedTimeRemaining?: number,
   ): number {
     return this.wsManager.broadcastStatusUpdateToProject(
       projectId,
       status,
       progress,
       currentStep,
-      message
+      message,
     );
   }
 
@@ -100,7 +103,7 @@ export class WebSocketEndpoints {
     fileName: string,
     progress: number,
     stage: 'uploading' | 'validating' | 'parsing' | 'processing' | 'completed' | 'failed',
-    message?: string
+    message?: string,
   ): number {
     const progressMessage = MessageFactory.createMessage(MessageType.FILE_UPLOAD_PROGRESS, {
       projectId,
@@ -108,7 +111,7 @@ export class WebSocketEndpoints {
       fileName,
       progress,
       stage,
-      message
+      message,
     });
 
     return this.wsManager.sendToProject(projectId, progressMessage);
@@ -128,7 +131,7 @@ export class WebSocketEndpoints {
       name: string;
       status: 'valid' | 'invalid' | 'warning';
       issues?: string[];
-    }>
+    }>,
   ): number {
     const extractionMessage = MessageFactory.createMessage(MessageType.TEST_CASE_EXTRACTION, {
       projectId,
@@ -136,7 +139,7 @@ export class WebSocketEndpoints {
       extractedCount,
       validCount,
       invalidCount,
-      testCases
+      testCases,
     });
 
     return this.wsManager.sendToProject(projectId, extractionMessage);
@@ -165,8 +168,8 @@ export class WebSocketEndpoints {
       defaultValue?: any;
       helpText?: string;
     }>,
-    timeoutSeconds: number = 300, // 5 minutes default
-    context?: any
+    timeoutSeconds = 300, // 5 minutes default
+    context?: any,
   ): Promise<{ [fieldId: string]: any }> {
     const requestId = this.generateRequestId();
     const projectClients = this.wsManager.getProjectClients(projectId);
@@ -186,19 +189,19 @@ export class WebSocketEndpoints {
       description,
       fields,
       timeout: timeoutSeconds,
-      context
+      context,
     } as UserInputRequestPayload);
 
     return new Promise<{ [fieldId: string]: any }>((resolve, reject) => {
       // Set up timeout
       const timeout = setTimeout(() => {
         this.activeInputRequests.delete(requestId);
-        
+
         // Notify client about timeout
         const timeoutMessage = MessageFactory.createMessage(MessageType.INPUT_REQUEST_TIMEOUT, {
           requestId,
           projectId,
-          timeoutAt: new Date().toISOString()
+          timeoutAt: new Date().toISOString(),
         });
         this.wsManager.sendToClient(targetClient.id, timeoutMessage);
 
@@ -212,7 +215,7 @@ export class WebSocketEndpoints {
         clientId: targetClient.id,
         timeout,
         resolve,
-        reject
+        reject,
       });
 
       // Send request to client
@@ -228,7 +231,11 @@ export class WebSocketEndpoints {
   /**
    * Handle user input responses
    */
-  public handleUserInputResponse(clientId: string, requestId: string, inputs: { [fieldId: string]: any }): boolean {
+  public handleUserInputResponse(
+    clientId: string,
+    requestId: string,
+    inputs: { [fieldId: string]: any },
+  ): boolean {
     const activeRequest = this.activeInputRequests.get(requestId);
     if (!activeRequest) {
       console.warn(`Received response for unknown request: ${requestId}`);
@@ -236,7 +243,9 @@ export class WebSocketEndpoints {
     }
 
     if (activeRequest.clientId !== clientId) {
-      console.warn(`Received response from unexpected client: ${clientId} for request: ${requestId}`);
+      console.warn(
+        `Received response from unexpected client: ${clientId} for request: ${requestId}`,
+      );
       return false;
     }
 
@@ -285,7 +294,7 @@ export class WebSocketEndpoints {
       label: string;
       action: string;
       primary?: boolean;
-    }>
+    }>,
   ): boolean {
     return this.wsManager.sendNotification(clientId, title, message, type, projectId);
   }
@@ -304,7 +313,7 @@ export class WebSocketEndpoints {
       label: string;
       action: string;
       primary?: boolean;
-    }>
+    }>,
   ): number {
     return this.wsManager.broadcastNotificationToProject(projectId, title, message, type);
   }
@@ -316,13 +325,13 @@ export class WebSocketEndpoints {
     title: string,
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
-    _duration?: number
+    _duration?: number,
   ): number {
     const notification = MessageFactory.createNotificationMessage(
       this.generateNotificationId(),
       title,
       message,
-      type
+      type,
     );
 
     return this.wsManager.sendToAll(notification);
@@ -341,7 +350,7 @@ export class WebSocketEndpoints {
     status: 'queued' | 'generating' | 'completed' | 'failed',
     progress?: number,
     scriptPath?: string,
-    error?: string
+    error?: string,
   ): number {
     const scriptMessage = MessageFactory.createMessage(MessageType.SCRIPT_GENERATION, {
       projectId,
@@ -349,7 +358,7 @@ export class WebSocketEndpoints {
       status,
       progress,
       scriptPath,
-      error
+      error,
     });
 
     return this.wsManager.sendToProject(projectId, scriptMessage);
@@ -363,17 +372,17 @@ export class WebSocketEndpoints {
     totalScripts: number,
     completedScripts: number,
     failedScripts: number,
-    currentScript?: string
+    currentScript?: string,
   ): number {
     const overallProgress = Math.round((completedScripts / totalScripts) * 100);
-    
+
     const batchMessage = MessageFactory.createMessage(MessageType.SCRIPT_GENERATION_BATCH, {
       projectId,
       totalScripts,
       completedScripts,
       failedScripts,
       currentScript,
-      overallProgress
+      overallProgress,
     });
 
     return this.wsManager.sendToProject(projectId, batchMessage);
@@ -393,14 +402,14 @@ export class WebSocketEndpoints {
       userId: client.userId,
       projectId: client.projectId,
       lastPing: client.lastPing,
-      connected: this.wsManager.isClientConnected(client.id)
+      connected: this.wsManager.isClientConnected(client.id),
     }));
   }
 
   /**
    * Disconnect all clients from a project
    */
-  public disconnectProjectClients(projectId: string, reason: string = 'Project terminated'): number {
+  public disconnectProjectClients(projectId: string, reason = 'Project terminated'): number {
     const clients = this.wsManager.getProjectClients(projectId);
     let disconnectedCount = 0;
 
@@ -408,7 +417,8 @@ export class WebSocketEndpoints {
       this.wsManager.sendError(client.id, reason, 'PROJECT_TERMINATED');
       // Force disconnect after a brief delay to allow error message to be sent
       setTimeout(() => {
-        if (client.ws.readyState === 1) { // OPEN
+        if (client.ws.readyState === 1) {
+          // OPEN
           client.ws.close(1000, reason);
         }
       }, 100);
@@ -430,7 +440,7 @@ export class WebSocketEndpoints {
     return {
       totalClients,
       activeRequests: this.activeInputRequests.size,
-      projectStats
+      projectStats,
     };
   }
 

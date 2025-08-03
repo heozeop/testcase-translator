@@ -43,7 +43,7 @@ export class GeneratedCode {
   metadata?: any;
 
   @Property({ type: 'varchar', length: 50, default: 'pending' })
-  status: string = 'pending';
+  status = 'pending';
 
   @Property({ type: 'text', nullable: true })
   errors?: string;
@@ -57,7 +57,12 @@ export class GeneratedCode {
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'timestamptz', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({
+    type: 'timestamptz',
+    fieldName: 'updated_at',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
   updatedAt: Date = new Date();
 
   @OneToMany(() => GeneratedCodeFile, file => file.generatedCode, { orphanRemoval: true })

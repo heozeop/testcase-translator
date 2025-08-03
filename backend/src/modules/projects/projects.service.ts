@@ -3,9 +3,9 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/core';
 import { EntityManager } from '@mikro-orm/mysql';
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto } from './dto/project.dto';
-import { Project } from '../../entities/Project.entity';
-import { GeneratedCode } from '../../entities/GeneratedCode.entity';
-import { GeneratedCodeFile } from '../../entities/GeneratedCodeFile.entity';
+import { Project } from '../../models/Project.entity';
+import { GeneratedCode } from '../../models/GeneratedCode.entity';
+import { GeneratedCodeFile } from '../../models/GeneratedCodeFile.entity';
 import { AICypressService } from '../../services/ai-cypress.service';
 import { CypressExecutorService } from '../../services/cypress-executor.service';
 import { FileStorageService } from '../../services/file-storage.service';
@@ -482,7 +482,7 @@ export class ProjectsService {
           }
 
           // Create test case
-          const testCase = new (await import('../../entities/TestCase.entity')).TestCase(
+          const testCase = new (await import('../../models/TestCase.entity')).TestCase(
             project,
             name,
             description

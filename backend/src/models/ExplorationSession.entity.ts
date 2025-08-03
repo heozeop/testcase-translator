@@ -18,7 +18,7 @@ export class ExplorationSession {
   currentUrl?: string;
 
   @Property({ type: 'varchar', length: 50, default: 'active' })
-  status: string = 'active';
+  status = 'active';
 
   @Property({ type: 'jsonb', nullable: true })
   configuration?: any;
@@ -32,7 +32,12 @@ export class ExplorationSession {
   @Property({ type: 'timestamptz', nullable: true, fieldName: 'ended_at' })
   endedAt?: Date;
 
-  @Property({ type: 'timestamptz', fieldName: 'last_activity', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({
+    type: 'timestamptz',
+    fieldName: 'last_activity',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
   lastActivity: Date = new Date();
 
   @OneToMany(() => ExplorationResult, result => result.session)

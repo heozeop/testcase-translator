@@ -1043,11 +1043,80 @@
             "testStrategy": "Repository testing to confirm license file is properly detected by GitHub/GitLab license detection, package managers recognize the custom license, and all documentation accurately reflects the licensing terms. Verify license badges display correctly and links to commercial licensing information are functional."
           }
         ]
+      },
+      {
+        "id": 29,
+        "title": "Refactor Backend Architecture with Clean Code Principles",
+        "description": "Restructure the backend codebase to implement clean architecture patterns with consistent code style, proper separation of concerns, and layered architecture following single responsibility principle.",
+        "details": "Implement comprehensive backend refactoring following modern Node.js/TypeScript best practices: 1) Code Style Standardization: Install and configure ESLint with Airbnb or Standard config, set up Prettier for consistent formatting, implement pre-commit hooks using Husky and lint-staged, add TypeScript strict mode configuration, and establish naming conventions for files, classes, and functions. 2) Repository Layer Implementation: Create abstract repository interfaces for database operations, implement concrete repository classes for each entity (projects, test cases, examples, execution results), use dependency injection pattern for repository instantiation, implement generic repository base class with common CRUD operations, and add proper error handling and transaction management. 3) Service Layer Architecture: Extract business logic into dedicated service classes following single responsibility principle, implement service interfaces for better testability and dependency inversion, create separate services for project management, test generation, file operations, and AI integration, add proper validation and error handling at service level, and implement service composition patterns for complex operations. 4) Directory Structure Reorganization: Create src/repositories/, src/services/, src/controllers/, src/models/, src/interfaces/, and src/utils/ directories, move existing code into appropriate layers, implement barrel exports (index.ts files) for clean imports, separate configuration files into config/ directory, and organize middleware into dedicated middleware/ folder. 5) Dependency Injection Setup: Implement IoC container using libraries like inversify or awilix, create service registration and resolution mechanisms, configure dependency injection for controllers and services, and add proper lifecycle management for singleton services. 6) Code Cleanup: Remove unused imports, files, and dead code, consolidate duplicate functionality, refactor large functions into smaller, focused methods, remove console.log statements and replace with proper logging, and update import statements to use new directory structure.",
+        "testStrategy": "Execute comprehensive testing strategy to validate refactoring success: Unit Testing - Create tests for each repository class to verify CRUD operations and error handling, test service layer methods with mocked dependencies, validate dependency injection container configuration, and ensure all business logic functions correctly after refactoring. Integration Testing - Test complete request flows through controller -> service -> repository layers, verify database operations work correctly with new repository pattern, test error propagation through all layers, and validate API endpoints maintain existing functionality. Code Quality Validation - Run ESLint and Prettier to ensure consistent code style across all files, verify TypeScript compilation with strict mode enabled, check test coverage maintains or improves current levels, and validate no unused imports or dead code remains. Architecture Validation - Verify proper separation of concerns with no business logic in controllers or database logic in services, confirm dependency injection works correctly for all components, test that repository interfaces can be easily mocked for testing, and ensure service layer methods follow single responsibility principle. Performance Testing - Compare API response times before and after refactoring to ensure no performance degradation, test database query efficiency with new repository layer, and validate memory usage patterns remain stable.",
+        "status": "done",
+        "dependencies": [
+          14,
+          16,
+          22
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Code Style Standardization and Configuration",
+            "description": "Set up comprehensive code style standards and automated formatting tools for consistent codebase quality",
+            "dependencies": [],
+            "details": "Install and configure ESLint with Airbnb or Standard config, set up Prettier for consistent formatting, implement pre-commit hooks using Husky and lint-staged, add TypeScript strict mode configuration, and establish naming conventions for files, classes, and functions. Configure .eslintrc.js, .prettierrc, and tsconfig.json with strict rules.",
+            "status": "done",
+            "testStrategy": "Verify ESLint rules are properly enforced, test Prettier formatting consistency, validate pre-commit hooks prevent non-compliant code commits, and ensure TypeScript strict mode catches type errors"
+          },
+          {
+            "id": 2,
+            "title": "Directory Structure Reorganization",
+            "description": "Restructure the codebase into a clean, layered architecture with proper separation of concerns",
+            "dependencies": [
+              "29.1"
+            ],
+            "details": "Create src/repositories/, src/services/, src/controllers/, src/models/, src/interfaces/, and src/utils/ directories, move existing code into appropriate layers, implement barrel exports (index.ts files) for clean imports, separate configuration files into config/ directory, and organize middleware into dedicated middleware/ folder.",
+            "status": "done",
+            "testStrategy": "Validate all imports resolve correctly after restructuring, ensure barrel exports work properly, test that configuration files are accessible from new locations, and verify no broken module references"
+          },
+          {
+            "id": 3,
+            "title": "Repository Layer Implementation",
+            "description": "Create a robust data access layer with abstract interfaces and concrete implementations for database operations",
+            "dependencies": [
+              "29.2"
+            ],
+            "details": "Create abstract repository interfaces for database operations, implement concrete repository classes for each entity (projects, test cases, examples, execution results), use dependency injection pattern for repository instantiation, implement generic repository base class with common CRUD operations, and add proper error handling and transaction management.",
+            "status": "done",
+            "testStrategy": "Create unit tests for each repository class to verify CRUD operations, test error handling scenarios, validate transaction management, and ensure repository interfaces are properly implemented"
+          },
+          {
+            "id": 4,
+            "title": "Service Layer Architecture Implementation",
+            "description": "Extract and organize business logic into dedicated service classes following single responsibility principle",
+            "dependencies": [
+              "29.3"
+            ],
+            "details": "Extract business logic into dedicated service classes following single responsibility principle, implement service interfaces for better testability and dependency inversion, create separate services for project management, test generation, file operations, and AI integration, add proper validation and error handling at service level, and implement service composition patterns for complex operations.",
+            "status": "done",
+            "testStrategy": "Test service layer methods with mocked dependencies, validate business logic isolation, ensure proper error handling and validation, and verify service composition patterns work correctly"
+          },
+          {
+            "id": 5,
+            "title": "Dependency Injection Setup and Code Cleanup",
+            "description": "Implement IoC container for dependency management and perform comprehensive code cleanup",
+            "dependencies": [
+              "29.4"
+            ],
+            "details": "Implement IoC container using libraries like inversify or awilix, create service registration and resolution mechanisms, configure dependency injection for controllers and services, add proper lifecycle management for singleton services. Remove unused imports, files, and dead code, consolidate duplicate functionality, refactor large functions into smaller focused methods, remove console.log statements and replace with proper logging, and update import statements to use new directory structure.",
+            "status": "done",
+            "testStrategy": "Validate dependency injection container configuration, test service registration and resolution, ensure singleton lifecycle management works correctly, verify all unused code is removed, and confirm proper logging implementation replaces console statements"
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-26T13:18:50.654Z",
-      "updated": "2025-08-03T05:32:16.309Z",
+      "updated": "2025-08-03T06:01:49.360Z",
       "description": "Tasks for master context"
     }
   }

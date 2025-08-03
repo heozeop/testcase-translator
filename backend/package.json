@@ -7,7 +7,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "tsc --noEmit",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
     "typecheck": "tsc --noEmit",
     "mikro-orm": "mikro-orm",
     "migration:create": "mikro-orm migration:create",
@@ -34,7 +37,8 @@
     "reinstall": "pnpm clean && pnpm install",
     "update": "pnpm update --interactive",
     "audit": "pnpm audit",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "npx only-allow pnpm",
+    "prepare": "husky"
   },
   "packageManager": "pnpm@10.10.0",
   "engines": {
@@ -105,5 +109,23 @@
     "uuid": "^3.0.0",
     "ws": "^8.18.2",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/eslint": "^9.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   }
 }

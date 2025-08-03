@@ -8,7 +8,7 @@ import {
   MessageValidator,
   MessageFactory,
   JoinProjectPayload,
-  StatusRequestPayload
+  StatusRequestPayload,
 } from './MessageTypes';
 
 export interface WebSocketClient {
@@ -26,11 +26,11 @@ export class WebSocketServerManager {
   private startTime: number = Date.now();
   public endpoints: any; // Will be set from outside
 
-  constructor(server: any, path: string = '/ws') {
+  constructor(server: any, path = '/ws') {
     this.wss = new WebSocketServer({
       server,
       path,
-      verifyClient: this.verifyClient.bind(this)
+      verifyClient: this.verifyClient.bind(this),
     });
 
     this.setupEventHandlers();
@@ -42,7 +42,7 @@ export class WebSocketServerManager {
   private verifyClient(info: { origin: string; secure: boolean; req: IncomingMessage }): boolean {
     // Basic verification - in production, add proper authentication
     const url = parse(info.req.url || '', true);
-    
+
     // Allow connections with valid project ID or authentication
     if (url.query.projectId || url.query.token) {
       return true;
@@ -72,17 +72,19 @@ export class WebSocketServerManager {
       ws,
       projectId,
       userId,
-      lastPing: Date.now()
+      lastPing: Date.now(),
     };
 
     this.clients.set(clientId, client);
 
-    console.log(`Client connected: ${clientId}, Project: ${projectId || 'none'}, Total clients: ${this.clients.size}`);
+    console.log(
+      `Client connected: ${clientId}, Project: ${projectId || 'none'}, Total clients: ${this.clients.size}`,
+    );
 
     // Set up client event handlers
-    ws.on('message', (data) => this.handleMessage(clientId, data));
+    ws.on('message', data => this.handleMessage(clientId, data));
     ws.on('close', () => this.handleDisconnection(clientId));
-    ws.on('error', (error) => this.handleClientError(clientId, error));
+    ws.on('error', error => this.handleClientError(clientId, error));
     ws.on('pong', () => this.handlePong(clientId));
 
     // Send welcome message
@@ -116,7 +118,6 @@ export class WebSocketServerManager {
 
       // Route message based on type
       this.routeMessage(clientId, message);
-
     } catch (error) {
       console.error(`Error parsing message from ${clientId}:`, error);
       this.sendError(clientId, 'Invalid message format');
@@ -126,9 +127,13 @@ export class WebSocketServerManager {
   private routeMessage(clientId: string, message: AnyWebSocketMessage): void {
     switch (message.type) {
       case MessageType.PING:
-        const pongMessage = MessageFactory.createMessage(MessageType.PONG, {
-          timestamp: Date.now()
-        }, message.messageId);
+        const pongMessage = MessageFactory.createMessage(
+          MessageType.PONG,
+          {
+            timestamp: Date.now(),
+          },
+          message.messageId,
+        );
         this.sendToClient(clientId, pongMessage);
         break;
 
@@ -169,7 +174,7 @@ export class WebSocketServerManager {
     const projectClients = this.getProjectClients(payload.projectId);
     const joinedMessage = MessageFactory.createMessage(MessageType.PROJECT_JOINED, {
       projectId: payload.projectId,
-      clientCount: projectClients.length
+      clientCount: projectClients.length,
     });
 
     this.sendToClient(clientId, joinedMessage);
@@ -182,11 +187,11 @@ export class WebSocketServerManager {
     const projectId = client.projectId;
     client.projectId = undefined;
     client.userId = undefined;
-    
+
     console.log(`Client ${clientId} left project: ${projectId}`);
 
     const leftMessage = MessageFactory.createMessage(MessageType.PROJECT_LEFT, {
-      projectId: projectId || ''
+      projectId: projectId || '',
     });
 
     this.sendToClient(clientId, leftMessage);
@@ -200,7 +205,7 @@ export class WebSocketServerManager {
       'in-progress',
       45,
       'ai-processing',
-      'Processing test cases with AI...'
+      'Processing test cases with AI...',
     );
 
     this.sendToClient(clientId, statusMessage);
@@ -208,7 +213,7 @@ export class WebSocketServerManager {
 
   private handleUserInputResponse(clientId: string, message: AnyWebSocketMessage): void {
     console.log(`User input response from ${clientId}:`, message.payload);
-    
+
     // Forward to endpoints handler if available
     if (this.endpoints) {
       const payload = message.payload as any;
@@ -287,13 +292,16 @@ export class WebSocketServerManager {
   public sendToProject(projectId: string, message: WebSocketMessage): number {
     let sentCount = 0;
 
-    this.clients.forEach((client) => {
+    this.clients.forEach(client => {
       if (client.projectId === projectId && client.ws.readyState === WebSocket.OPEN) {
         try {
           client.ws.send(JSON.stringify(message));
           sentCount++;
         } catch (error) {
-          console.error(`Error sending message to client ${client.id} in project ${projectId}:`, error);
+          console.error(
+            `Error sending message to client ${client.id} in project ${projectId}:`,
+            error,
+          );
         }
       }
     });
@@ -304,7 +312,7 @@ export class WebSocketServerManager {
   public sendToAll(message: WebSocketMessage): number {
     let sentCount = 0;
 
-    this.clients.forEach((client) => {
+    this.clients.forEach(client => {
       if (client.ws.readyState === WebSocket.OPEN) {
         try {
           client.ws.send(JSON.stringify(message));
@@ -318,7 +326,7 @@ export class WebSocketServerManager {
     return sentCount;
   }
 
-  public sendError(clientId: string, errorMessage: string, code: string = 'GENERIC_ERROR'): boolean {
+  public sendError(clientId: string, errorMessage: string, code = 'GENERIC_ERROR'): boolean {
     const errorMsg = MessageFactory.createErrorMessage(code, errorMessage);
     return this.sendToClient(clientId, errorMsg);
   }
@@ -328,14 +336,14 @@ export class WebSocketServerManager {
     title: string,
     message: string,
     type: 'info' | 'success' | 'warning' | 'error',
-    projectId?: string
+    projectId?: string,
   ): boolean {
     const notification = MessageFactory.createNotificationMessage(
       this.generateMessageId(),
       title,
       message,
       type,
-      projectId
+      projectId,
     );
     return this.sendToClient(clientId, notification);
   }
@@ -344,14 +352,14 @@ export class WebSocketServerManager {
     projectId: string,
     title: string,
     message: string,
-    type: 'info' | 'success' | 'warning' | 'error'
+    type: 'info' | 'success' | 'warning' | 'error',
   ): number {
     const notification = MessageFactory.createNotificationMessage(
       this.generateMessageId(),
       title,
       message,
       type,
-      projectId
+      projectId,
     );
     return this.sendToProject(projectId, notification);
   }
@@ -362,14 +370,14 @@ export class WebSocketServerManager {
     status: 'pending' | 'in-progress' | 'completed' | 'failed',
     progress: number,
     currentStep?: string,
-    message?: string
+    message?: string,
   ): boolean {
     const statusUpdate = MessageFactory.createStatusUpdateMessage(
       projectId,
       status,
       progress,
       currentStep,
-      message
+      message,
     );
     return this.sendToClient(clientId, statusUpdate);
   }
@@ -379,14 +387,14 @@ export class WebSocketServerManager {
     status: 'pending' | 'in-progress' | 'completed' | 'failed',
     progress: number,
     currentStep?: string,
-    message?: string
+    message?: string,
   ): number {
     const statusUpdate = MessageFactory.createStatusUpdateMessage(
       projectId,
       status,
       progress,
       currentStep,
-      message
+      message,
     );
     return this.sendToProject(projectId, statusUpdate);
   }
@@ -399,13 +407,13 @@ export class WebSocketServerManager {
 
   public getConnectionInfo(): any {
     const projectStats: Record<string, number> = {};
-    
+
     for (const client of this.clients.values()) {
       if (client.projectId) {
         projectStats[client.projectId] = (projectStats[client.projectId] || 0) + 1;
       }
     }
-    
+
     return {
       totalClients: this.clients.size,
       projectBreakdown: projectStats,
@@ -414,14 +422,14 @@ export class WebSocketServerManager {
         id: client.id,
         projectId: client.projectId,
         userId: client.userId,
-        connectedAt: client.lastPing
-      }))
+        connectedAt: client.lastPing,
+      })),
     };
   }
 
   public getProjectClients(projectId: string): WebSocketClient[] {
     const projectClients: WebSocketClient[] = [];
-    this.clients.forEach((client) => {
+    this.clients.forEach(client => {
       if (client.projectId === projectId) {
         projectClients.push(client);
       }
@@ -448,7 +456,7 @@ export class WebSocketServerManager {
       clearInterval(this.pingInterval);
     }
 
-    this.clients.forEach((client) => {
+    this.clients.forEach(client => {
       if (client.ws.readyState === WebSocket.OPEN) {
         client.ws.close(1000, 'Server shutting down');
       }

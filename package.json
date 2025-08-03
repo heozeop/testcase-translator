@@ -18,7 +18,8 @@
     "prod": "docker-compose -f docker-compose.prod.yml up",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
     "lint": "cd backend && npm run lint",
-    "typecheck": "cd backend && npm run typecheck"
+    "typecheck": "cd backend && npm run typecheck",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",

@@ -16,13 +16,23 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
+import { ProjectManagementService } from '../../services/project-management.service';
+import { TestCaseUploadService } from '../../services/testcase-upload.service';
+import { CodeGenerationService } from '../../services/code-generation.service';
+import { UrlValidationService } from '../../services/url-validation.service';
 import { CreateProjectDto, UpdateProjectDto, ProjectQueryDto } from './dto/project.dto';
 import { multerConfig } from '../../common/config/multer.config';
 
 @ApiTags('projects')
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly projectManagementService: ProjectManagementService,
+    private readonly testCaseUploadService: TestCaseUploadService,
+    private readonly codeGenerationService: CodeGenerationService,
+    private readonly urlValidationService: UrlValidationService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all projects' })

@@ -24,13 +24,13 @@ export const sendSuccess = <T>(
   res: Response,
   data: T,
   message?: string,
-  statusCode: number = 200
+  statusCode = 200,
 ): void => {
   const response: ApiSuccessResponse<T> = {
     success: true,
     data,
     ...(message && { message }),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   res.status(statusCode).json(response);
@@ -41,7 +41,7 @@ export const sendPaginatedResponse = <T>(
   res: Response,
   result: PaginationResult<T>,
   message?: string,
-  statusCode: number = 200
+  statusCode = 200,
 ): void => {
   const response: PaginatedApiResponse<T> = {
     success: true,
@@ -50,10 +50,10 @@ export const sendPaginatedResponse = <T>(
       page: result.page,
       limit: result.limit,
       total: result.total,
-      totalPages: result.totalPages
+      totalPages: result.totalPages,
     },
     ...(message && { message }),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   // Add pagination metadata to headers
@@ -63,7 +63,7 @@ export const sendPaginatedResponse = <T>(
     'X-Per-Page': result.limit.toString(),
     'X-Total-Pages': result.totalPages.toString(),
     'X-Has-Next': result.hasNext.toString(),
-    'X-Has-Prev': result.hasPrev.toString()
+    'X-Has-Prev': result.hasPrev.toString(),
   });
 
   res.status(statusCode).json(response);
@@ -74,17 +74,17 @@ export const sendError = (
   res: Response,
   code: string,
   message: string,
-  statusCode: number = 500,
-  details?: any
+  statusCode = 500,
+  details?: any,
 ): void => {
   const response: ApiErrorResponse = {
     success: false,
     error: {
       code,
       message,
-      ...(details && { details })
+      ...(details && { details }),
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 
   res.status(statusCode).json(response);
@@ -95,7 +95,7 @@ export const getPaginationOptions = (req: Request): PaginationOptions => {
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
   const offset = (page - 1) * limit;
-  const orderBy = req.query.orderBy as string || 'created_at';
+  const orderBy = (req.query.orderBy as string) || 'created_at';
   const order = (req.query.order as string)?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
   return {
@@ -103,7 +103,7 @@ export const getPaginationOptions = (req: Request): PaginationOptions => {
     limit,
     offset,
     orderBy,
-    order
+    order,
   };
 };
 
@@ -112,7 +112,7 @@ export const createPaginationResult = <T>(
   data: T[],
   total: number,
   page: number,
-  limit: number
+  limit: number,
 ): PaginationResult<T> => {
   const totalPages = Math.ceil(total / limit);
   const hasNext = page < totalPages;
@@ -125,23 +125,29 @@ export const createPaginationResult = <T>(
     total,
     totalPages,
     hasNext,
-    hasPrev
+    hasPrev,
   };
 };
 
 // Validate pagination parameters
-export const validatePaginationParams = (page?: any, limit?: any): { page: number; limit: number } => {
+export const validatePaginationParams = (
+  page?: any,
+  limit?: any,
+): { page: number; limit: number } => {
   const validatedPage = Math.max(1, parseInt(page) || 1);
   const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 10));
 
   return {
     page: validatedPage,
-    limit: validatedLimit
+    limit: validatedLimit,
   };
 };
 
 // Extract filter options from request
-export const getFilterOptions = (req: Request, allowedFilters: string[] = []): Record<string, any> => {
+export const getFilterOptions = (
+  req: Request,
+  allowedFilters: string[] = [],
+): Record<string, any> => {
   const filters: Record<string, any> = {};
 
   for (const filter of allowedFilters) {
@@ -167,7 +173,10 @@ export const getFilterOptions = (req: Request, allowedFilters: string[] = []): R
 };
 
 // Extract search options from request
-export const getSearchOptions = (req: Request, searchableFields: string[] = []): Record<string, any> => {
+export const getSearchOptions = (
+  req: Request,
+  searchableFields: string[] = [],
+): Record<string, any> => {
   const search = req.query.search as string;
   if (!search || !searchableFields.length) {
     return {};
@@ -175,11 +184,11 @@ export const getSearchOptions = (req: Request, searchableFields: string[] = []):
 
   // Create OR condition for searching across multiple fields
   const searchConditions = searchableFields.map(field => ({
-    [field]: { $regex: search, $options: 'i' }
+    [field]: { $regex: search, $options: 'i' },
   }));
 
   return {
-    $or: searchConditions
+    $or: searchConditions,
   };
 };
 
@@ -217,9 +226,12 @@ export const sanitizeOutput = <T>(data: T, sensitiveFields: string[] = []): T =>
 // Generate cache key for responses
 export const generateCacheKey = (req: Request, additionalKeys: string[] = []): string => {
   const baseKey = `${req.method}:${req.baseUrl}${req.path}`;
-  const queryKeys = Object.keys(req.query).sort().map(key => `${key}=${req.query[key]}`).join('&');
+  const queryKeys = Object.keys(req.query)
+    .sort()
+    .map(key => `${key}=${req.query[key]}`)
+    .join('&');
   const additional = additionalKeys.sort().join(':');
-  
+
   return [baseKey, queryKeys, additional].filter(Boolean).join('|');
 };
 
@@ -288,7 +300,7 @@ export const logRequest = (req: Request, additionalInfo?: any): void => {
     ip: req.ip,
     userAgent: req.get('user-agent'),
     timestamp: new Date().toISOString(),
-    ...(additionalInfo && { additional: additionalInfo })
+    ...(additionalInfo && { additional: additionalInfo }),
   };
 
   console.log('API Request:', JSON.stringify(logData));
@@ -297,17 +309,17 @@ export const logRequest = (req: Request, additionalInfo?: any): void => {
 // Performance monitoring helper
 export const measurePerformance = <T>(
   operation: () => Promise<T> | T,
-  operationName: string
+  operationName: string,
 ): Promise<{ result: T; duration: number }> => {
   return new Promise(async (resolve, reject) => {
     const startTime = Date.now();
-    
+
     try {
       const result = await operation();
       const duration = Date.now() - startTime;
-      
+
       console.log(`Performance: ${operationName} took ${duration}ms`);
-      
+
       resolve({ result, duration });
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -329,13 +341,13 @@ export const addResponseMetadata = (res: Response, metadata: Record<string, any>
 // Health check helpers
 export const createHealthCheckResponse = (checks: Record<string, boolean>): any => {
   const allHealthy = Object.values(checks).every(Boolean);
-  
+
   return {
     status: allHealthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     checks,
     uptime: process.uptime(),
     memory: process.memoryUsage(),
-    version: process.env.npm_package_version || 'unknown'
+    version: process.env.npm_package_version || 'unknown',
   };
 };

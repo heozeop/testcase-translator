@@ -20,12 +20,17 @@ export class TestExample {
   cypressCode?: string;
 
   @Property({ type: 'boolean', default: true, fieldName: 'is_active' })
-  isActive: boolean = true;
+  isActive = true;
 
   @Property({ type: 'timestamptz', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'timestamptz', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({
+    type: 'timestamptz',
+    fieldName: 'updated_at',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
   updatedAt: Date = new Date();
 
   constructor(project: Project, testScenario: string, expectedResult: string) {

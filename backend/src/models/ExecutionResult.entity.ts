@@ -15,7 +15,7 @@ export class ExecutionResult {
   generatedCode?: GeneratedCode;
 
   @Property({ type: 'varchar', length: 50, default: 'pending' })
-  status: string = 'pending';
+  status = 'pending';
 
   @Property({ type: 'jsonb', nullable: true })
   results?: any;

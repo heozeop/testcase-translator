@@ -19,12 +19,17 @@ export class Project {
   description?: string;
 
   @Property({ type: 'varchar', length: 50, default: 'active' })
-  status: string = 'active';
+  status = 'active';
 
   @Property({ type: 'datetime', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'datetime', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({
+    type: 'datetime',
+    fieldName: 'updated_at',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
   updatedAt: Date = new Date();
 
   @OneToMany(() => TestCase, testCase => testCase.project)

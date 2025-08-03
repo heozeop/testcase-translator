@@ -22,7 +22,7 @@ export function getDatabaseUrl(): string {
   if (databaseConfig.connectionString) {
     return databaseConfig.connectionString;
   }
-  
+
   const { user, password, host, port, database } = databaseConfig;
   return `postgresql://${user}:${password}@${host}:${port}/${database}`;
 }

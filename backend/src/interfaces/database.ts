@@ -23,7 +23,7 @@ export enum TestCaseStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
-  FAILED = 'failed'
+  FAILED = 'failed',
 }
 
 export interface TestCase {
@@ -93,7 +93,7 @@ export enum ExecutionStatus {
   FAILED = 'failed',
   ERROR = 'error',
   TIMEOUT = 'timeout',
-  SKIPPED = 'skipped'
+  SKIPPED = 'skipped',
 }
 
 export interface ExecutionResult {
@@ -115,7 +115,6 @@ export interface CreateExecutionResultInput {
   error_message?: string;
   duration_ms?: number;
 }
-
 
 export interface ProjectWithStats extends Project {
   test_case_count?: number;

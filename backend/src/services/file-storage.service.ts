@@ -29,21 +29,21 @@ export class FileStorageService {
     projectId: string,
     fileName: string,
     content: string,
-    generationId?: string
+    generationId?: string,
   ): Promise<string> {
     try {
       console.log('🗃️ FileStorageService.saveGeneratedCodeFile called:', {
         projectId,
         fileName,
         contentLength: content.length,
-        generationId
+        generationId,
       });
 
       await this.ensureDirectories();
-      
+
       const projectDir = path.join(this.generatedCodeDir, projectId);
       console.log('📁 Project directory:', projectDir);
-      
+
       // Create project directory if it doesn't exist
       try {
         await fs.access(projectDir);
@@ -69,7 +69,7 @@ export class FileStorageService {
 
       const filePath = path.join(targetDir, fileName);
       console.log('📄 Full file path:', filePath);
-      
+
       // Ensure parent directories exist for nested file paths (e.g., support/e2e.js)
       const fileDir = path.dirname(filePath);
       if (fileDir !== targetDir) {
@@ -82,16 +82,16 @@ export class FileStorageService {
           await fs.mkdir(fileDir, { recursive: true });
         }
       }
-      
+
       // Save file content
       console.log('💾 Writing file content...');
       await fs.writeFile(filePath, content, 'utf-8');
       console.log('✅ File written successfully');
-      
+
       // Return relative path from storage root for database storage
       const relativePath = path.relative(this.storageDir, filePath);
       console.log('📄 Relative path:', relativePath);
-      
+
       return relativePath;
     } catch (error) {
       console.error('❌ Error in saveGeneratedCodeFile:', error);
@@ -108,14 +108,14 @@ export class FileStorageService {
     projectId: string,
     fileName: string,
     content: string,
-    generationId?: string
+    generationId?: string,
   ): Promise<string> {
     try {
       console.log('🔄 FileStorageService.updateGeneratedCodeFile called:', {
         projectId,
         fileName,
         contentLength: content.length,
-        generationId
+        generationId,
       });
 
       // Use the same logic as saveGeneratedCodeFile since we're overwriting

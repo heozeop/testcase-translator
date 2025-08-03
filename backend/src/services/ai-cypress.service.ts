@@ -41,21 +41,21 @@ export class AICypressService {
 
   async generateIntelligentCypressCode(context: GenerationContext) {
     console.log('🤖 Starting AI-powered Cypress code generation...');
-    
+
     try {
       // Generate test file using AI
       const testFile = await this.generateTestFile(context);
-      
+
       // Generate config file
       const configFile = this.generateConfigFile(context);
-      
+
       // Generate support utilities if needed
       const supportFile = await this.generateSupportFile(context);
 
       return {
         testFile,
         configFile,
-        supportFile
+        supportFile,
       };
     } catch (error) {
       console.error('❌ Error in AI Cypress generation:', error);
@@ -65,7 +65,7 @@ export class AICypressService {
 
   private async generateTestFile(context: GenerationContext): Promise<string> {
     const { project, testCases } = context;
-    
+
     const systemPrompt = `You are an expert Cypress test automation engineer. Generate high-quality, maintainable Cypress test code based on the provided test cases.
 
 REQUIREMENTS:
@@ -117,7 +117,9 @@ DESCRIPTION: ${project.description}
 MANDATORY REQUIREMENT: You MUST implement ALL of the following test cases exactly as specified. Do not generate generic tests - implement these specific scenarios:
 
 TEST CASES TO IMPLEMENT:
-${testCases.map((tc, index) => `
+${testCases
+  .map(
+    (tc, index) => `
 ${index + 1}. TEST: "${tc.name}"
    DESCRIPTION: ${tc.description}
    CATEGORY: ${tc.category}
@@ -128,7 +130,9 @@ ${index + 1}. TEST: "${tc.name}"
    
    REQUIRED RESULTS TO VERIFY:
    ${tc.expectedResults.map((result, i) => `   ${i + 1}. ${result}`).join('\n')}
-`).join('\n')}
+`,
+  )
+  .join('\n')}
 
 CRITICAL IMPLEMENTATION REQUIREMENTS:
 1. Create exactly ${testCases.length} test cases using it() blocks
@@ -166,7 +170,7 @@ Return only the complete JavaScript test code implementing ALL specified test ca
 
     try {
       console.log('🤖 Starting Claude 4 Sonnet streaming generation...');
-      
+
       const stream = await this.anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 64000,
@@ -175,14 +179,14 @@ Return only the complete JavaScript test code implementing ALL specified test ca
         messages: [
           {
             role: 'user',
-            content: userPrompt
-          }
+            content: userPrompt,
+          },
         ],
-        stream: true
+        stream: true,
       });
 
       let generatedCode = '';
-      
+
       for await (const chunk of stream) {
         if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
           generatedCode += chunk.delta.text;
@@ -193,13 +197,15 @@ Return only the complete JavaScript test code implementing ALL specified test ca
       return generatedCode;
     } catch (error) {
       console.error('❌ Error generating test file:', error);
-      throw new Error(`Failed to generate test file: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate test file: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   private generateConfigFile(context: GenerationContext): string {
     const { project, config } = context;
-    
+
     return `const { defineConfig } = require('cypress');
 
 module.exports = defineConfig({
@@ -299,6 +305,6 @@ Cypress.on('uncaught:exception', (err, runnable) => {
 // Viewport preset
 Cypress.Commands.add('setViewportDesktop', () => {
   cy.viewport(1920, 1080)
-})`
+})`;
   }
 }

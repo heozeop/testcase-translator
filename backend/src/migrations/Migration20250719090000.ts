@@ -1,7 +1,6 @@
 import { Migration } from '@mikro-orm/migrations';
 
 export class Migration20250719090000 extends Migration {
-
   async up(): Promise<void> {
     // Remove content column and add file_size column to generated_code_files table
     this.addSql('alter table `generated_code_files` drop column `content`;');
@@ -13,5 +12,4 @@ export class Migration20250719090000 extends Migration {
     this.addSql('alter table `generated_code_files` add column `content` text not null;');
     this.addSql('alter table `generated_code_files` drop column `file_size`;');
   }
-
 }

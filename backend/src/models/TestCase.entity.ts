@@ -27,13 +27,13 @@ export class TestCase {
   testData?: any;
 
   @Property({ type: 'varchar', length: 50, default: 'medium' })
-  priority: string = 'medium';
+  priority = 'medium';
 
   @Property({ type: 'varchar', length: 100, nullable: true })
   category?: string;
 
   @Property({ type: 'varchar', length: 50, default: 'active' })
-  status: string = 'active';
+  status = 'active';
 
   @Property({ type: 'varchar', length: 255, nullable: true, fieldName: 'excel_file_path' })
   excelFilePath?: string;
@@ -44,7 +44,12 @@ export class TestCase {
   @Property({ type: 'datetime', fieldName: 'created_at', onCreate: () => new Date() })
   createdAt: Date = new Date();
 
-  @Property({ type: 'datetime', fieldName: 'updated_at', onCreate: () => new Date(), onUpdate: () => new Date() })
+  @Property({
+    type: 'datetime',
+    fieldName: 'updated_at',
+    onCreate: () => new Date(),
+    onUpdate: () => new Date(),
+  })
   updatedAt: Date = new Date();
 
   @OneToMany(() => GeneratedCode, generatedCode => generatedCode.testCase)
