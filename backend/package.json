@@ -43,7 +43,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "SEE LICENSE IN ../LICENSE",
   "description": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.55.0",

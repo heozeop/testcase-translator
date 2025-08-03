@@ -415,4 +415,34 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+![License](https://img.shields.io/badge/License-Dual--License-blue.svg)
+![Non-Commercial](https://img.shields.io/badge/Non--Commercial-Free-green.svg)
+![Commercial](https://img.shields.io/badge/Commercial-License%20Required-red.svg)
+
+**This project uses a dual-license model:**
+
+### 🆓 Non-Commercial Use (FREE)
+- ✅ Personal projects and learning
+- ✅ Educational use (schools, universities)
+- ✅ Research and academic work
+- ✅ Open source contributions
+- ✅ Non-profit organizations
+
+### 💼 Commercial Use (LICENSE REQUIRED)
+- ❌ Business operations and revenue generation
+- ❌ SaaS platforms and commercial products
+- ❌ Consulting and professional services
+- ❌ Corporate/enterprise environments
+
+**For commercial licensing:**
+- 📧 Email: dltmdcks702@gmail.com
+- 🌐 Website: https://heozeop.kr
+- 📄 See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for details
+
+### License Summary
+- **Non-commercial use**: Free under custom non-commercial license
+- **Commercial use**: Requires separate commercial license purchase
+- **Modifications**: Allowed with same license requirements
+- **Distribution**: Must maintain license notices
+
+See the [LICENSE](LICENSE) file for complete terms and conditions.

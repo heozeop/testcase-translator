@@ -999,11 +999,55 @@
             "testStrategy": "Test dirty state detection and visual indicators, validate navigation confirmation dialogs, test syntax validation with various code scenarios, verify code formatting functionality, and test integration with test execution system."
           }
         ]
+      },
+      {
+        "id": 28,
+        "title": "Add Custom Non-Commercial License File",
+        "description": "Create and implement a custom license file that permits non-commercial use while requiring purchase for commercial applications, establishing clear usage terms and commercial licensing requirements.",
+        "details": "Create a comprehensive custom license file that balances open access for non-commercial use with commercial protection: 1) License File Creation: Draft a LICENSE file in the project root containing clear terms that explicitly permit non-commercial use (personal projects, education, research, open source contributions), prohibit commercial use without explicit permission, define commercial use as any revenue-generating activity or business application, include contact information for commercial licensing inquiries, and specify penalties for license violations. 2) License Header Template: Create standardized license headers for source files that reference the main license and include copyright notice with current year and repository owner information. 3) Documentation Integration: Update README.md to prominently display license information and commercial licensing contact details, create a separate COMMERCIAL_LICENSE.md file explaining the commercial licensing process, pricing structure, and terms, and add license badges to repository documentation. 4) Legal Considerations: Research similar dual-license models (like Qt, MySQL) for reference, ensure license language is legally sound and enforceable, consider trademark protection for the project name, and include disclaimer of warranties and limitation of liability clauses. 5) Repository Configuration: Configure GitHub/GitLab repository settings to display license information, add license detection for dependency scanning tools, and ensure package.json or equivalent includes license field with custom identifier.",
+        "testStrategy": "Verify license implementation through comprehensive validation: Legal review to ensure license terms are clear, enforceable, and properly formatted according to standard license conventions. Repository testing to confirm license file is properly detected by GitHub/GitLab license detection, package managers correctly identify the custom license, and license badges display correctly in documentation. Documentation review to validate that README and other docs clearly communicate license terms, commercial licensing process is well-explained, and contact information is accurate and accessible. Automated testing to ensure license headers are consistently applied across source files, license validation tools can parse the custom license, and CI/CD pipelines respect license requirements. User experience testing by having team members review license clarity from both non-commercial and potential commercial user perspectives, ensuring the licensing terms are understandable to developers without legal expertise.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Custom License File and Legal Framework",
+            "description": "Draft and implement the main LICENSE file with comprehensive terms that permit non-commercial use while protecting commercial rights, including all necessary legal clauses and contact information.",
+            "dependencies": [],
+            "details": "Create a LICENSE file in the project root directory containing: explicit permission for non-commercial use (personal projects, education, research, open source contributions), clear prohibition of commercial use without written permission, definition of commercial use as any revenue-generating activity or business application, contact information for commercial licensing inquiries, penalties for license violations, disclaimer of warranties and limitation of liability clauses. Research similar dual-license models (Qt, MySQL) for reference and ensure language is legally sound and enforceable. Include copyright notice with current year and repository owner information.",
+            "status": "done",
+            "testStrategy": "Legal review to ensure license terms are clear, enforceable, and properly formatted according to standard license conventions. Validate that all required clauses are present and contact information is accurate."
+          },
+          {
+            "id": 2,
+            "title": "Implement License Headers and Source File Integration",
+            "description": "Create standardized license headers for source files and integrate them throughout the codebase to ensure consistent license attribution and reference to the main license file.",
+            "dependencies": [
+              "28.1"
+            ],
+            "details": "Develop a standardized license header template that references the main LICENSE file and includes copyright notice with current year and repository owner information. Apply these headers to all existing source files in the project. Create a script or process to automatically add license headers to new files. Ensure headers are appropriate for different file types (JavaScript, CSS, HTML, etc.) and follow language-specific comment conventions.",
+            "status": "done",
+            "testStrategy": "Verify that license headers are correctly applied to all source files and that they properly reference the main LICENSE file. Test automated header insertion process for new files."
+          },
+          {
+            "id": 3,
+            "title": "Configure Repository and Documentation Integration",
+            "description": "Update project documentation, repository configuration, and package files to properly display and integrate the custom license information across all project touchpoints.",
+            "dependencies": [
+              "28.1",
+              "28.2"
+            ],
+            "details": "Update README.md to prominently display license information and commercial licensing contact details with appropriate badges. Create COMMERCIAL_LICENSE.md file explaining the commercial licensing process, pricing structure, and terms. Configure GitHub/GitLab repository settings to display license information and ensure proper license detection. Update package.json or equivalent project files to include license field with custom identifier. Add license detection configuration for dependency scanning tools. Consider trademark protection documentation for the project name.",
+            "status": "done",
+            "testStrategy": "Repository testing to confirm license file is properly detected by GitHub/GitLab license detection, package managers recognize the custom license, and all documentation accurately reflects the licensing terms. Verify license badges display correctly and links to commercial licensing information are functional."
+          }
+        ]
       }
     ],
     "metadata": {
       "created": "2025-06-26T13:18:50.654Z",
-      "updated": "2025-08-03T05:17:39.481Z",
+      "updated": "2025-08-03T05:32:16.309Z",
       "description": "Tasks for master context"
     }
   }

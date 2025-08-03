@@ -1,0 +1,17 @@
+/*
+ * Testcase Translator - AI-Powered Test Automation
+ * Copyright (c) 2025 Testcase Translator Project
+ * 
+ * This file is part of the Testcase Translator project.
+ * 
+ * For non-commercial use, this software is available under the terms
+ * specified in the LICENSE file in the project root.
+ * 
+ * For commercial use, a separate commercial license is required.
+ * Please contact us for commercial licensing information.
+ * 
+ * Repository: https://github.com/heozeop/testcase-translator
+ * License: Dual-License-Noncommercial-Commercial
+ * 
+ * COMMERCIAL USE PROHIBITED WITHOUT LICENSE
+ */
