@@ -1528,17 +1528,66 @@ export class ProjectsService {
         elapsedTime: Date.now() - startTime 
       });
 
-      const testResults = cypressResult.results.map((result: any, index: number) => ({
-        name: result.name || `Test ${index + 1}`,
-        status: result.status,
-        details: result.status === 'passed' 
-          ? `Test completed successfully: ${result.name}`
-          : `Test failed: ${result.error || 'Unknown error'}`,
-        duration: result.duration || 0,
-        screenshotUrl: result.status === 'failed' ? `http://localhost:8000/api/projects/${project.id}/executions/${executionId}/screenshots/test_${index + 1}.png` : null,
-        video: cypressResult.videos[index] || `http://localhost:8000/api/projects/${project.id}/executions/${executionId}/videos/test_${index + 1}.mp4`,
-        error: result.status === 'failed' ? result.error : null
-      }));
+      // Parse test results from Cypress output
+      let testResults = [];
+      
+      // First try to use the structured results
+      if (cypressResult.results && cypressResult.results.length > 0) {
+        testResults = cypressResult.results.map((result: any, index: number) => ({
+          name: result.name || `Test ${index + 1}`,
+          status: result.status,
+          details: result.status === 'passed' 
+            ? `Test completed successfully: ${result.name}`
+            : `Test failed: ${result.error || 'Unknown error'}`,
+          duration: result.duration || 0,
+          screenshotUrl: result.status === 'failed' ? `http://localhost:8000/api/projects/${project.id}/executions/${executionId}/screenshots/test_${index + 1}.png` : null,
+          video: cypressResult.videos[index] || `http://localhost:8000/api/projects/${project.id}/executions/${executionId}/videos/test_${index + 1}.mp4`,
+          error: result.status === 'failed' ? result.error : null
+        }));
+      }
+      
+      // If no results but we have logs, try to parse from logs
+      if (testResults.length === 0 && cypressResult.logs && typeof cypressResult.logs === 'string') {
+        try {
+          console.log('📊 Attempting to extract test results from Cypress JSON logs');
+          
+          // Enhanced JSON pattern matching
+          const jsonPattern = /\{\s*"stats":\s*\{[\s\S]*?\},\s*"tests":\s*\[[\s\S]*?\],\s*"pending":\s*\[[\s\S]*?\],\s*"failures":\s*\[[\s\S]*?\],\s*"passes":\s*\[[\s\S]*?\]\s*\}/;
+          const jsonMatch = cypressResult.logs.match(jsonPattern);
+          
+          if (jsonMatch) {
+            const parsedJson = JSON.parse(jsonMatch[0]);
+            console.log('📊 Successfully parsed Cypress JSON:', {
+              tests: parsedJson.tests?.length || 0,
+              passes: parsedJson.passes?.length || 0,
+              failures: parsedJson.failures?.length || 0,
+              stats: parsedJson.stats
+            });
+            
+            if (parsedJson.tests) {
+              testResults = parsedJson.tests.map((test: any, index: number) => {
+                const hasError = test.err && Object.keys(test.err).length > 0;
+                return {
+                  name: test.fullTitle || test.title || `Test ${index + 1}`,
+                  status: hasError ? 'failed' : 'passed',
+                  details: hasError ? `Test failed: ${test.err.message}` : 'Test passed successfully',
+                  duration: test.duration || 0,
+                  error: hasError ? test.err.message : null,
+                  stackTrace: hasError ? test.err.stack : null,
+                  codeFrame: hasError ? test.err.codeFrame : null,
+                  retries: test.currentRetry || 0
+                };
+              });
+              
+              console.log(`📋 Extracted ${testResults.length} test results from logs`);
+            }
+          } else {
+            console.warn('⚠️ Could not find complete Cypress JSON pattern in logs');
+          }
+        } catch (error) {
+          console.warn('Could not parse test results from logs:', error);
+        }
+      }
 
       const passedTests = testResults.filter((t: any) => t.status === 'passed').length;
       const failedTests = testResults.filter((t: any) => t.status === 'failed').length;

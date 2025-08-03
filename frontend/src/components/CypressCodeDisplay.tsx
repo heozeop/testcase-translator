@@ -54,7 +54,28 @@ interface TestExecutionResult {
   status: string;
   startedAt: string;
   baseUrl: string;
-  logs?: any;
+  logs?: {
+    message?: string;
+    stage?: string;
+    testResults?: Array<{
+      name: string;
+      status: string;
+      details?: string;
+      duration?: number;
+      error?: string;
+      stackTrace?: string;
+      codeFrame?: any;
+      retries?: number;
+    }>;
+    summary?: {
+      total: number;
+      passed: number;
+      failed: number;
+    };
+    screenshots?: string[];
+    videos?: string[];
+    cypressLogs?: string;
+  };
 }
 
 interface CypressCodeDisplayProps {
@@ -801,6 +822,77 @@ export const CypressCodeDisplay: React.FC<CypressCodeDisplayProps> = ({ projectI
                 </div>
               )}
               
+              {/* Status Message */}
+              {executionResult.logs?.message && !executionResult.logs?.testResults && (
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-sm text-blue-800">{executionResult.logs.message}</p>
+                </div>
+              )}
+              
+              {/* Test Results Details */}
+              {executionResult.logs?.testResults && executionResult.logs.testResults.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-medium mb-4">Test Results</h4>
+                  <div className="space-y-3">
+                    {executionResult.logs.testResults.map((test, index) => (
+                      <div key={index} className={`p-4 rounded-lg border ${
+                        test.status === 'passed' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                test.status === 'passed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
+                                {test.status === 'passed' ? '✓' : '✗'} {test.status}
+                              </span>
+                              <span className="font-medium">{test.name}</span>
+                            </div>
+                            {test.error && (
+                              <div className="mt-2 text-sm text-red-600">
+                                <p className="font-medium">Error:</p>
+                                <pre className="mt-1 p-2 bg-red-100 rounded text-xs overflow-x-auto">{test.error}</pre>
+                              </div>
+                            )}
+                            
+                            {test.codeFrame && (
+                              <div className="mt-2 text-sm">
+                                <p className="font-medium text-gray-700">Code Frame:</p>
+                                <div className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
+                                  <pre className="font-mono">{test.codeFrame.frame}</pre>
+                                  <p className="text-gray-600 mt-1">
+                                    {test.codeFrame.originalFile}:{test.codeFrame.line}:{test.codeFrame.column}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            
+                            <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                              {test.duration && (
+                                <span>Duration: {(test.duration / 1000).toFixed(2)}s</span>
+                              )}
+                              {test.retries && test.retries > 0 && (
+                                <span>Retries: {test.retries}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Cypress Logs */}
+              {executionResult.logs?.cypressLogs && (
+                <div className="mt-6">
+                  <h4 className="text-lg font-medium mb-4">Cypress Output</h4>
+                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
+                    <pre className="text-xs font-mono whitespace-pre-wrap">{executionResult.logs.cypressLogs}</pre>
+                  </div>
+                </div>
+              )}
+
               {/* Screenshots and Videos */}
               {(executionResult.logs?.screenshots?.length > 0 || executionResult.logs?.videos?.length > 0) && (
                 <div className="mt-6">

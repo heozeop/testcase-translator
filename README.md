@@ -29,6 +29,37 @@ The project uses a three-tier architecture:
 - **Virtual Display**: Xvfb for headless browser operation
 - **ARM64 Compatible**: Optimized for Apple Silicon and Intel architectures
 
+### Cypress Execution Modes
+
+The system supports three execution modes controlled by the `CYPRESS_EXECUTION_MODE` environment variable:
+
+1. **`auto` (default)**: Intelligently detects the best execution method
+   - Attempts real browser execution first
+   - Falls back to simulation if dependencies are missing
+   - Perfect for development and CI/CD environments
+
+2. **`real`**: Forces real Cypress execution
+   - Requires Cypress and browser to be installed
+   - Fails if dependencies are missing
+   - Use when you need guaranteed real test execution
+
+3. **`simulate`**: Always uses simulation mode
+   - Generates realistic test results without browser
+   - Useful for development and testing
+   - Fast execution with simulated videos/screenshots
+
+Example configuration:
+```bash
+# Force real execution (will fail if Cypress not available)
+CYPRESS_EXECUTION_MODE=real
+
+# Use automatic detection (recommended)
+CYPRESS_EXECUTION_MODE=auto
+
+# Always simulate (for development)
+CYPRESS_EXECUTION_MODE=simulate
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -70,9 +101,10 @@ BACKEND_PORT=8000
 FRONTEND_PORT=3000
 
 # Cypress Execution Configuration
-CYPRESS_FORCE_REAL=true  # Forces real Cypress execution in Docker
-DISPLAY=:99              # Virtual display for headless browser
-DOCKER=true              # Identifies Docker environment
+CYPRESS_EXECUTION_MODE=auto  # Controls test execution mode (real/auto/simulate)
+CYPRESS_FORCE_REAL=true      # Forces real Cypress execution in Docker (legacy)
+DISPLAY=:99                  # Virtual display for headless browser
+DOCKER=true                  # Identifies Docker environment
 ```
 
 3. Choose your setup method:
